@@ -500,8 +500,9 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    png_bytepp rows;
    png_uint_32 width, height, i, j;
    png_byte is_used[256];
-   int num_palette, num_trans, last_color, is_gray, k;
+   int num_palette, num_trans, last_color_index, last_trans_index, is_gray, k;
    png_color_16 gray_trans;
+   png_byte last_trans;
 
    png_debug(1, "in opng_reduce_palette\n");
 
@@ -532,34 +533,54 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    }
 
    /* Analyze the possible reductions. */
+   /* Also check the integrity of PLTE and tRNS. */
    opng_analyze_sample_usage(png_ptr, info_ptr, is_used);
-   for (k = num_trans - 1; k >= 0; --k)
+   is_gray = (reductions & OPNG_REDUCE_PALETTE_TO_GRAY) ? 1 : 0;
+   last_color_index = last_trans_index = -1;
+   for (k = 0; k < 256; ++k)
    {
       if (!is_used[k])
          continue;
-      if (trans[k] < 255)
-         break;
+      last_color_index = k;
+      if (k < num_trans && trans[k] < 255)
+         last_trans_index = k;
+      if (!is_gray ||
+          palette[k].red != palette[k].green ||
+          palette[k].red != palette[k].blue)
+         is_gray = 0;
    }
-   num_trans = k + 1;
-   for ( ; k >= 0; --k)
-      is_used[k] = 1;
-
-   is_gray = (reductions & OPNG_REDUCE_PALETTE_TO_GRAY) ? 1 : 0;
-   last_color = -1;
-   for (k = 0; k < 256; ++k)
-      if (is_used[k])
-      {
-         last_color = k;
-         if (palette[k].red != palette[k].green ||
-             palette[k].red != palette[k].blue)
-            is_gray = 0;
-      }
-   OPNG_ASSERT(last_color >= 0);
-
-   if (last_color >= num_palette)
+   OPNG_ASSERT(last_color_index >= 0);
+   if (last_color_index >= num_palette)
    {
-      png_warning(png_ptr, "Invalid number of colors in palette");
-      return OPNG_REDUCE_NONE;
+      png_warning(png_ptr, "Too few colors in palette");
+      /* Fix the palette by adding blank entries at the end. */
+      num_palette = last_color_index + 1;
+      info_ptr->num_palette = (png_uint_16)num_palette;
+   }
+   if (num_trans > num_palette)
+   {
+      png_warning(png_ptr, "Too many alpha values in tRNS");
+      info_ptr->num_trans = info_ptr->num_palette;
+   }
+   num_trans = last_trans_index + 1;
+   OPNG_ASSERT(num_trans <= num_palette);
+
+   /* Test if tRNS can be reduced to grayscale. */
+   if (is_gray && num_trans > 0)
+   {
+      gray_trans.gray = palette[last_trans_index].red;
+      last_trans = trans[last_trans_index];
+      for (k = last_trans_index; k >= 0; --k)
+      {
+         if (!is_used[k])
+            continue;
+         if ((palette[k].red != gray_trans.gray && trans[k] < 255) ||
+             (palette[k].red == gray_trans.gray && trans[k] != last_trans))
+         {
+            is_gray = 0;
+            break;
+         }
+      }
    }
 
    /* Initialize result value. */
@@ -571,19 +592,6 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
       png_free_data(png_ptr, info_ptr, PNG_FREE_TRNS, -1);
       info_ptr->valid &= ~PNG_INFO_tRNS;
       result = OPNG_REDUCE_PALETTE_FAST;
-   }
-
-   /* Test if tRNS can be reduced to grayscale. */
-   if (is_gray && num_trans > 0)
-   {
-      k = num_trans - 1;
-      gray_trans.gray = palette[k].red;
-      for (--k ; k >= 0; --k)
-         if (trans[k] < 255 && gray_trans.gray != palette[k].red)
-         {
-            is_gray = 0;
-            break;
-         }
    }
 
    if (is_gray)
@@ -623,16 +631,16 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
 
    if (reductions & OPNG_REDUCE_PALETTE_FAST)
    {
-      if (num_palette > last_color + 1)
+      if (num_palette != last_color_index + 1)
       {
          /* Reduce PLTE. */
          /* hIST is reduced automatically. */
-         info_ptr->num_palette = (png_uint_16)(last_color + 1);
+         info_ptr->num_palette = (png_uint_16)(last_color_index + 1);
          result = OPNG_REDUCE_PALETTE_FAST;
       }
 
       if ((info_ptr->valid & PNG_INFO_tRNS) &&
-          (int)info_ptr->num_trans > num_trans)
+          (int)info_ptr->num_trans != num_trans)
       {
          /* Reduce tRNS. */
          info_ptr->num_trans = (png_uint_16)num_trans;

@@ -235,6 +235,11 @@ small size of the executable.
   enabled. Most of the time is spent by this code, and it is
   important to optimize it to the maximum extent possible.
 
+  Note: It may be necessary to profile the zlib code, in order to
+  know the configuration that provides the best optimization.
+  For example, too much inlining may cause cache penalties, and
+  "gcc -O2" may work better than "gcc -O3" in some circumstances.
+
 - Compile the libpng library and the OptiPNG source code using
   a set of optimizations that do not sacrifice the code size,
   such as "gcc -O2". The speed of the OptiPNG program is

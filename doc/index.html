@@ -10,17 +10,69 @@
 
 <h2>OptiPNG: Advanced PNG Optimizer</h2>
 
+<p>
+Current version: <b>OptiPNG 0.4.7</b> (released 30&nbsp;Oct&nbsp;2004)
+<br>
+Download the source code:
+<a href="optipng-0.4.7.tar.gz">optipng-0.4.7.tar.gz</a>,
+<a href="optipng-0.4.7.zip">optipng-0.4.7.zip</a>
+<br>
+Download the Windows executable:
+<a href="optipng-0.4.7-exe.zip">optipng-0.4.7-exe.zip</a>
+</p>
+
+<p>
+What's new (see <a href="HISTORY">HISTORY</a> for the complete list of
+changes):
+<ul>
+  <li>
+    <i>Fixed reduction bug</i>
+    <br>
+    Fixed a palette-to-gray reduction problem that occurred when having more
+    than one alpha value per RGB triple.
+  </li>
+  <li>
+    <i>Improved speed</i>
+    <br>
+    Reduced the IDAT buffer size, allowing abandoned trials to terminate
+    earlier in some circumstances.
+  </li>
+  <li>
+    <i>Improved new error recovery feature</i>
+    <br>
+    Fixed image when PLTE is too small, or tRNS is too large.
+  </li>
+</ul>
+</p>
+
 <hr>
 
 <p>
-Current version: <b>OptiPNG 0.4.5</b> (released 31&nbsp;May&nbsp;2004)
+Previous version: <b>OptiPNG 0.4.6</b> (released 25&nbsp;Oct&nbsp;2004)
 <br>
 Download the source code:
-<a href="optipng-0.4.5.tar.gz">optipng-0.4.5.tar.gz</a>,
-<a href="optipng-0.4.5.zip">optipng-0.4.5.zip</a>
+<a href="optipng-0.4.6.tar.gz">optipng-0.4.6.tar.gz</a>,
+<a href="optipng-0.4.6.zip">optipng-0.4.6.zip</a>
 <br>
 Download the Windows executable:
-<a href="optipng-0.4.5-exe.zip">optipng-0.4.5-exe.zip</a>
+<a href="optipng-0.4.6-exe.zip">optipng-0.4.6-exe.zip</a>
+</p>
+
+<p>
+What's new:
+<ul>
+  <li>
+    <i>Improved security</i>
+    <br>
+    Upgraded <b>zlib</b> and <b>libpng</b> to the latest, most secure versions.
+  </li>
+  <li>
+    <i>Improved speed</i>
+    <br>
+    Trials are ended prematurely, in the moment when IDAT grows beyond the
+    smallest size previously achieved. This has no effect on the output size.
+  </li>
+</ul>
 </p>
 
 <hr>
@@ -81,26 +133,28 @@ available here:
 </ul>
 </p>
 
+<hr>
+
 <p>
 NOTE:
 <br>
 The <b>OptiPNG</b> source distribution contains modified versions of
-<b>zlib-1.2.1</b> and <b>libpng-1.0.15</b>. The original libraries are
-available at their home sites:
+<b>zlib-1.2.2</b> and <b>libpng-1.0.17</b>. Still, <b>OptiPNG</b> works with
+the original libraries as well. These libraries are available at their home
+sites:
 <ul>
 <li>
-  <b>zlib</b> at <a href="http://www.zlib.org/">http://www.zlib.org/</a>
+  <b>zlib</b> at <a href="http://www.zlib.net/">http://www.zlib.net/</a>
   <br>
-  (A notable change: the constant <tt>TOO_FAR</tt> is set to 32768, for
+  A notable change: the constant <tt>TOO_FAR</tt> is set to 32768, for
   a slight compression improvement; see the PNG-Tech article
-  <i>&quot;<a href="http://www.cs.toronto.edu/~cosmin/pngtech/too_far.html">TOO_FAR in zlib is not too far...</a>&quot;</i>.)
+  <i>&quot;<a href="http://www.cs.toronto.edu/~cosmin/pngtech/too_far.html">TOO_FAR in zlib is not too far...</a>&quot;</i>.
 </li>
 <li>
   <b>libpng</b> at <a href="http://www.libpng.org/pub/png/libpng.html">http://www.libpng.org/pub/png/libpng.html</a>
   <br>
-  (Although <b>OptiPNG</b> is designed to work with any recent version of
-  <b>libpng</b> (post- <b>1.0.6</b>), we distribute a special version
-  that contains some corrections and improvements.)
+  The modified version provides a tiny speed improvement. In addition, the
+  unused features are disabled and compiled out, allowing a smaller executable.
 </li>
 </ul>
 IMPORTANT:
@@ -111,7 +165,7 @@ libraries.
 <br>
 You may use the original libraries instead of those supplied in the
 source package; however, if you use the supplied ones, it is strongly
-recommended that you link them in statically.
+recommended to link them in statically.
 </p>
 
 <hr>
@@ -125,9 +179,10 @@ This version is not publicly available.
 
 <hr>
 
-Last updated: 31&nbsp;May&nbsp;2004 by Cosmin Truþa.
+Last updated: 30&nbsp;Oct&nbsp;2004 by
+<a href="http://www.cs.toronto.edu/~cosmin/">Cosmin Truþa</a>
 <br>
-<a href="http://www.cs.toronto.edu/~cosmin/pngtech/">PNG-Tech</a>
+<a href="http://www.cs.toronto.edu/~cosmin/pngtech/">&lt;&lt;&nbsp;PNG-Tech</a>
 
 </body>
 

@@ -1,0 +1,17 @@
+This directory contains *MODIFIED* versions of zlib and libpng.
+Please DO NOT send bug reports to the authors of the *ORIGINAL* libraries!
+
+
+zlib
+  version: 1.2.2-optipng
+  changes: see zlib/ChangeLog (tip: search for "optipng")
+  derived from original
+    version: 1.2.2
+    available at: http://www.zlib.net/
+
+libpng
+  version: 1.0.17-optipng
+  changes: see libpng/CHANGES (tip: search for "optipng")
+  derived from original
+    version: 1.0.17
+    available at: http://www.libpng.org/pub/png/libpng.html

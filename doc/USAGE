@@ -1,8 +1,8 @@
-OptiPNG 0.4.5: Advanced PNG optimizer.
+OptiPNG 0.4.7: Advanced PNG optimizer.
 Copyright (C) 2001-2004 Cosmin Truta.
 
 This program is open-source software. See LICENSE for more details.
-Compiled with libpng version 1.0.15-cos2 and zlib version 1.2.1.f-cos2
+Compiled with libpng version 1.0.17-optipng and zlib version 1.2.2-optipng
 
 Usage:
     optipng [options] files.png ...
@@ -26,7 +26,8 @@ Advanced options:
     -np			no palette reduction
     -nz			no IDAT recompression (also disable reductions)
     -fix		enable error recovery
-    -force		write a new output even if it is larger than the input
+    -force		write a new output, even if it is bigger than the input
+    -full		do not abandon trial, even if IDAT is already too big
     -preserve		preserve file attributes if possible
     --			stop option switch parsing
 Optimization level presets:

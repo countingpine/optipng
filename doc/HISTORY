@@ -4,11 +4,43 @@ OptiPNG - Revision history
 
 Legend
 ------
+++ Added or improved feature that might affect compression ratio
+   or speed.
  + Added or improved feature.
  - Removed feature.
  * Modified code (e.g. for architectural improvements).
  ! Fixed bug.
-!! Fixed dangerous bug, that might cause accidental data loss.
+!! Fixed dangerous bug that might cause accidental data loss.
+
+
+Version 0.4.7   30-oct-2004
+-------------
+!! Fixed a palette-to-gray reduction problem that occurred when
+   having more than one alpha value per RGB triple.
+   (Thanks to Larry Hastings for the report.)
+ ! Fixed the progress display, when processing very large images.
+ + Displayed the image info at the beginning of processing.
+++ Reduced the IDAT buffer size, allowing abandoned trials to
+   terminate earlier in some circumstances.
+ + Implemented error recovery, when PLTE is too small, and/or
+   tRNS is too large.
+
+
+Version 0.4.6   25-oct-2004
+-------------
+ + Upgraded zlib to version 1.2.2-optipng [private]
+ + Upgraded libpng to version 1.0.17-optipng [private]
+   This provides safe handling of some ill-formed PNG images.
+ + Rewrote makefiles.
+ + Added project workspace to build under Visual C++ 6.0,
+   integrated with memory leak detection.
+++ Implemented a premature termination of trials, in the moment
+   when IDAT grows beyond the smallest size previously achieved.
+   (Thanks to Larry Hastings for the idea.)
+ + Changed the order of trials, to perform the trials that are
+   more likely to yield a smaller IDAT, at the beginning.
+ + Added user option -full to avoid the premature termination of
+   trials; useful for debugging.
 
 
 Version 0.4.5   31-may-2004
@@ -29,7 +61,7 @@ Version 0.4.5   31-may-2004
 Version 0.4.4	20-nov-2003
 -------------
  + Upgraded zlib to version 1.2.1
- + Added support for the Z_RLE strategy.
+++ Added support for the Z_RLE strategy.
 
 
 Version 0.4.3	12-aug-2003
@@ -40,7 +72,7 @@ Version 0.4.3	12-aug-2003
 
 Version 0.4.2	30-jun-2003
 -------------
- + Enhanced the support for palette size reductions:
+++ Enhanced the support for palette size reductions:
    trailing sterile palette entries are removed even when
    the bit depth is below 8.
  ! Enforced recompression when the new IDAT has the same size,
@@ -56,8 +88,8 @@ Version 0.4.1	19-may-2003
 
 Version 0.4	12-may-2003
 -----------
- + Added support for palette-to-gray reductions.
- + Added partial support for palette size reductions.
+++ Added support for palette-to-gray reductions.
+++ Added partial support for palette size reductions.
  ! Fixed the reporting of invalid command-line options.
  ! Eliminated a spurious warning when the zlib window size
    is set to 256.
@@ -79,11 +111,11 @@ Version 0.3.1	25-feb-2003
 Version 0.3	24-feb-2003
 -----------
  This is the first public release of OptiPNG.
- + Added support for iterating through zlib memory levels.
- + Added support for collapsing IDAT, avoiding calls to
+++ Added support for iterating through zlib memory levels.
+++ Added support for collapsing IDAT, avoiding calls to
    png_set_compression_buffer_size().
    This reduces the memory requirements.
- + Added support for lossless reduction of the image type:
+++ Added support for lossless reduction of the image type:
    RGB[A] -> G[A], RGBA -> RGB, GA -> G
  + Added many user options.
  + Added documentation.
