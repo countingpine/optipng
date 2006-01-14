@@ -6,7 +6,7 @@
 #  Copyright (C) 1996, 1997 Andreas Dilger
 # For conditions of distribution and use, see copyright notice in png.h
 
-# where "make install" puts libpng.a, libpng10.dylib, png.h and pngconf.h
+# where "make install" puts libpng.a, libpng12.dylib, png.h and pngconf.h
 prefix=/usr/local
 
 # Where the zlib library and include files are located
@@ -17,15 +17,15 @@ ZLIBINC=../zlib
 
 CC=cc
 CFLAGS=-I$(ZLIBINC) -Wall -O3 -funroll-loops
-LDFLAGS=-L. -L$(ZLIBLIB) -lpng10 -lz
+LDFLAGS=-L. -L$(ZLIBLIB) -lpng12 -lz
 
 #RANLIB=echo
 RANLIB=ranlib
 
 PNGMAJ = 0
-PNGMIN = 1.0.17
+PNGMIN = 1.2.8
 PNGVER = $(PNGMAJ).$(PNGMIN)
-LIBNAME = libpng10
+LIBNAME = libpng12
 
 INCPATH=$(prefix)/include
 LIBPATH=$(prefix)/lib
@@ -73,7 +73,7 @@ libpng-config:
 	echo prefix=\"$(prefix)\"; \
 	echo I_opts=\"-I$(INCPATH)/$(LIBNAME)\"; \
 	echo L_opts=\"-L$(LIBPATH)\"; \
-	echo libs=\"-lpng10 -lz\"; \
+	echo libs=\"-lpng12 -lz\"; \
 	cat scripts/libpng-config-body.in ) > libpng-config
 	chmod +x libpng-config
 
@@ -174,16 +174,16 @@ test-dd:
 	echo
 	echo Testing installed dynamic shared library in $(DL).
 	$(CC) -I$(DI) -I$(ZLIBINC) \
-	   `$(BINPATH)/libpng10-config --cflags` pngtest.c \
+	   `$(BINPATH)/libpng12-config --cflags` pngtest.c \
 	   -L$(DL) -L$(ZLIBLIB) \
-	   -o pngtestd `$(BINPATH)/libpng10-config --ldflags`
+	   -o pngtestd `$(BINPATH)/libpng12-config --ldflags`
 	./pngtestd pngtest.png
 
 test-installed:
 	$(CC) $(CFLAGS) \
-	   `$(BINPATH)/libpng10-config --cflags` pngtest.c \
+	   `$(BINPATH)/libpng12-config --cflags` pngtest.c \
 	   -L$(ZLIBLIB) \
-	   -o pngtesti `$(BINPATH)/libpng10-config --ldflags`
+	   -o pngtesti `$(BINPATH)/libpng12-config --ldflags`
 	./pngtesti pngtest.png
 
 clean:

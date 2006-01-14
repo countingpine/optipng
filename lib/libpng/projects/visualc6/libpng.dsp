@@ -8,16 +8,16 @@
 CFG=libpng - Win32 DLL Release
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "libpng.mak".
-!MESSAGE 
+!MESSAGE
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "libpng.mak" CFG="libpng - Win32 DLL Release"
-!MESSAGE 
+!MESSAGE
 !MESSAGE Possible choices for configuration are:
-!MESSAGE 
+!MESSAGE
 !MESSAGE "libpng - Win32 DLL Release" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "libpng - Win32 DLL Debug" (based on "Win32 (x86) Dynamic-Link Library")
 !MESSAGE "libpng - Win32 DLL ASM Release" (based on "Win32 (x86) Dynamic-Link Library")
@@ -27,7 +27,7 @@ CFG=libpng - Win32 DLL Release
 !MESSAGE "libpng - Win32 LIB Debug" (based on "Win32 (x86) Static Library")
 !MESSAGE "libpng - Win32 LIB ASM Release" (based on "Win32 (x86) Static Library")
 !MESSAGE "libpng - Win32 LIB ASM Debug" (based on "Win32 (x86) Static Library")
-!MESSAGE 
+!MESSAGE
 
 # Begin Project
 # PROP AllowPerConfigDependencies 0
@@ -63,7 +63,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /dll /machine:I386
-# ADD LINK32 zlib1.lib /nologo /dll /machine:I386 /out:"Win32_DLL_Release\libpng10.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_Release"
+# ADD LINK32 zlib1.lib /nologo /dll /machine:I386 /out:"Win32_DLL_Release\libpng13.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_Release"
 
 !ELSEIF  "$(CFG)" == "libpng - Win32 DLL Debug"
 
@@ -94,7 +94,7 @@ BSC32=bscmake.exe
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 zlib1d.lib /nologo /dll /debug /machine:I386 /out:"Win32_DLL_Debug\libpng10d.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_Debug"
+# ADD LINK32 zlib1d.lib /nologo /dll /debug /machine:I386 /out:"Win32_DLL_Debug\libpng13d.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_Debug"
 
 !ELSEIF  "$(CFG)" == "libpng - Win32 DLL ASM Release"
 
@@ -112,20 +112,20 @@ LINK32=link.exe
 CPP=cl.exe
 # ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MD /W3 /O2 /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "NDEBUG" /D "PNG_USE_PNGVCRD" /D "PNG_BUILD_DLL" /D "ZLIB_DLL" /FD /c
+# ADD CPP /nologo /MD /W3 /O2 /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "NDEBUG" /D "PNG_USE_PNGVCRD" /D "PNG_BUILD_DLL" /D "ZLIB_DLL" /D "PNG_LIBPNG_SPECIALBUILD" /FD /c
 # SUBTRACT CPP /YX /Yc /Yu
 MTL=midl.exe
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 RSC=rc.exe
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
-# ADD RSC /l 0x409 /i "..\.." /d "NDEBUG" /d "PNG_USE_PNGVCRD"
+# ADD RSC /l 0x409 /i "..\.." /d "NDEBUG" /d PNG_LIBPNG_SPECIALBUILD=""""Use MMX instructions""""
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /dll /machine:I386
-# ADD LINK32 zlib1.lib /nologo /dll /machine:I386 /out:"Win32_DLL_ASM_Release\libpng10.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_ASM_Release"
+# ADD LINK32 zlib1.lib /nologo /dll /machine:I386 /out:"Win32_DLL_ASM_Release\libpng13.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_ASM_Release"
 
 !ELSEIF  "$(CFG)" == "libpng - Win32 DLL ASM Debug"
 
@@ -143,20 +143,20 @@ LINK32=link.exe
 CPP=cl.exe
 # ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "_DEBUG" /D "DEBUG" /D PNG_DEBUG=1 /D "PNG_USE_PNGVCRD" /D "PNG_BUILD_DLL" /D "ZLIB_DLL" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "_DEBUG" /D "DEBUG" /D PNG_DEBUG=1 /D "PNG_USE_PNGVCRD" /D "PNG_BUILD_DLL" /D "ZLIB_DLL" /D "PNG_LIBPNG_SPECIALBUILD" /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 MTL=midl.exe
 # ADD BASE MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "_DEBUG" /mktyplib203 /win32
 RSC=rc.exe
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
-# ADD RSC /l 0x409 /i "..\.." /d "_DEBUG" /d PNG_DEBUG=1 /d "PNG_USE_PNGVCRD"
+# ADD RSC /l 0x409 /i "..\.." /d "_DEBUG" /d PNG_DEBUG=1 /d PNG_LIBPNG_SPECIALBUILD=""""Use MMX instructions""""
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /dll /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 zlib1d.lib /nologo /dll /debug /machine:I386 /out:"Win32_DLL_ASM_Debug\libpng10d.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_ASM_Debug"
+# ADD LINK32 zlib1d.lib /nologo /dll /debug /machine:I386 /out:"Win32_DLL_ASM_Debug\libpng13d.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_ASM_Debug"
 
 !ELSEIF  "$(CFG)" == "libpng - Win32 DLL VB"
 
@@ -174,23 +174,23 @@ LINK32=link.exe
 CPP=cl.exe
 # ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MD /W3 /O2 /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "NDEBUG" /D "PNG_BUILD_DLL" /D "ZLIB_DLL" /D PNGAPI=__stdcall /D "PNG_NO_MODULEDEF" /FD /c
+# ADD CPP /nologo /MD /W3 /O2 /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "NDEBUG" /D "PNG_BUILD_DLL" /D "ZLIB_DLL" /D PNGAPI=__stdcall /D "PNG_NO_MODULEDEF" /D "PNG_LIBPNG_SPECIALBUILD" /FD /c
 # SUBTRACT CPP /YX /Yc /Yu
 MTL=midl.exe
 # ADD BASE MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 # ADD MTL /nologo /D "NDEBUG" /mktyplib203 /win32
 RSC=rc.exe
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
-# ADD RSC /l 0x409 /i "..\.." /d "NDEBUG" /dDLLFNAME_POSTFIX=""""VB"""" /dSPECIALBUILD=""""__stdcall calling convention used for exported functions""""
+# ADD RSC /l 0x409 /i "..\.." /d "NDEBUG" /dPNG_LIBPNG_DLLFNAME_POSTFIX=""""VB"""" /dPNG_LIBPNG_SPECIALBUILD=""""__stdcall calling convention used for exported functions""""
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 /nologo /dll /machine:I386
-# ADD LINK32 zlib1.lib /nologo /dll /machine:I386 /out:"Win32_DLL_VB\libpng10vb.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_Release"
+# ADD LINK32 zlib1.lib /nologo /dll /machine:I386 /out:"Win32_DLL_VB\libpng13vb.dll" /libpath:"..\..\..\zlib\projects\visualc6\Win32_DLL_Release"
 # Begin Special Build Tool
 OutDir=.\Win32_DLL_VB
-TargetName=libpng10vb
+TargetName=libpng13vb
 SOURCE="$(InputPath)"
 PostBuild_Cmds=echo    Deleting $(targetname) import library and export file (Not required for VB projects)	del $(outdir)\$(targetname).lib	del $(outdir)\$(targetname).exp
 # End Special Build Tool
@@ -264,7 +264,7 @@ LIB32=link.exe -lib
 CPP=cl.exe
 # ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MD /W3 /O2 /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "NDEBUG" /D "PNG_USE_PNGVCRD" /FD /c
+# ADD CPP /nologo /MD /W3 /O2 /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "NDEBUG" /D "PNG_USE_PNGVCRD" /D "PNG_LIBPNG_SPECIALBUILD" /FD /c
 # SUBTRACT CPP /YX /Yc /Yu
 RSC=rc.exe
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
@@ -291,7 +291,7 @@ LIB32=link.exe -lib
 CPP=cl.exe
 # ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "_DEBUG" /D "DEBUG" /D PNG_DEBUG=1 /D "PNG_USE_PNGVCRD" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /I "..\.." /I "..\..\..\zlib" /D "WIN32" /D "_DEBUG" /D "DEBUG" /D PNG_DEBUG=1 /D "PNG_USE_PNGVCRD" /D "PNG_LIBPNG_SPECIALBUILD" /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 RSC=rc.exe
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
@@ -303,7 +303,7 @@ LIB32=link.exe -lib
 # ADD BASE LIB32 /nologo
 # ADD LIB32 /nologo /out:"Win32_LIB_ASM_Debug\libpngd.lib"
 
-!ENDIF 
+!ENDIF
 
 # Begin Target
 
@@ -395,7 +395,7 @@ SOURCE=..\..\pngvcrd.c
 
 !ELSEIF  "$(CFG)" == "libpng - Win32 LIB ASM Debug"
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
@@ -430,7 +430,7 @@ SOURCE=..\..\scripts\pngw32.def
 
 # PROP Exclude_From_Build 1
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # Begin Source File
@@ -495,7 +495,7 @@ SOURCE=..\..\scripts\pngw32.rc
 
 # PROP Exclude_From_Build 1
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # End Group

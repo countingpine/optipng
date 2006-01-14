@@ -76,10 +76,10 @@ CFLAGS= $(strip $(MINGW_CCFLAGS) $(addprefix -I,$(ZLIBINC)) \
         -Wall -O3 $(ALIGN) -funroll-loops \
 	-fomit-frame-pointer) # $(WARNMORE) -g -DPNG_DEBUG=5
 
-LIBNAME = libpng10
+LIBNAME = libpng12
 PNGMAJ = 0
 CYGDLL = 12
-PNGMIN = 1.0.17
+PNGMIN = 1.2.8
 PNGVER = $(PNGMAJ).$(PNGMIN)
 
 SHAREDLIB=cygpng$(CYGDLL).dll
@@ -267,16 +267,16 @@ test-dd:
 	echo
 	echo Testing installed dynamic shared library in $(DL).
 	$(CC) -I$(DI) $(CFLAGS) \
-	   `$(BINPATH)/libpng10-config --cflags` pngtest.c \
+	   `$(BINPATH)/libpng12-config --cflags` pngtest.c \
 	   -L$(DL) -L$(ZLIBLIB) \
-	   -o pngtestd `$(BINPATH)/libpng10-config --ldflags`
+	   -o pngtestd `$(BINPATH)/libpng12-config --ldflags`
 	./pngtestd pngtest.png
 
 test-installed:
 	$(CC) $(CFLAGS) \
-	   `$(BINPATH)/libpng10-config --cflags` pngtest.c \
+	   `$(BINPATH)/libpng12-config --cflags` pngtest.c \
 	   -L$(ZLIBLIB) \
-	   -o pngtesti$(EXE) `$(BINPATH)/libpng10-config --ldflags`
+	   -o pngtesti$(EXE) `$(BINPATH)/libpng12-config --ldflags`
 	./pngtesti$(EXE) pngtest.png
 
 clean:

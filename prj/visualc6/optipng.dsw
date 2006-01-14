@@ -27,8 +27,23 @@ Package=<4>
     Project_Dep_Name libpng
     End Project Dependency
     Begin Project Dependency
+    Project_Dep_Name pngxtern
+    End Project Dependency
+    Begin Project Dependency
     Project_Dep_Name zlib
     End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "pngxtern"=.\pngxtern.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
 }}}
 
 ###############################################################################

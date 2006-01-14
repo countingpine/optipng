@@ -1,25 +1,28 @@
 # Makefile for OptiPNG
 # Borland C++ for Win32
 #
-# Usage: make -f scripts\bcw32.mak
+# Usage: make -f scripts\bcc32.mak
 
 
 CC = bcc32
-LD = bcc32
+LD = $(CC)
 CFLAGS  = -O2 -v -w
 LDFLAGS = -v
 
 OPTIPNG  = optipng.exe
 ZLIB     = zlib.lib
 PNGLIB   = libpng.lib
+PNGXLIB  = pngxtern.lib
 ZMAK     = win32\Makefile.bor
 PNGMAK   = scripts\makefile.bc32
+PNGXMAK  = scripts\bcc32.mak
 ZDIR     = ..\lib\zlib
 PNGDIR   = ..\lib\libpng
+PNGXDIR  = ..\lib\pngxtern
 BACKHERE = ..\..\src
 
 OBJS = optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj wildargs.obj
-LIBS = $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
+LIBS = $(PNGXDIR)\$(PNGXLIB) $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
 
 
 $(OPTIPNG): $(OBJS) $(LIBS)
@@ -27,7 +30,7 @@ $(OPTIPNG): $(OBJS) $(LIBS)
 
 
 .c.obj:
-	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $*.c
+	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR) $*.c
 
 optipng.obj  : optipng.c   opng.h osys.h cbitset.h cexcept.h
 opngio.obj   : opngio.c    opng.h
@@ -38,6 +41,11 @@ osys.obj     : osys.c      osys.h
 wildargs.obj : xtra\wildargs.c
 	$(CC) -c $(CFLAGS) xtra\wildargs.c
 
+
+$(PNGXDIR)\$(PNGXLIB): $(ZDIR)\$(ZLIB) $(PNGDIR)\$(PNGLIB)
+	cd $(PNGXDIR)
+	$(MAKE) -f $(PNGXMAK) $(PNGXLIB)
+	cd $(BACKHERE)
 
 $(PNGDIR)\$(PNGLIB): $(ZDIR)\$(ZLIB)
 	cd $(PNGDIR)
@@ -53,8 +61,11 @@ $(ZDIR)\$(ZLIB):
 clean:
 	-del *.obj
 	-del *.lib
-	-del *.exe
+	-del $(OPTIPNG)
 	-del *.tds
+	cd $(PNGXDIR)
+	$(MAKE) -f $(PNGXMAK) clean
+	cd $(BACKHERE)
 	cd $(PNGDIR)
 	$(MAKE) -f $(PNGMAK) clean
 	cd $(BACKHERE)

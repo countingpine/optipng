@@ -18,7 +18,8 @@ decreasing order of importance:
    The most important goal is to produce PNG files that comply
    to the PNG specification. The code is written with great care,
    and it is tested extensively.
-   Bug reports may be sent to <cosmin@cs.toronto.edu>
+   However, if you do find defects, please report them to the
+   author. (See README file for contact info.)
 
 2. Efficiency.
    OptiPNG is designed to be fast. It needs to run a series of
@@ -99,24 +100,19 @@ decreasing order of importance:
 
 4. Functionality.
    OptiPNG serves its primary goal: to optimize the size of the
-   given PNG files. Additional features can be added (e.g. error
-   recovery, or basic metadata editing at the chunk level), as
-   long as the level of the other quality factors, especially of
-   those with a higher priority, is preserved.
-   The ability to read external formats such as PNM, GIF, BMP, or
-   even JPEG and JP2 has been considered. It has not been decided
-   yet whether to implement this by hand-crafted code, or by
-   using external code such as the JasPer library. Again, all the
-   other quality factors must not be ignored.
+   given PNG files. Additional features, such as error recovery,
+   or support for external image formats, have been implemented.
+   When adding any new extra feature, it is important to preserve
+   the level of other quality factors -- especially of those with
+   a higher priority.
 
 5. Portability.
    - Language and standard library:
-     The program is written in pure ANSI/ISO (Standard) C.
-     If Standard C is not enough to implement some potentially
-     useful feature (e.g. directory traversal), it may be
-     necessary to reduce the level of portability to POSIX.
-     Most of today's platforms, including Windows, offer some
-     degree of POSIX functionality.
+     The program is written in ANSI/ISO (Standard) C, and requires
+     the Standard C library. Specific features rely on basic POSIX
+     functionality, which is available on most of today's platforms,
+     including Windows. However, even if the C library lacks POSIX
+     support, the program is still compilable.
 
    - Machine:
      The program is designed to run on any 32-bit machine.
@@ -210,15 +206,11 @@ File recovery
 -------------
 
 A regular PNG decoder may choose to stop the decoding process
-whenever it detects problems with the input. On the other hand,
-at the user's option, OptiPNG can ignore non-fatal errors and
-replace the bad input with a corrected output. Currently, OptiPNG
-accepts files that have bad CRCs in non-critical chunks, and
-files that end unexpectedly (they have incomplete chunks, or they
-do not have the IEND chunk), provided that they have IDAT and all
-the other critical chunks are in good condition.
-The error recovery is provided via structured exception handling
-(see below).
+whenever it detects integrity problems within the input. On the
+other hand, at the user's option, OptiPNG can ignore non-fatal
+errors and, in some particular instances, replace the invalid
+input with corrected output. The correction is performed based
+on simple, automatic decisions.
 
 
 
@@ -252,9 +244,9 @@ small size of the executable.
 - Remove the libpng features that are unnecessary for OptiPNG.
   This is possible by #defining PNG_NO_XXX macros when compiling
   libpng. Here are a few examples:
-    PNG_NO_FLOATING_POINT_SUPPORTED	// not needed for now
-    PNG_NO_MNG_FEATURES			// no MNG support for now
-    PNG_NO_SETJMP_SUPPORTED		// see "Exception handling"
+    PNG_NO_FLOATING_POINT_SUPPORTED     // not needed for now
+    PNG_NO_MNG_FEATURES                 // no MNG support for now
+    PNG_NO_SETJMP_SUPPORTED             // see "Exception handling"
     PNG_NO_READ_TRANSFORMS
     PNG_NO_WRITE_TRANSFORMS
 
@@ -265,18 +257,18 @@ Exception handling
 
 It is unfortunate that C does not provide an exception handling
 system, and the standard alternatives (returned error codes or
-the setjmp mechanism) are many times unsatisfactory.
+the setjmp mechanism) are many times unsatisfactory. Exception
+handling is exceptionally useful to implementing recovery.
+
 OptiPNG uses CEXCEPT, an ultra-thin abstraction layer that
 implements structured exception handling on top of the setjmp
-mechanism.
-
-Essentially, the CEXCEPT exception handling system defines macros
-such as Throw, Try, Catch, which are used by OptiPNG. The
-multi-layered approach to throwing, catching and re-throwing
-exceptions allows the program to continue with the next file,
-even if fatal errors occur inside libpng. By using CEXCEPT, the
-source code is very clean, and the performance overload is
-insignificant.
+mechanism. Essentially, the CEXCEPT exception handling system
+defines macros such as Throw, Try, Catch, which are used by
+OptiPNG. The multi-layered approach to throwing, catching and
+re-throwing exceptions allows the program to continue with the
+next file, even if fatal errors occur inside libpng. By using
+CEXCEPT, the source code is very clean, and the performance
+overload is insignificant.
 
 There are many issues pertaining to how the CEXCEPT macros work,
 and they can be read inside the "cexcept.h" file. If OptiPNG or

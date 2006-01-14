@@ -1,28 +1,26 @@
 /*
  * opngreduc.c - libpng extension: image reductions
  *
- * Copyright (C) 2003-2004 Cosmin Truta.
+ * Copyright (C) 2003-2005 Cosmin Truta.
  * The code is distributed under the same licensing and warranty terms
  * as libpng.
  *
  * CAUTION:
- * This code is intended to become a part of libpng. Due to this reason,
- * it accesses the internal libpng structures directly. Although it
- * works well with dynamic libpng builds (.so / .dll), it is recommended
- * to be linked to static libpng builds.
+ * This code is intended to be integrated into libpng.  It is written
+ * as if it were a part of libpng, which means that it accesses the
+ * internal libpng structures directly.
+ * IT IS IMPORTANT TO LINK THIS CODE STATICALLY to libpng, in order to
+ * avoid possible data corruption problems that may occur when linking
+ * to a dynamic libpng build, due to a possible png_struct mismatch.
  *
- * When this code will emerge into libpng, it is recommended to rename
+ * When integrating this code into libpng, it is recommended to rename
  * this source file to "pngreduc.c", and to rename the var/func/macro
  * names as follows:
  *   opng_xxx -> png_xxx
  *   OPNG_XXX -> PNG_XXX
  *
- * CAUTION:
- * Currently, libpng does not offer a reliable way to know when
- * the alpha channel is before the other components (e.g. AG, ARGB).
- * For example, this code fails to function properly under
- * PNG_TRANSFORM_SWAP_ALPHA. As an interim solution, we rely on
- * the presence of PNG_TRANSFORM and PNG_FILLER_AFTER.
+ * For simplicity, this code does not function if the pixels are stored
+ * in a non-implicit form, i.e. if any PNG_TRANSFORM is in effect.
  *
  * For more info, see opng.h.
  */
@@ -102,13 +100,176 @@ opng_validate_image(png_structp png_ptr, png_infop info_ptr)
 }
 
 
+#define OPNG_CMP_COLOR(R1, G1, B1, R2, G2, B2) \
+   (((int)(R1) != (int)(R2)) ?      \
+      ((int)(R1) - (int)(R2)) :     \
+      (((int)(G1) != (int)(G2)) ?   \
+         ((int)(G1) - (int)(G2)) :  \
+         ((int)(B1) - (int)(B2))))
+
+#define OPNG_CMP_ALPHA_COLOR(A1, R1, G1, B1, A2, R2, G2, B2) \
+   (((int)(A1) != (int)(A2)) ?          \
+      ((int)(A1) - (int)(A2)) :         \
+      (((int)(R1) != (R2)) ?            \
+         ((int)(R1) - (int)(R2)) :      \
+         (((int)(G1) != (int)(G2)) ?    \
+            ((int)(G1) - (int)(G2)) :   \
+            ((int)(B1) - (int)(B2)))))
+
+
 /*
- * Analyze the possibility of reducing the image type.
+ * Build a color+alpha palette in which the entries are sorted by
+ * (alpha, red, green, blue) in this particular order.
+ * Use the insertion sort algorithm.
+ * The function returns:
+ *   1 if the insertion was successful;     *index = position of new entry;
+ *   0 if the insertion was not successful; *index = position of crt entry;
+ *  -1 if overflow;                *num_palette = *num_trans = *index = -1;
+ */
+static int /* PRIVATE */
+opng_insert_palette_entry(png_colorp palette, int *num_palette,
+   png_bytep trans, int *num_trans, int max_tuples,
+   unsigned int red, unsigned int green, unsigned int blue, unsigned int alpha,
+   int *index)
+{
+   int low, high, mid, cmp, i;
+
+   OPNG_ASSERT(*num_palette >= 0 && *num_palette <= max_tuples);
+   OPNG_ASSERT(*num_trans >= 0 && *num_trans <= *num_palette);
+
+   /* (Binary) Search for the tuple. */
+   if (alpha < 255)
+   {
+      low  = 0;
+      high = *num_trans - 1;
+      while (low <= high)
+      {
+         mid = (low + high) / 2;
+         cmp = OPNG_CMP_ALPHA_COLOR(alpha, red, green, blue,
+            trans[mid],
+            palette[mid].red, palette[mid].green, palette[mid].blue);
+         if (cmp < 0)
+            high = mid - 1;
+         else if (cmp > 0)
+            low = mid + 1;
+         else /* cmp == 0 */
+         {
+            *index = mid;
+            return 0;
+         }
+      }
+   }
+   else  /* increase speed: search only within fully opaque tuples. */
+   {
+      low  = *num_trans;
+      high = *num_palette - 1;
+      while (low <= high)
+      {
+         mid = (low + high) / 2;
+         cmp = OPNG_CMP_COLOR(red, green, blue,
+            palette[mid].red, palette[mid].green, palette[mid].blue);
+         if (cmp < 0)
+            high = mid - 1;
+         else if (cmp > 0)
+            low = mid + 1;
+         else /* cmp == 0 */
+         {
+            *index = mid;
+            return 0;
+         }
+      }
+   }
+
+   /* Check for overflow. */
+   if (*num_palette + 1 == max_tuples)
+   {
+       *num_palette = *num_trans = *index = -1;
+       return -1;
+   }
+
+   /* Insert new tuple at [low]. */
+   OPNG_ASSERT(low >= 0 && low <= *num_palette);
+   for (i = *num_palette; i > low; --i)
+      palette[i] = palette[i - 1];
+   palette[low].red   = (png_byte)red;
+   palette[low].green = (png_byte)green;
+   palette[low].blue  = (png_byte)blue;
+   ++(*num_palette);
+   if (alpha < 255)
+   {
+      OPNG_ASSERT(low <= *num_trans);
+      for (i = *num_trans; i > low; --i)
+         trans[i] = trans[i - 1];
+      trans[low] = (png_byte)alpha;
+      ++(*num_trans);
+   }
+   return 1;
+}
+
+
+/*
+ * Retrieve the alpha samples from the given image row.
+ */
+static void /* PRIVATE */
+opng_get_alpha_row(png_structp png_ptr, png_infop info_ptr,
+   png_bytep row, png_bytep alpha_row)
+{
+   png_bytep sample_ptr;
+   png_uint_32 width, i;
+   unsigned int channels;
+   png_color_16 *trans_values;
+
+   OPNG_ASSERT(info_ptr->bit_depth == 8);
+   OPNG_ASSERT(!(info_ptr->color_type & PNG_COLOR_MASK_PALETTE));
+
+   width = info_ptr->width;
+   if (!(info_ptr->color_type & PNG_COLOR_MASK_ALPHA))
+   {
+      if (!(info_ptr->valid & PNG_INFO_tRNS))
+      {
+         memset(alpha_row, 255, (size_t)width);
+         return;
+      }
+      trans_values = &info_ptr->trans_values;
+      if (info_ptr->color_type == PNG_COLOR_TYPE_RGB)
+      {
+         png_byte trans_red   = (png_byte)trans_values->red;
+         png_byte trans_green = (png_byte)trans_values->green;
+         png_byte trans_blue  = (png_byte)trans_values->blue;
+         for (i = 0; i < width; ++i)
+            alpha_row[i] = (png_byte)
+               ((row[3*i] == trans_red && row[3*i+1] == trans_green &&
+                 row[3*i+2] == trans_blue) ? 0 : 255);
+      }
+      else
+      {
+         png_byte trans_gray = (png_byte)trans_values->gray;
+         OPNG_ASSERT(info_ptr->color_type == PNG_COLOR_TYPE_GRAY);
+         for (i = 0; i < width; ++i)
+            alpha_row[i] = (png_byte)(row[i] == trans_gray ? 0 : 255);
+      }
+      return;
+   }
+
+   /* There is a real alpha channel. */
+   channels = (png_ptr->usr_channels > 0) ?
+      png_ptr->usr_channels : info_ptr->channels;
+   sample_ptr = row;
+   if (!(png_ptr->transformations & PNG_FILLER) ||
+        (png_ptr->flags & PNG_FLAG_FILLER_AFTER))
+      sample_ptr += channels - 1;  /* alpha sample is the last in RGBA tuple */
+   for (i = 0; i < width; ++i, sample_ptr += channels, ++alpha_row)
+      *alpha_row = *sample_ptr;
+}
+
+
+/*
+ * Analyze the redundancy of bits inside the image.
  * The parameter reductions indicates the intended reductions.
  * The function returns the possible reductions.
  */
 png_uint_32 /* PRIVATE */
-opng_analyze_image_reduction(png_structp png_ptr, png_infop info_ptr,
+opng_analyze_bits(png_structp png_ptr, png_infop info_ptr,
    png_uint_32 reductions)
 {
    png_bytepp row_ptr;
@@ -117,11 +278,11 @@ opng_analyze_image_reduction(png_structp png_ptr, png_infop info_ptr,
    unsigned int bit_depth, byte_depth, color_type, channels, sample_size,
       offset_color, offset_alpha;
 
-   png_debug(1, "in opng_analyze_image_reduction\n");
+   png_debug(1, "in opng_analyze_bits\n");
 
    bit_depth = info_ptr->bit_depth;
    if (bit_depth < 8)
-      return OPNG_REDUCE_NONE;  /* nothing needs to be done */
+      return OPNG_REDUCE_NONE;  /* nothing is done in this case */
 
    color_type = info_ptr->color_type;
    if (color_type & PNG_COLOR_MASK_PALETTE)
@@ -156,7 +317,7 @@ opng_analyze_image_reduction(png_structp png_ptr, png_infop info_ptr,
        (info_ptr->valid & PNG_INFO_bKGD))
    {
       png_color_16p background = &info_ptr->background;
-      if (background->red != background->green &&
+      if (background->red != background->green ||
           background->red != background->blue)
          reductions &= ~OPNG_REDUCE_RGB_TO_GRAY;
    }
@@ -255,14 +416,15 @@ opng_analyze_image_reduction(png_structp png_ptr, png_infop info_ptr,
 
 
 /*
- * Reduce the image type to a lower bit depth and color type
- * without losing valuable information.
+ * Reduce the image type to a lower bit depth and color type,
+ * by removing redundant bits.
+ * Possible reductions: 16bpp to 8bpp; RGB to gray; strip alpha.
  * The parameter reductions indicates the intended reductions.
  * The function returns the successful reductions.
  * All reductions are performed in a single step.
  */
 png_uint_32 /* PRIVATE */
-opng_reduce_image_type(png_structp png_ptr, png_infop info_ptr,
+opng_reduce_bits(png_structp png_ptr, png_infop info_ptr,
    png_uint_32 reductions)
 {
    png_bytepp row_ptr;
@@ -274,10 +436,10 @@ opng_reduce_image_type(png_structp png_ptr, png_infop info_ptr,
       src_sample_size, dest_sample_size, src_offset_alpha;
    unsigned int tran_tbl[8], k;
 
-   png_debug(1, "in opng_reduce_image_type\n");
+   png_debug(1, "in opng_reduce_bits\n");
 
    /* See which reductions may be performed. */
-   reductions = opng_analyze_image_reduction(png_ptr, info_ptr, reductions);
+   reductions = opng_analyze_bits(png_ptr, info_ptr, reductions);
    /* Strip the filler even if it is not an alpha channel. */
    if (png_ptr->transformations & PNG_FILLER)
       reductions |= OPNG_REDUCE_STRIP_ALPHA;
@@ -425,6 +587,141 @@ opng_reduce_image_type(png_structp png_ptr, png_infop info_ptr,
 
 
 /*
+ * Reduce the image type from RGB to palette, if possible.
+ * The parameter reductions indicates the intended reductions.
+ * The function returns the successful reductions.
+ */
+png_uint_32 /* PRIVATE */
+opng_reduce_rgb_to_palette(png_structp png_ptr, png_infop info_ptr,
+   png_uint_32 reductions)
+{
+   png_bytepp row_ptr;
+   png_bytep sample_ptr, alpha_row;
+   png_uint_32 height, width, i, j;
+   png_color palette[256];
+   png_byte trans[256];
+   int num_palette, num_trans, index;
+   unsigned int channels;
+   unsigned int
+      red, green, blue, alpha, prev_red, prev_green, prev_blue, prev_alpha;
+
+   png_debug(1, "in opng_reduce_rgb_to_palette\n");
+
+   /* Only the following reduction applies. */
+   if (!(reductions & OPNG_REDUCE_RGB_TO_PALETTE) ||
+       (info_ptr->bit_depth != 8) ||
+       (info_ptr->color_type & PNG_COLOR_MASK_PALETTE) ||
+       !(info_ptr->color_type & PNG_COLOR_MASK_COLOR))
+      return OPNG_REDUCE_NONE;
+
+   row_ptr   = info_ptr->row_pointers;
+   height    = info_ptr->height;
+   width     = info_ptr->width;
+   channels  = info_ptr->channels;
+   alpha_row = (png_bytep)png_malloc(png_ptr, width);
+
+   /* Analyze the possibility of this reduction. */
+   num_palette = num_trans = 0;
+   prev_red = prev_green = prev_blue = prev_alpha = (unsigned int)(-1);
+   for (i = 0; i < height; ++i, ++row_ptr)
+   {
+      sample_ptr = *row_ptr;
+      opng_get_alpha_row(png_ptr, info_ptr, *row_ptr, alpha_row);
+      for (j = 0; j < width; ++j, sample_ptr += channels)
+      {
+         red   = sample_ptr[0];
+         green = sample_ptr[1];
+         blue  = sample_ptr[2];
+         alpha = alpha_row[j];
+         /* Check the cache first. */
+         if (red != prev_red || green != prev_green || blue != prev_blue ||
+             alpha != prev_alpha)
+         {
+            prev_red   = red;
+            prev_green = green;
+            prev_blue  = blue;
+            prev_alpha = alpha;
+            if (opng_insert_palette_entry(palette, &num_palette,
+                trans, &num_trans, 256,
+                red, green, blue, alpha, &index) < 0)  /* overflow */
+            {
+               OPNG_ASSERT(num_palette < 0);
+               i = height;  /* forced exit from outer loop */
+               break;
+            }
+         }
+      }
+   }
+
+   /* Check if the uncompressed paletted image (pixels + PLTE + tRNS)
+    * isn't bigger than the uncompressed RGB(A) image.
+    * Chunk overhead is ignored.
+    *
+    * compare (pixels * channels) vs. (pixels + 3 * num_palette + num_trans)
+    *   <=>
+    * compare (pixels * (channels - 1)) vs. (3 * num_palette + num_trans)
+    */
+   if (num_palette >= 0)
+   {
+      OPNG_ASSERT(num_palette > 0 && num_palette <= 256);
+      OPNG_ASSERT(num_trans >= 0 && num_trans <= num_palette);
+      if (width <= 384 && height <= 384 && /* protect against arith overflow */
+          (int)(width*height * (channels - 1)) <= 3 * num_palette + num_trans)
+         num_palette = -1;
+   }
+
+   if (num_palette < 0)  /* can't reduce */
+   {
+      png_free(png_ptr, alpha_row);
+      return OPNG_REDUCE_NONE;
+   }
+
+   /* Reduce. */
+   row_ptr = info_ptr->row_pointers;
+   index = -1;
+   prev_red = prev_green = prev_blue = prev_alpha = (unsigned int)(-1);
+   for (i = 0; i < height; ++i, ++row_ptr)
+   {
+      sample_ptr = *row_ptr;
+      opng_get_alpha_row(png_ptr, info_ptr, *row_ptr, alpha_row);
+      for (j = 0; j < width; ++j, sample_ptr += channels)
+      {
+         red   = sample_ptr[0];
+         green = sample_ptr[1];
+         blue  = sample_ptr[2];
+         alpha = alpha_row[j];
+         /* Check the cache first. */
+         if (red != prev_red || green != prev_green || blue != prev_blue ||
+             alpha != prev_alpha)
+         {
+            prev_red   = red;
+            prev_green = green;
+            prev_blue  = blue;
+            prev_alpha = alpha;
+            if (opng_insert_palette_entry(palette, &num_palette,
+                trans, &num_trans, 256,
+                red, green, blue, alpha, &index) != 0)
+               index = -1;  /* this should never happen */
+         }
+         OPNG_ASSERT(index >= 0);
+         (*row_ptr)[j] = (png_byte)index;
+      }
+   }
+
+   /* Update the image info. */
+   png_ptr->color_type  = info_ptr->color_type  = PNG_COLOR_TYPE_PALETTE;
+   png_ptr->channels    = info_ptr->channels    = 1;
+   png_ptr->pixel_depth = info_ptr->pixel_depth = 8;
+   png_set_PLTE(png_ptr, info_ptr, palette, num_palette);
+   if (num_trans > 0)
+      png_set_tRNS(png_ptr, info_ptr, trans, num_trans, NULL);
+
+   png_free(png_ptr, alpha_row);
+   return OPNG_REDUCE_RGB_TO_PALETTE;
+}
+
+
+/*
  * Analyze the usage of samples.
  * The output value usage_map[n] indicates whether the sample n
  * is used. The usage_map[] array must have 256 entries.
@@ -502,7 +799,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    png_byte is_used[256];
    int num_palette, num_trans, last_color_index, last_trans_index, is_gray, k;
    png_color_16 gray_trans;
-   png_byte last_trans;
+   png_byte crt_trans_value, last_trans_value;
 
    png_debug(1, "in opng_reduce_palette\n");
 
@@ -544,10 +841,10 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
       last_color_index = k;
       if (k < num_trans && trans[k] < 255)
          last_trans_index = k;
-      if (!is_gray ||
-          palette[k].red != palette[k].green ||
-          palette[k].red != palette[k].blue)
-         is_gray = 0;
+      if (is_gray)
+         if (palette[k].red != palette[k].green ||
+             palette[k].red != palette[k].blue)
+            is_gray = 0;
    }
    OPNG_ASSERT(last_color_index >= 0);
    if (last_color_index >= num_palette)
@@ -569,13 +866,26 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    if (is_gray && num_trans > 0)
    {
       gray_trans.gray = palette[last_trans_index].red;
-      last_trans = trans[last_trans_index];
-      for (k = last_trans_index; k >= 0; --k)
+      last_trans_value = trans[last_trans_index];
+      for (k = 0; k <= last_color_index; ++k)
       {
          if (!is_used[k])
             continue;
-         if ((palette[k].red != gray_trans.gray && trans[k] < 255) ||
-             (palette[k].red == gray_trans.gray && trans[k] != last_trans))
+         if (k <= last_trans_index)
+         {
+            crt_trans_value = trans[k];
+            /* Cannot reduce if different colors have transparency. */
+            if (crt_trans_value < 255 && palette[k].red != gray_trans.gray)
+            {
+               is_gray = 0;
+               break;
+            }
+         }
+         else
+            crt_trans_value = 255;
+         /* Cannot reduce if same color has multiple transparency levels. */
+         if (palette[k].red == gray_trans.gray &&
+             crt_trans_value != last_trans_value)
          {
             is_gray = 0;
             break;
@@ -669,13 +979,25 @@ opng_reduce_image(png_structp png_ptr, png_infop info_ptr,
    if (!opng_validate_image(png_ptr, info_ptr))
    {
       png_warning(png_ptr,
-         "Image reduction requires the presence of the critical info.");
+         "Image reduction requires the presence of the critical info");
       return OPNG_REDUCE_NONE;
    }
 
+#if 0  /* PNG_INTERLACE must be recognized! */
+   if (png_ptr->transformations)
+   {
+      png_warning(png_ptr,
+         "Image reduction cannot be applied "
+         "under the presence of transformations");
+      return OPNG_REDUCE_NONE;
+   }
+#endif
+
+   /* The reductions below must come in this particular order. */
    return
-      opng_reduce_image_type(png_ptr, info_ptr, reductions) |
-      opng_reduce_palette(png_ptr, info_ptr, reductions);
+      opng_reduce_bits(png_ptr, info_ptr, reductions) |
+      opng_reduce_palette(png_ptr, info_ptr, reductions) |
+      opng_reduce_rgb_to_palette(png_ptr, info_ptr, reductions);
 }
 
 

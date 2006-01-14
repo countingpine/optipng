@@ -16,11 +16,11 @@ Legend
  * Another problematic issue, that is not necessarily a bug.
 
 
-Version 0.4.7   30-oct-2004
--------------
+Version 0.5     14-jan-2006
+-----------
  - The color palette reductions are implemented only partially.
    (This does NOT affect the integrity of PNG files.)
  - The bit depth reductions below 8, for grayscale images, are
    not implemented yet.
- - The RGB(A)-to-palette reductions are not implemented yet.
+ - The gray(alpha)-to-palette reductions are not implemented yet.
 

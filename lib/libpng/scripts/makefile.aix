@@ -16,9 +16,9 @@ AR = ar rcs
 RANLIB = ranlib
 RM = rm -f
 
-LIBNAME=libpng10
+LIBNAME=libpng12
 PNGMAJ = 0
-PNGMIN = 1.0.17
+PNGMIN = 1.2.8
 PNGVER = $(PNGMAJ).$(PNGMIN)
 
 prefix=/usr/local
@@ -44,7 +44,7 @@ CRELEASE = -O2
 LDRELEASE = -s
 WARNMORE=-Wall
 CFLAGS = -I$(ZLIBINC) $(WARNMORE) $(CRELEASE)
-LDFLAGS = -L. -L$(ZLIBLIB) -lpng10 -lz -lm $(LDRELEASE)
+LDFLAGS = -L. -L$(ZLIBLIB) -lpng12 -lz -lm $(LDRELEASE)
 
 # File extensions
 O=.o

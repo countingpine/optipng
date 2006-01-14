@@ -2,7 +2,7 @@
  ** OptiPNG: a PNG optimization program.
  ** http://www.cs.toronto.edu/~cosmin/pngtech/optipng/
  **
- ** Copyright (C) 2001-2004 Cosmin Truta.
+ ** Copyright (C) 2001-2006 Cosmin Truta.
  ** The program is distributed under the same licensing and warranty
  ** terms as libpng.
  **
@@ -16,19 +16,20 @@
  **
  ** The idea of running multiple trials with different PNG filters
  ** and zlib parameters is based on the pngcrush program by
- ** Glenn Randers-Pehrson <randeg@alum.rpi.edu>.
+ ** Glenn Randers-Pehrson.
  **
  ** Requirements:
  **    ANSI C or ISO C compiler and library.
- **    zlib version 1.2.2 or newer (version 1.2.2 is bundled).
- **    libpng version 1.0.17 or a newer libpng version 1.0.X;
- **       or libpng version 1.2.7 or newer;
+ **    zlib version 1.2.1 or newer (version 1.2.3 is bundled).
+ **    libpng version 1.0.18 or a newer libpng version 1.0.X;
+ **       or libpng version 1.2.8 or newer;
  **       with the following options enabled:
  **       - PNG_bKGD,hIST,sBIT,tRNS_SUPPORTED
  **       - PNG_INFO_IMAGE_SUPPORTED
  **       - PNG_FREE_ME_SUPPORTED
  **       - OPNG_IMAGE_REDUCTIONS_SUPPORTED
- **       (version 1.0.17 is bundled).
+ **       (version 1.0.18 is bundled).
+ **    pngxtern (version 0.2 is bundled).
  **    cbitset (version 0.1 is bundled).
  **    cexcept version 1.0.0 or newer (version 2.0.0 is bundled).
  **/
@@ -48,8 +49,8 @@
 
 
 #define OPTIPNG_NAME        "OptiPNG"
-#define OPTIPNG_VERSION     "0.4.7"
-#define OPTIPNG_COPYRIGHT   "Copyright (C) 2001-2004 Cosmin Truta"
+#define OPTIPNG_VERSION     "0.5"
+#define OPTIPNG_COPYRIGHT   "Copyright (C) 2001-2006 Cosmin Truta"
 
 
 static const char *msg_intro =
@@ -57,29 +58,40 @@ static const char *msg_intro =
    OPTIPNG_COPYRIGHT ".\n\n";
 
 static const char *msg_license =
-   "This program is open-source software. See LICENSE for more details.\n";
+   "This program is open-source software. See LICENSE for more details.\n"
+   "\n"
+   "Portions of this software are based in part on the work of:\n"
+   "  Jean-loup Gailly and Mark Adler (zlib)\n"
+   "  Glenn Randers-Pehrson and the PNG Development Group (libpng)\n"
+   "  Miyasaka Masaru (BMP support)\n"
+   "  David Koblas (GIF support)\n"
+   "\n";
 
 static const char *msg_short_help =
    "Type \"optipng -h\" for advanced help.\n"
    "\n"
    "Usage:\n"
-   "    optipng [options] files.png ...\n"
+   "    optipng [options] files ...\n"
+   "Files:\n"
+   "    Image files of type: PNG, BMP, GIF, or PNM\n"
    "Basic options:\n"
    "    -h, -help\t\tshow the advanced help\n"
    "    -v\t\t\tverbose mode / show copyright, version and build info\n"
    "    -o  <level>\t\toptimization level (0-7)\t\tdefault 2\n"
    "    -i  <type>\t\tinterlace type (0-1)\t\t\tdefault <input>\n"
-   "    -k, -keep\t\tkeep a backup of the input files\n"
+   "    -k, -keep\t\tkeep a backup of the modified files\n"
    "    -log\t\tlog messages to \"optipng.log\"\n"
    "    -q, -quiet\t\tquiet mode\n"
    "Examples:\n"
    "    optipng -o5 file.png\t\t\t(moderately slow)\n"
    "    optipng -o7 file.png\t\t\t(very slow)\n"
-   "    optipng -i1 -zc4,9 -zs0-2 -f0-2,4-5 file1.png file2.png\n";
+   "    optipng -i1 -zc4,9 -zs0-2 -f0-2,4-5 file1.png file2.gif file3.bmp\n";
 
 static const char *msg_help =
    "Usage:\n"
-   "    optipng [options] files.png ...\n"
+   "    optipng [options] files ...\n"
+   "Files:\n"
+   "    Image files of type: PNG, BMP, GIF, or PNM\n"
    "Basic options:\n"
    "    -h, -help\t\tshow this help\n"
    "    -v\t\t\tverbose mode / show copyright, version and build info\n"
@@ -89,7 +101,7 @@ static const char *msg_help =
    "    -c  <type>\t\tcolor type (0,2,3,4,6)\t\t\tdefault <input>\n"
 #endif
    "    -i  <type>\t\tinterlace type (0-1)\t\t\tdefault <input>\n"
-   "    -k, -keep\t\tkeep a backup of the input files\n"
+   "    -k, -keep\t\tkeep a backup of the modified files\n"
    "    -log\t\tlog messages to \"optipng.log\"\n"
    "    -q, -quiet\t\tquiet mode\n"
    "Advanced options:\n"
@@ -106,13 +118,13 @@ static const char *msg_help =
    "    -nc\t\t\tno color type reduction\n"
    "    -no\t\t\tno output (simulation mode)\n"
    "    -np\t\t\tno palette reduction\n"
-#if 0
+#if 0  /* text chunk optimization is not implemented */
    "    -nt\t\t\tno text chunk optimization\n"
 #endif
    "    -nz\t\t\tno IDAT recompression (also disable reductions)\n"
    "    -fix\t\tenable error recovery\n"
    "    -force\t\twrite a new output, even if it is bigger than the input\n"
-   "    -full\t\tdo not abandon trial, even if IDAT is already too big\n"
+   "    -full\t\tproduce a full report on IDAT (might reduce speed)\n"
    "    -preserve\t\tpreserve file attributes if possible\n"
    "    --\t\t\tstop option switch parsing\n"
    "Optimization level presets:\n"
@@ -214,13 +226,14 @@ static struct opng_image_struct
 
 static struct opng_info_struct
 {
+   int input_is_png;
+   int valid;
    png_uint_32 file_size, idat_size;
    png_uint_32 best_file_size, best_idat_size, total_idat_size;
    unsigned int num_idat_chunks;
    png_uint_32 crt_row, last_row;
    int crt_ipass, last_ipass;
    png_uint_32 reductions;
-   int valid;
    int best_compr_level, best_mem_level, best_strategy, best_filter;
 } opng_info;
 
@@ -338,7 +351,7 @@ opng_print_percentage(png_uint_32 num, png_uint_32 denom)
 
    if (denom == 0)
    {
-      opng_printf("HUGE%%");
+      opng_printf("INFTY%%");
       return;
    }
 
@@ -382,7 +395,7 @@ opng_print_size_difference(png_uint_32 init_size, png_uint_32 final_size,
 
 /** Progress calculation w/ printing and logging **/
 static int
-opng_progress(int print_percentage)
+opng_progress(void)
 {
    static const int progress_factor[7] = {1, 1, 2, 4, 8, 16, 32};
    png_uint_32 height, crt_row, progress;
@@ -391,44 +404,40 @@ opng_progress(int print_percentage)
    if (opng_info.crt_row >= opng_info.last_row &&
        opng_info.crt_ipass >= opng_info.last_ipass)
    {
-      if (print_percentage)
-         opng_printf("100%%");
+      opng_printf("100%%");
       return 1;  /* finished */
    }
 
-   if (print_percentage)
+   if (opng_image.interlace_type == PNG_INTERLACE_ADAM7)
    {
-      if (opng_image.interlace_type == PNG_INTERLACE_ADAM7)
-      {
-         assert(opng_info.crt_ipass < 7);
+      assert(opng_info.crt_ipass < 7);
 
-         /* This code is accurate only if opng_image.height >= 8 */
-         height = opng_image.height;
-         crt_row = opng_info.crt_row;
-         if (height > PNG_MAX_UINT / 64)
-         {
-            /* Reduce precision to prevent overflow. */
-            height  = (height + 32) / 64;
-            crt_row = (crt_row + 32) / 64;
-         }
-
-         /* Accumulate the previous passes, and the current one */
-         progress = 0;
-         for (i = 0; i < opng_info.crt_ipass; ++i)
-            progress += progress_factor[i] * height;
-         progress += progress_factor[i] * crt_row;
-         /* Compute the percentage, and make sure it's not beyond 100% */
-         height *= 64;
-         if (progress < height)
-            opng_print_percentage(progress, height);
-         else  /* this may happen only if precision was reduced */
-            opng_printf("100%%");  /* ... but isn't really finished */
-      }
-      else  /* PNG_INTERLACE_NONE */
+      /* This code is accurate only if opng_image.height >= 8 */
+      height = opng_image.height;
+      crt_row = opng_info.crt_row;
+      if (height > PNG_MAX_UINT / 64)
       {
-         assert(opng_info.crt_ipass == 0);
-         opng_print_percentage(opng_info.crt_row, opng_image.height);
+         /* Reduce precision to prevent overflow. */
+         height  = (height + 32) / 64;
+         crt_row = (crt_row + 32) / 64;
       }
+
+      /* Accumulate the previous passes, and the current one */
+      progress = 0;
+      for (i = 0; i < opng_info.crt_ipass; ++i)
+         progress += progress_factor[i] * height;
+      progress += progress_factor[i] * crt_row;
+      /* Compute the percentage, and make sure it's not beyond 100% */
+      height *= 64;
+      if (progress < height)
+         opng_print_percentage(progress, height);
+      else  /* this may happen only if precision was reduced */
+         opng_printf("100%%");  /* ... but it isn't really finished */
+   }
+   else  /* PNG_INTERLACE_NONE */
+   {
+      assert(opng_info.crt_ipass == 0);
+      opng_print_percentage(opng_info.crt_row, opng_image.height);
    }
    return 0;  /* unfinished */
 }
@@ -438,9 +447,11 @@ opng_progress(int print_percentage)
 static void
 opng_error(png_structp png_ptr, png_const_charp msg)
 {
-   msg += (png_ptr - png_ptr);  /* dummy, keep compilers happy */
-   opng_info.valid = 0;
-   Throw msg;
+   if (&png_ptr)  /* dummy, keep compilers happy */
+   {
+      opng_info.valid = 0;
+      Throw msg;
+   }
 }
 
 
@@ -448,9 +459,11 @@ opng_error(png_structp png_ptr, png_const_charp msg)
 static void
 opng_warning(png_structp png_ptr, png_const_charp msg)
 {
-   msg += (png_ptr - png_ptr);  /* dummy, keep compilers happy */
-   opng_info.valid = 0;
-   opng_printf("!Warning: %s\n", msg);
+   if (&png_ptr)  /* dummy, keep compilers happy */
+   {
+      opng_info.valid = 0;
+      opng_printf("!Warning: %s\n", msg);
+   }
 }
 
 
@@ -486,8 +499,11 @@ opng_set_keep_unknown_chunk(png_structp png_ptr, png_bytep chunk_type)
 static void
 opng_read_write_status(png_structp png_ptr, png_uint_32 row_num, int pass)
 {
-   opng_info.crt_row = row_num;
-   opng_info.crt_ipass = pass;
+   if (&png_ptr)  /* dummy, keep compilers happy */
+   {
+      opng_info.crt_row = row_num;
+      opng_info.crt_ipass = pass;
+   }
 }
 
 
@@ -531,15 +547,14 @@ opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
          crt_chunk_is_idat = 1;
          ++opng_info.num_idat_chunks;
          opng_info.idat_size += png_get_uint_32(crt_chunk_len);
-         /* Abandon trial if IDAT can't fit into a single chunk,
-          * or if it's already bigger than the smallest IDAT previously found
-          * and there are still more rows to process.
+         /* Abandon trial if IDAT is already bigger than the smallest IDAT
+          * previously found, or if it can't fit into a single chunk.
           */
          if (fp == NULL)
          {
-            if ((opng_info.idat_size >= opng_info.best_idat_size &&
-                 !opng_progress(0)) ||
-                (opng_info.idat_size > PNG_MAX_UINT))
+            if ((opng_info.idat_size > opng_info.best_idat_size
+                 && !cmdline.full)
+                || opng_info.idat_size > PNG_MAX_UINT)
                Throw NULL;
          }
       }
@@ -551,7 +566,7 @@ opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
       }
    }
 
-   /* Writing is done at the end. */
+   /* Don't write anything during trials. */
    if (fp == NULL || !(io_state & OPNG_IO_WRITING))
       return;
 
@@ -643,7 +658,7 @@ opng_get_image_info(png_structp png_ptr, png_infop info_ptr,
    if (png_get_bKGD(png_ptr, info_ptr, &opng_image.background_ptr))
    {
       /* Double copying (pointer + value) is necessary here
-       * due to an inconsistency in libpng.
+       * due to an inconsistency in the libpng design.
        */
       opng_image.background = *opng_image.background_ptr;
       opng_image.background_ptr = &opng_image.background;
@@ -749,8 +764,9 @@ static void
 opng_read_png(FILE *infile)
 {
    png_uint_32 reductions;
-   const char *err_msg;
+   const char *extern_fmt, *err_msg;
 
+   opng_info.valid = 1;
    opng_info.file_size = opng_info.idat_size = 0;
    opng_info.num_idat_chunks = 0;
 
@@ -771,12 +787,26 @@ opng_read_png(FILE *infile)
          Throw "Out of memory";
 
       png_set_keep_unknown_chunks(read_ptr, PNG_HANDLE_CHUNK_ALWAYS, NULL, 0);
-
-      png_debug(0, "Reading PNG file\n");
       opng_set_read_fn(read_ptr, infile, opng_read_write_data);
-      png_read_png(read_ptr, read_info_ptr, 0, NULL);
+
+      png_debug(0, "Reading input file\n");
+      extern_fmt = pngx_read_external(read_ptr, read_info_ptr, infile);
+      if (extern_fmt != NULL)
+      {
+         opng_printf("%s format detected\n", extern_fmt);
+         opng_info.input_is_png = 0;
+         fseek(infile, 0, SEEK_END);
+         opng_info.file_size = ftell(infile);
+         opng_info.idat_size = 0;
+      }
+      else
+      {
+         /* The format is not recognized by pngxtern, so assume it's PNG. */
+         png_read_png(read_ptr, read_info_ptr, 0, NULL);
+         opng_info.input_is_png = 1;
+      }
    }
-   Catch(err_msg)
+   Catch (err_msg)
    {
       /* If the critical info has been loaded, treat all errors as warnings.
          This enables a more advanced data recovery. */
@@ -1081,8 +1111,12 @@ opng_minimize_idat(void)
                               compr_level, mem_level, strategy, filter);
                            if (opng_info.idat_size > PNG_MAX_UINT)
                            {
-                              opng_printf("IDAT too big ... abandoned at ");
-                              opng_progress(1);
+                              opng_printf("IDAT too big");
+                              if (cmdline.ver)  /* verbose */
+                              {
+                                 opng_printf(" ... abandoned at ");
+                                 opng_progress();
+                              }
                               opng_printf("\n");
                               continue;
                            }
@@ -1118,18 +1152,19 @@ static void
 opng_optimize_png(const char *filename)
 {
    static FILE *infile, *outfile;        /* static or volatile is required */
-   volatile int replace;                 /* by cexcept */
+   volatile enum {none, join, recompress, create} action;    /* by cexcept */
    png_uint_32 init_file_size, init_idat_size;
-   char bak_filename[FILENAME_MAX];
-   const char *err_msg;
+   char bak_filename[FILENAME_MAX], out_filename[FILENAME_MAX];
+   const char *volatile err_msg;
 
    opng_printf("** Processing %s\n", filename);
 
    memset(&opng_info, 0, sizeof(opng_info));
-   opng_info.valid = 1;
-   replace = 0;
+   action = none;
    if (cmdline.force)
-      replace = 2;
+      action = recompress;
+
+   err_msg = NULL;  /* prepare for error handling */
 
    if ((infile = fopen(filename, "rb")) == NULL)
       Throw "Can't open the input file";
@@ -1139,21 +1174,44 @@ opng_optimize_png(const char *filename)
    }
    Catch (err_msg)
    {
-      fclose(infile);
-      Throw err_msg;
+      /* assert(err_msg != NULL); */
    }
-   fclose(infile);
+   fclose(infile);  /* finally */
+   if (err_msg != NULL)
+      Throw err_msg;  /* rethrow */
 
+   /* If there's more than one IDAT in input, join all into a single one. */
    if (opng_info.num_idat_chunks > 1)
-      replace = 1;  /* multiple IDATs must be collapsed */
+      action = join;
 
+   /* If the input is not PNG, enforce full compression. */
+   if (!opng_info.input_is_png)
+   {
+      action = create;
+      /* Also make sure it's possible to write the output. */
+      if (osys_fname_chext(out_filename, sizeof(out_filename), filename,
+          ".png") == NULL)
+         Throw "Can't create the output file (name too long)";
+      if (osys_fname_cmp(filename, out_filename) == 0)
+         action = recompress;
+      else if ((outfile = fopen(out_filename, "rb")) != NULL)
+      {
+         fclose(outfile);
+         if (!cmdline.keep)
+            Throw "The output file exists, try backing it up (use -keep)";
+      }
+   }
+
+   /* If the input is invalid, but recoverable, enforce full compression. */
    if (!opng_info.valid)
    {
       opng_printf("!Recoverable errors encountered. ");
       if (cmdline.fix)
       {
+         opng_info.valid = 1;
          opng_printf("!Fixing...\n");
-         replace = 2;
+         if (action != create)
+            action = recompress;
          ++global.fix_count;
       }
       else
@@ -1163,22 +1221,27 @@ opng_optimize_png(const char *filename)
       }
    }
 
+   /* If the interlace type is changed, enforce full compression. */
    if (cmdline.interlace >= 0 &&
        opng_image.interlace_type != cmdline.interlace)
    {
       opng_image.interlace_type = cmdline.interlace;
-      replace = 2;
+      action = recompress;
    }
 
    init_file_size = opng_info.file_size;
    init_idat_size = opng_info.total_idat_size = opng_info.idat_size;
-   opng_printf("Input file size = %lu bytes\n"
-               "Input IDAT size = %lu bytes\n",
-      (unsigned long)init_file_size, (unsigned long)init_idat_size);
+   opng_printf("Input file size = %lu bytes\n",
+      (unsigned long)init_file_size);
+   if (opng_info.input_is_png)
+      opng_printf("Input IDAT size = %lu bytes\n",
+         (unsigned long)init_idat_size);
 
-   if (replace >= 2 && cmdline.nz)
+   if (opng_info.input_is_png && cmdline.nz && action == recompress)
       opng_printf("!Warning: IDAT recompression is enforced.\n");
-   if (replace >= 2 || !cmdline.nz)
+
+   /* Find the best parameters, and see if it's worth recompressing. */
+   if (action == create || action == recompress || !cmdline.nz)
    {
       opng_minimize_idat();
       opng_printf("\nThe best parameters are:\n"
@@ -1186,21 +1249,25 @@ opng_optimize_png(const char *filename)
          opng_info.best_compr_level, opng_info.best_mem_level,
          opng_info.best_strategy, opng_info.best_filter,
          (unsigned long)opng_info.best_idat_size);
-      if (opng_info.reductions != OPNG_REDUCE_NONE)
+      if (action != create)
       {
-         if (opng_info.best_file_size < init_file_size)
-            replace = 2;
+         if (opng_info.reductions != OPNG_REDUCE_NONE)
+         {
+            if (opng_info.best_file_size < init_file_size)
+               action = recompress;
+         }
+         else
+         {
+            if (opng_info.best_idat_size < init_idat_size)
+               action = recompress;
+         }
+         if (action == recompress)
+             opng_info.total_idat_size = opng_info.best_idat_size;
       }
-      else
-      {
-         if (opng_info.best_idat_size < init_idat_size)
-            replace = 2;
-      }
-      if (replace == 2)
-         opng_info.total_idat_size = opng_info.best_idat_size;
+      /* If action == create then opng_info.total_idat_size is set below. */
    }
 
-   if (!replace)
+   if (action == none)
    {
       opng_printf("\n%s is already optimized.\n\n", filename);
       return;
@@ -1211,70 +1278,119 @@ opng_optimize_png(const char *filename)
       return;
    }
 
-   /* Rename the input and write the output. */
-   /* This can be changed if you care about more limited file systems. */
-   if (osys_bak_nam(bak_filename, sizeof(bak_filename), filename) == NULL ||
-       rename(filename, bak_filename) != 0)
-      Throw "Can't back up the input file";
-   Try
+   if (action == join || action == recompress)
    {
-      if ((outfile = fopen(filename, "wb")) == NULL)
-         Throw "Can't open the output file";
-
-      if (replace == 1)
+      /* Rename the input to a backup name, and write the output. */
+      if (osys_fname_mkbak(bak_filename,sizeof(bak_filename),filename) == NULL
+          || rename(filename, bak_filename) != 0)
+         Throw "Can't back up the input file";
+      Try
       {
-         if ((infile = fopen(bak_filename, "rb")) == NULL)
-            Throw "Can't reopen the input file";
-         Try
+         if ((outfile = fopen(filename, "wb")) == NULL)
+            Throw "Can't open the output file";
+
+         if (action == join)  /* copy in to out, collapsing IDAT */
          {
-            opng_copy_png(infile, outfile);
+            if ((infile = fopen(bak_filename, "rb")) == NULL)
+               Throw "Can't reopen the input file";
+            Try
+            {
+               opng_copy_png(infile, outfile);
+            }
+            Catch (err_msg)
+            {
+               /* assert(err_msg != NULL); */
+            }
+            fclose(infile);  /* finally */
+            if (err_msg != NULL)
+               Throw err_msg;  /* rethrow */
          }
-         Catch (err_msg)
+         else  /* action == recompress: full rewrite */
          {
-            fclose(infile);
-            Throw err_msg;
+            opng_write_png(outfile,
+               opng_info.best_compr_level, opng_info.best_mem_level,
+               opng_info.best_strategy, opng_info.best_filter);
          }
-         fclose(infile);
       }
-      else
+      Catch (err_msg)
+      {
+         if (outfile != NULL)
+            fclose(outfile);
+         /* Restore the original input file and rethrow the exception. */
+         if (remove(filename) != 0 || rename(bak_filename, filename) != 0)
+            opng_printf("!Warning: "
+               "The original file was not recovered from the backup.\n");
+         Throw err_msg;  /* rethrow */
+      }
+      fclose(outfile);
+
+      if (cmdline.preserve)
+      {
+         /* Preserve the file attributes, if possible. */
+         osys_fattr_cpy(filename, bak_filename);
+      }
+      if (!cmdline.keep)
+      {
+         /* Remove the old file. */
+         if (remove(bak_filename) != 0)
+            Throw "Can't remove the backup file";
+      }
+   }
+   else
+   {
+      assert(action == create);  /* this is much similar to recompression */
+
+      /* Create a new output file whose name is in out_filename. */
+      assert(out_filename[0] == filename[0]);
+      opng_info.total_idat_size = opng_info.best_idat_size;
+      if ((outfile = fopen(out_filename, "rb")) != NULL)
+      {
+         fclose(outfile);
+         if (cmdline.keep)
+         {
+            /* Rename the input to a backup name, and write the output. */
+            if (osys_fname_mkbak(bak_filename, sizeof(bak_filename),
+                                 out_filename) == NULL
+                || rename(out_filename, bak_filename) != 0)
+               Throw "Can't back up the output file";
+         }
+         else
+            Throw "The output file exists, try backing it up (use -keep)";
+      }
+      if ((outfile = fopen(out_filename, "wb")) == NULL)
+         Throw "Can't open the output file";
+      Try
       {
          opng_write_png(outfile,
             opng_info.best_compr_level, opng_info.best_mem_level,
             opng_info.best_strategy, opng_info.best_filter);
       }
-   }
-   Catch (err_msg)
-   {
-      if (outfile != NULL)
-         fclose(outfile);
-      /* Restore the original input file and rethrow the exception. */
-      remove(filename);
-      if (rename(bak_filename, filename) != 0)
-         opng_printf("!Warning: "
-            "The original file was not recovered from the backup.\n");
-      Throw err_msg;
-   }
-   fclose(outfile);
+      Catch (err_msg)
+      {
+         /* assert(err_msg != NULL); */
+      }
+      fclose(outfile);  /* finally */
+      if (err_msg != NULL)
+         Throw err_msg;  /* rethrow */
 
-   if (cmdline.preserve)
-   {
-      /* Preserve the file attributes, if possible. */
-      osys_attr_cpy(filename, bak_filename);
-   }
-
-   if (!cmdline.keep)
-   {
-      /* Remove the old file. */
-      remove(bak_filename);
+      if (cmdline.preserve)
+         osys_fattr_cpy(out_filename, filename);
    }
 
    opng_printf("\nNew file size = %lu bytes (",
       (unsigned long)opng_info.file_size);
-   opng_print_size_difference(init_file_size, opng_info.file_size, 0);
-   opng_printf(")\nNew IDAT size = %lu bytes (",
+   opng_print_size_difference(init_file_size, opng_info.file_size, 1);
+
+   opng_printf(")\nNew IDAT size = %lu bytes",
       (unsigned long)opng_info.idat_size);
-   opng_print_size_difference(init_idat_size, opng_info.idat_size, 1);
-   opng_printf(")\n\n");
+   if (opng_info.input_is_png)
+   {
+      opng_printf(" (");
+      opng_print_size_difference(init_idat_size, opng_info.idat_size, 0);
+      opng_printf(")\n\n");
+   }
+   else
+      opng_printf("\n\n");
 }
 
 
@@ -1575,7 +1691,7 @@ main(int argc, char *argv[])
    {
       parse_args(argc, argv);
    }
-   Catch(option)
+   Catch (option)
    {
       fprintf(stderr, "Invalid option: %s\n", option);
       return EXIT_FAILURE;
@@ -1598,7 +1714,7 @@ main(int argc, char *argv[])
    {
       opng_printf(msg_license);
       opng_printf("Compiled with libpng version %s and zlib version %s\n\n",
-         PNG_LIBPNG_VER_STRING, ZLIB_VERSION);
+         png_get_libpng_ver(NULL), zlibVersion());
    }
    if (cmdline.help)
    {

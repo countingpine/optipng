@@ -16,7 +16,7 @@ OptiPNG - TODO list
   provided that file globbing works, either at the shell level (Unix)
   or in the program (linked with wildargs.obj on Windows).
 
-- Support for reading external image formats: PNM, BMP, GIF, ...
+- Improved support for reading external image formats (e.g. TIFF).
 
 - Support for conversion to a desired bit depth and color type:
     optipng -b16 -c6 ...

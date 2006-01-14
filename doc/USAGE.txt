@@ -1,17 +1,26 @@
-OptiPNG 0.4.7: Advanced PNG optimizer.
-Copyright (C) 2001-2004 Cosmin Truta.
+OptiPNG 0.5: Advanced PNG optimizer.
+Copyright (C) 2001-2006 Cosmin Truta.
 
 This program is open-source software. See LICENSE for more details.
-Compiled with libpng version 1.0.17-optipng and zlib version 1.2.2-optipng
+
+Portions of this software are based in part on the work of:
+  Jean-loup Gailly and Mark Adler (zlib)
+  Glenn Randers-Pehrson and the PNG Development Group (libpng)
+  Miyasaka Masaru (BMP support)
+  David Koblas (GIF support)
+
+Compiled with libpng version 1.2.8-optipng and zlib version 1.2.3-optipng
 
 Usage:
-    optipng [options] files.png ...
+    optipng [options] files ...
+Files:
+    Image files of type: PNG, BMP, GIF, or PNM
 Basic options:
     -h, -help		show this help
     -v			verbose mode / show copyright, version and build info
     -o  <level>		optimization level (0-7)		default 2
     -i  <type>		interlace type (0-1)			default <input>
-    -k, -keep		keep a backup of the input files
+    -k, -keep		keep a backup of the modified files
     -log		log messages to "optipng.log"
     -q, -quiet		quiet mode
 Advanced options:
@@ -27,7 +36,7 @@ Advanced options:
     -nz			no IDAT recompression (also disable reductions)
     -fix		enable error recovery
     -force		write a new output, even if it is bigger than the input
-    -full		do not abandon trial, even if IDAT is already too big
+    -full		produce a full report on IDAT (might reduce speed)
     -preserve		preserve file attributes if possible
     --			stop option switch parsing
 Optimization level presets:

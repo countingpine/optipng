@@ -31,11 +31,11 @@ To use:
 
 This project builds the libpng binaries as follows:
 
-* Win32_DLL_Release\libpng10.dll      DLL build
-* Win32_DLL_Debug\libpng10d.dll       DLL build (debug version)
-* Win32_DLL_ASM_Release\libpng10.dll  DLL build using ASM code
-* Win32_DLL_ASM_Debug\libpng10d.dll   DLL build using ASM (debug version)
-* Win32_DLL_VB\libpng10vb.dll         DLL build for Visual Basic, using stdcall
+* Win32_DLL_Release\libpng13.dll      DLL build
+* Win32_DLL_Debug\libpng13d.dll       DLL build (debug version)
+* Win32_DLL_ASM_Release\libpng13.dll  DLL build using ASM code
+* Win32_DLL_ASM_Debug\libpng13d.dll   DLL build using ASM (debug version)
+* Win32_DLL_VB\libpng13vb.dll         DLL build for Visual Basic, using stdcall
 * Win32_LIB_Release\libpng.lib        static build
 * Win32_LIB_Debug\libpngd.lib         static build (debug version)
 * Win32_LIB_ASM_Release\libpng.lib    static build using ASM code
@@ -46,16 +46,9 @@ Notes:
 
 If you change anything in the source files, or select different compiler
 settings, please change the DLL name to something different than any of
-the above names.
-
-Also, make sure that DLLFNAME_POSTFIX and (PRIVATEBUILD or SPECIALBUILD)
-are defined when compiling the resource file.  DLLFNAME_POSTFIX contains
-the trailing letters that come after the version number.  PRIVATEBUILD
-and/or SPECIALBUILD store information describing the type of change made
-in the VERSIONINFO structure.  Please refer to MSDN for more information
-on the used macros and the nature of their content.  For an example on
-how to define these macros, look at the resource compiler settings for
-the "Win32 DLL VB" configuration.
+the above names. Also, make sure that in your "pngusr.h" you define
+PNG_USER_PRIVATEBUILD and PNG_USER_DLLFNAME_POSTFIX according to the
+instructions provided in "pngconf.h".
 
 All DLLs built by this project use the Microsoft dynamic C runtime library
 MSVCRT.DLL (MSVCRTD.DLL for debug versions).  If you distribute any of the

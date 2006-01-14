@@ -34,16 +34,16 @@ WARNMORE=-Wwrite-strings -Wpointer-arith -Wshadow \
 
 CFLAGS=-I$(ZLIBINC) -Wall -O3 -funroll-loops \
 	$(ALIGN) # $(WARNMORE) -g -DPNG_DEBUG=5
-#LDFLAGS=-L. -Wl,-rpath,. -L$(ZLIBLIB) -Wl,-rpath,$(ZLIBLIB) -lpng10 -lz -lm
-LDFLAGS=-L. -L$(ZLIBLIB) -lpng10 -lz -lm
+#LDFLAGS=-L. -Wl,-rpath,. -L$(ZLIBLIB) -Wl,-rpath,$(ZLIBLIB) -lpng12 -lz -lm
+LDFLAGS=-L. -L$(ZLIBLIB) -lpng12 -lz -lm
 
 RANLIB=ranlib
 #RANLIB=echo
 
 PNGMAJ = 0
-PNGMIN = 1.0.17
+PNGMIN = 1.2.8
 PNGVER = $(PNGMAJ).$(PNGMIN)
-LIBNAME = libpng10
+LIBNAME = libpng12
 
 INCPATH=$(prefix)/include
 LIBPATH=$(prefix)/lib
@@ -89,7 +89,7 @@ libpng-config:
 	( cat scripts/libpng-config-head.in; \
 	echo prefix=\"$(prefix)\"; \
 	echo I_opts=\"-I$(INCPATH)/$(LIBNAME)\"; \
-	echo libs=\"-lpng10 -lz -lm\"; \
+	echo libs=\"-lpng12 -lz -lm\"; \
 	cat scripts/libpng-config-body.in ) > libpng-config
 	chmod +x libpng-config
 
@@ -183,18 +183,18 @@ test-dd:
 	echo
 	echo Testing installed dynamic shared library in $(DL).
 	$(CC) -I$(DI) -I$(ZLIBINC) \
-	   `$(BINPATH)/libpng10-config --cflags` pngtest.c \
+	   `$(BINPATH)/libpng12-config --cflags` pngtest.c \
 	   -L$(DL) -L$(ZLIBLIB) -W1,-rpath,$(DL) -Wl,-rpath,$(ZLIBLIB) \
-	   -o pngtestd `$(BINPATH)/libpng10-config --ldflags`
+	   -o pngtestd `$(BINPATH)/libpng12-config --ldflags`
 	./pngtestd pngtest.png
 
 test-installed:
 	echo
 	echo Testing installed dynamic shared library.
 	$(CC) -I$(ZLIBINC) \
-	   `$(BINPATH)/libpng10-config --cflags` pngtest.c \
+	   `$(BINPATH)/libpng12-config --cflags` pngtest.c \
 	   -L$(ZLIBLIB) -Wl,-rpath,$(ZLIBLIB) \
-	   -o pngtesti `$(BINPATH)/libpng10-config --ldflags`
+	   -o pngtesti `$(BINPATH)/libpng12-config --ldflags`
 	./pngtesti pngtest.png
 
 clean:

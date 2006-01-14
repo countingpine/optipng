@@ -1,5 +1,5 @@
 /* inflate.h -- internal inflate state definition
- * Copyright (C) 1995-2003 Mark Adler
+ * Copyright (C) 1995-2004 Mark Adler
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -80,8 +80,10 @@ struct inflate_state {
     int wrap;                   /* bit 0 true for zlib, bit 1 true for gzip */
     int havedict;               /* true if dictionary provided */
     int flags;                  /* gzip header method and flags (0 if zlib) */
+    unsigned dmax;              /* zlib header max distance (INFLATE_STRICT) */
     unsigned long check;        /* protected copy of check value */
     unsigned long total;        /* protected copy of output count */
+    gz_headerp head;            /* where to save gzip header information */
         /* sliding window */
     unsigned wbits;             /* log base 2 of requested window size */
     unsigned wsize;             /* window size or zero if not using window */

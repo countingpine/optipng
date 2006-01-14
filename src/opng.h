@@ -1,7 +1,7 @@
 /*
  * opng.h - auxiliary functions used by OptiPNG and proposed for libpng.
  *
- * Copyright (C) 2001-2004 Cosmin Truta.
+ * Copyright (C) 2001-2006 Cosmin Truta.
  * The program is distributed under the same licensing and warranty terms
  * as libpng.
  *
@@ -32,6 +32,12 @@
 #define PNG_INTERNAL
 
 #include "png.h"
+#include "pngxtern.h"
+
+#if !(PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
+#error This program requires the BUNDLED libpng version 1.2.x-optipng
+#endif
+
 
 #define OPNG_IMAGE_REDUCTIONS_SUPPORTED  /* implemented here */
 

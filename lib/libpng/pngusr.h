@@ -10,6 +10,12 @@
 
 
 /*
+ * Indicate a private build of libpng.
+ */
+#define PNG_USER_PRIVATEBUILD
+
+
+/*
  * Track down memory leaks, if using MS Visual C++.
  */
 #if defined(_DEBUG) && defined(_MSC_VER)
@@ -31,6 +37,7 @@
 /*
  * Remove libpng features that are not needed by OptiPNG.
  */
+#define PNG_NO_ASSEMBLER_CODE
 #define PNG_NO_ERROR_NUMBERS
 #define PNG_NO_FLOATING_POINT_SUPPORTED
 #define PNG_NO_LEGACY_SUPPORTED

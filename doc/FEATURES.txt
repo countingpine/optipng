@@ -44,3 +44,26 @@ In addition, OptiPNG has the following capabilities:
   files, or extraneous data in IDAT, are examples of such
   integrity errors.
 
+- It recognizes several external file formats:
+
+  * BMP
+    The reading capabilities are limited to uncompressed BMP
+    files.  This is not a big problem, since few programs produce
+    compresses BMPs.  On the other hand, it is easy to uncompress
+    a BMP file, by opening it in a BMP processing program (such
+    as MS Paint), and re-saving it uncompressed.
+
+  * GIF
+    All static (i.e. non-animated) GIF images are supported.
+    OptiPNG preserves the transparency information, but it
+    does not preserve the textual comments embedded in GIFs.
+    Animated GIFs cannot be converted to PNG.  Instead, only
+    the first frame is converted, and a warning is issued.
+
+  * PNM (PBM, PGM, PPM)
+    All these Unix-based formats are fully supported by OptiPNG.
+    However, losslessness is only guaranteed when the maximum
+    sample value is one of the following: 1, 3, 7, 15, 255, 65535.
+    (This limitation applies to any PNM-to-PNG format converter,
+    not only to OptiPNG.)
+

@@ -1,7 +1,7 @@
 /*
  * osys.c - system extensions
  *
- * Copyright (C) 2003-2004 Cosmin Truta.
+ * Copyright (C) 2003-2006 Cosmin Truta.
  * This program is open-source software.  See LICENSE for more details.
  */
 
@@ -24,16 +24,31 @@
 # define OSYS_DOS
 #endif
 
-#if defined WIN32 || defined _WIN32 || defined __WIN32__
+#if defined OS2 || defined OS_2 || defined __OS2__
+# define OSYS_OS2
+#endif
+
+#if defined WIN32 || defined _WIN32 || defined __WIN32__ || defined _WIN32_WCE
 # define OSYS_WIN32
 #endif
 
-#ifndef OSYS_SLASH
-# define OSYS_SLASH "/"
+#if defined WIN64 || defined _WIN64 || defined __WIN64__
+# define OSYS_WIN64
 #endif
 
-#ifndef OSYS_DOT
-# define OSYS_DOT "."
+#if /* defined _WINDOWS || */ defined OSYS_WIN32 || defined OSYS_WIN64
+# define OSYS_WINDOWS
+#endif
+
+#define OSYS_FNAME_CHR_SLASH '/'
+#define OSYS_FNAME_CHR_DOT   '.'
+#define OSYS_FNAME_STR_SLASH "/"
+#define OSYS_FNAME_STR_DOT   "."
+
+#if defined OSYS_DOS || defined OSYS_OS2 || defined OSYS_WINDOWS
+# define OSYS_FNAME_IGN_CASE 1
+#else  /* OSYS_UNIX and possibly others */
+# define OSYS_FNAME_IGN_CASE 0
 #endif
 
 
@@ -45,34 +60,11 @@
 # include <sys/stat.h>
 # include <utime.h>
 #endif
-#ifdef OSYS_WIN32
+#ifdef OSYS_WINDOWS
 # include <windows.h>
 #endif
 
 #include "osys.h"
-
-
-/**
- * Creates a backup file name.
- * On success, returns buffer.
- * On error, returns NULL.
- **/
-char *osys_bak_nam(char *buffer, size_t bufsize, const char *fname)
-{
-#if defined OSYS_DOS
-
-#error osys_bak_nam for DOS is not implemented
-
-#else
-
-    if (strlen(fname) + sizeof(OSYS_DOT "bak") > bufsize)
-        return NULL;
-    strcpy(buffer, fname);
-    strcat(buffer, OSYS_DOT "bak");
-    return buffer;
-
-#endif
-}
 
 
 /**
@@ -81,7 +73,7 @@ char *osys_bak_nam(char *buffer, size_t bufsize, const char *fname)
  * On success, returns 0.
  * On error, sets the global variable errno and returns -1.
  **/
-int osys_attr_cpy(const char *destname, const char *srcname)
+int osys_fattr_cpy(const char *destname, const char *srcname)
 {
 #if defined OSYS_UNIX
 
@@ -101,7 +93,7 @@ int osys_attr_cpy(const char *destname, const char *srcname)
     else
         return -1;
 
-#elif defined OSYS_WIN32
+#elif defined OSYS_WINDOWS
 
     HANDLE hFile;
     FILETIME ftLastWrite;
@@ -132,5 +124,84 @@ int osys_attr_cpy(const char *destname, const char *srcname)
     /* Do nothing. */
     return 0;
 
+#endif
+}
+
+
+/**
+ * Creates a backup file name.
+ * On success, returns buffer.
+ * On error, returns NULL.
+ **/
+char *osys_fname_mkbak(char *buffer, size_t bufsize, const char *fname)
+{
+    if (strlen(fname) + sizeof(OSYS_FNAME_STR_DOT "bak") > bufsize)
+        return NULL;
+
+#if defined OSYS_DOS
+
+    return osys_fname_chext(buffer, bufsize, fname, OSYS_FNAME_STR_DOT "bak");
+
+#else
+
+    strcpy(buffer, fname);
+    strcat(buffer, OSYS_FNAME_STR_DOT "bak");
+    return buffer;
+
+#endif
+}
+
+
+/**
+ * Creates a file name by changing the extension of a given file name.
+ * The new extension can be the empty string, indicating that the new
+ * file name has no extension.  Otherwise, it must begin with the
+ * extension separator (usually '.').
+ * On success, returns buffer.
+ * On error, returns NULL.
+ **/
+char *osys_fname_chext(char *buffer, size_t bufsize,
+    const char *oldname, const char *newext)
+{
+    size_t i, pos;
+
+    if (newext[0] != OSYS_FNAME_CHR_DOT)
+        return NULL;  /* invalid argument */
+    for (i = 0, pos = (size_t)(-1); oldname[i] != 0; ++i)
+    {
+        if (i >= bufsize)
+            return NULL;  /* overflow */
+        if ((buffer[i] = oldname[i]) == OSYS_FNAME_CHR_DOT)
+            pos = i;
+    }
+    if (i > pos)
+        i = pos;  /* go back only if oldname has an extension */
+    for ( ;; ++i, ++newext)
+    {
+        if (i >= bufsize)
+            return NULL;  /* overflow */
+        if ((buffer[i] = *newext) == 0)
+            return buffer;  /* success */
+    }
+}
+
+
+/**
+ * Compares one file name to another.
+ * It returns a value (less than, equal to, or greater than 0)
+ * based on the result of comparing name1 to name2.
+ * The comparison may or may not be case sensitive, depending on
+ * the operating system.
+ **/
+int osys_fname_cmp(const char *name1, const char *name2)
+{
+#if OSYS_FNAME_IGN_CASE
+# ifdef OSYS_WINDOWS
+    return lstrcmpi(name1, name2);
+# else
+    return stricmp(name1, name2);
+# endif
+#else
+    return strcmp(name1, name2);
 #endif
 }

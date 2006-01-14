@@ -1,5 +1,5 @@
 /* trees.c -- output deflated data using Huffman coding
- * Copyright (C) 1995-2004 Jean-loup Gailly
+ * Copyright (C) 1995-2005 Jean-loup Gailly
  * For conditions of distribution and use, see copyright notice in zlib.h
  */
 
@@ -152,7 +152,7 @@ local void send_all_trees OF((deflate_state *s, int lcodes, int dcodes,
                               int blcodes));
 local void compress_block OF((deflate_state *s, ct_data *ltree,
                               ct_data *dtree));
-local int guess_data_type OF((deflate_state *s));
+local void set_data_type  OF((deflate_state *s));
 local unsigned bi_reverse OF((unsigned value, int length));
 local void bi_windup      OF((deflate_state *s));
 local void bi_flush       OF((deflate_state *s));
@@ -555,7 +555,7 @@ local void gen_bitlen(s, desc)
         while (n != 0) {
             m = s->heap[--h];
             if (m > max_code) continue;
-            if (tree[m].Len != (unsigned) bits) {
+            if ((unsigned) tree[m].Len != (unsigned) bits) {
                 Trace((stderr,"code %d bits %d->%d\n", m, tree[m].Len, bits));
                 s->opt_len += ((long)bits - (long)tree[m].Len)
                               *(long)tree[m].Freq;
@@ -930,10 +930,9 @@ void _tr_flush_block(s, buf, stored_len, eof)
     /* Build the Huffman trees unless a stored block is forced */
     if (s->level > 0) {
 
-         /* Check if the file is text or binary */
-        if (s->strm->data_type == Z_UNKNOWN)
-            s->strm->data_type =
-                ((stored_len > 0) ? guess_data_type(s) : Z_BINARY);
+        /* Check if the file is binary or text */
+        if (stored_len > 0 && s->strm->data_type == Z_UNKNOWN)
+            set_data_type(s);
 
         /* Construct the literal and distance trees */
         build_tree(s, (tree_desc *)(&(s->l_desc)));
@@ -984,7 +983,7 @@ void _tr_flush_block(s, buf, stored_len, eof)
 #ifdef FORCE_STATIC
     } else if (static_lenb >= 0) { /* force static trees */
 #else
-    } else if (static_lenb == opt_lenb) {
+    } else if (s->strategy == Z_FIXED || static_lenb == opt_lenb) {
 #endif
         send_bits(s, (STATIC_TREES<<1)+eof, 3);
         compress_block(s, (ct_data *)static_ltree, (ct_data *)static_dtree);
@@ -1119,24 +1118,24 @@ local void compress_block(s, ltree, dtree)
 }
 
 /* ===========================================================================
- * Check if the data type is TEXT or BINARY, using a crude approximation:
- * return Z_TEXT if all symbols are either printable characters (33 to 255)
- * or white spaces (9 to 13, or 32); return Z_BINARY otherwise.
- * Note: if the stream is empty, this function returns Z_TEXT, although
- * Z_BINARY would be more appropriate. This situation is better handled
- * outside this function.
+ * Set the data type to BINARY or TEXT, using a crude approximation:
+ * set it to Z_TEXT if all symbols are either printable characters (33 to 255)
+ * or white spaces (9 to 13, or 32); or set it to Z_BINARY otherwise.
  * IN assertion: the fields Freq of dyn_ltree are set.
  */
-local int guess_data_type(s)
+local void set_data_type(s)
     deflate_state *s;
 {
     int n;
 
-    for (n = 0; n <= 8; n++)
-        if (s->dyn_ltree[n].Freq != 0) return Z_BINARY;
-    for (n = 14; n <= 31; n++)
-        if (s->dyn_ltree[n].Freq != 0) return Z_BINARY;
-    return Z_TEXT;
+    for (n = 0; n < 9; n++)
+        if (s->dyn_ltree[n].Freq != 0)
+            break;
+    if (n == 9)
+        for (n = 14; n < 32; n++)
+            if (s->dyn_ltree[n].Freq != 0)
+                break;
+    s->strm->data_type = (n == 32) ? Z_TEXT : Z_BINARY;
 }
 
 /* ===========================================================================
