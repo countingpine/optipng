@@ -1,0 +1,27 @@
+
+libpng 1.0.15-cos2 - May 31, 2004
+
+This is an ** unofficial ** release of libpng.
+
+Changes since the last release (1.0.15-cos1):
+
+  Integrated the 1.2.6beta2 and 1.2.5-patch1 changes into the branches
+    1.0.15-cos and 1.2.5-cos (Cosmin).
+  Avoided access to asm_flags in pngvcrd.c, if PNG_1_0_X is defined (Cosmin).
+  Commented out warning about uninitialized mmx_support in pngvcrd.c (Cosmin).
+  Removed scripts/makefile.bd32 and scripts/pngdef.pas (Cosmin).
+  Added extra guard around inclusion of Turbo C memory headers, in pngconf.h
+    (Cosmin).
+  Renamed projects/msvc6/ to projects/visualc6/, and projects/bcbuild5/ to
+    projects/cbuilder5/ (hoping this is final... Cosmin).
+  Moved projects/visualc6/png32ms.def to scripts/pngw32.def,
+    and projects/visualc6/png.rc to scripts/pngw32.rc (Cosmin).
+  Added projects/visualc6/pngtest.dsp; removed contrib/msvctest/ (Cosmin).
+  Updated contrib/visupng/VisualPng.dsp (Cosmin).
+  Updated contrib/visupng/cexcept.h to version 2.0.0 (Cosmin).
+
+This is an ** unofficial ** release.  Send comments/corrections/commendations
+to cosmin (at) cs (dot) toronto (dot) edu.
+DO NOT send them to png-implement@ccrc.wustl.edu.
+
+Cosmin Truta

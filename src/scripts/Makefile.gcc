@@ -1,0 +1,37 @@
+# ** OptiPNG
+# ** Quick and dirty makefile for GCC
+
+all: optipng
+
+optipng: optipng.o opngio.o opngreduc.o cbitset.o osys.o \
+  wildargs.o libpng.a libz.a
+	gcc -s -o optipng optipng.o opngio.o opngreduc.o cbitset.o osys.o \
+	  wildargs.o libpng.a libz.a
+
+.c.o: #png.h opng.h
+	gcc -c -O2 -I../lib-cos/zlib -I../lib-cos/libpng -Wall $*.c
+
+cbitset.o: cbitset.c cbitset.h
+	gcc -c -O2 -Wall $*.c
+
+osys.o: osys.c osys.h
+	gcc -c -O2 -Wall $*.c
+
+wildargs.o: xtra/wildargs.c
+	gcc -c -O2 xtra/wildargs.c
+
+libpng.a: ../lib-cos/libpng/libpng.a
+	cp ../lib-cos/libpng/libpng.a libpng.a
+
+libz.a: ../lib-cos/zlib/libz.a
+	cp ../lib-cos/zlib/libz.a libz.a
+
+../lib-cos/libpng/libpng.a: ../lib-cos/zlib/libz.a
+	cd ../lib-cos/libpng; \
+	${MAKE} -f scripts/makefile.gcc; \
+	cd ../../src
+
+../lib-cos/zlib/libz.a:
+	cd ../lib-cos/zlib; \
+	${MAKE} CC="gcc" CFLAGS="-O3 -DNO_GZCOMPRESS -DNO_GZIO" libz.a; \
+	cd ../../src

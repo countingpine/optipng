@@ -1,0 +1,37 @@
+# ** OptiPNG
+# ** Quick and dirty makefile for Borland C
+
+all: optipng.exe
+
+optipng.exe: optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj \
+  wildargs.obj libpng.lib zlib.lib
+	bcc32 -v optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj \
+	  wildargs.obj libpng.lib zlib.lib noeh32.lib
+
+.c.obj: #png.h opng.h
+	bcc32 -c -v -w -I..\lib-cos\zlib -I..\lib-cos\libpng -O2 $*.c
+
+cbitset.obj: cbitset.c cbitset.h
+	bcc32 -c -v -w -O2 $*.c
+
+osys.obj: osys.c osys.h
+	bcc32 -c -v -w -O2 $*.c
+
+wildargs.obj: xtra/wildargs.c
+	bcc32 -c -v -w -O2 xtra\wildargs.c
+
+libpng.lib: ../lib-cos/libpng/libpng.lib
+	copy ..\lib-cos\libpng\libpng.lib libpng.lib
+
+zlib.lib: ../lib-cos/zlib/zlib.lib
+	copy ..\lib-cos\zlib\zlib.lib zlib.lib
+
+../lib-cos/libpng/libpng.lib: ../lib-cos/zlib/zlib.lib
+	cd ..\lib-cos\libpng
+	make -f scripts\makefile.bc32
+	cd ..\..\src
+
+../lib-cos/zlib/zlib.lib:
+	cd ..\lib-cos\zlib
+	make -f win32\Makefile.bor
+	cd ..\..\src

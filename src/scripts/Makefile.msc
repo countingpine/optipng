@@ -1,0 +1,37 @@
+# ** OptiPNG
+# ** Quick and dirty makefile for Microsoft C
+
+all: optipng.exe
+
+optipng.exe: optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj \
+  wildargs.obj libpng.lib zlib.lib
+	cl -MD optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj \
+	  wildargs.obj libpng.lib zlib.lib
+
+.c.obj: #png.h opng.h
+	cl -c -I..\lib-cos\zlib -I..\lib-cos\libpng -MD -O2 $*.c
+
+cbitset.obj: cbitset.c cbitset.h
+	cl -c -MD -O2 $*.c
+
+osys.obj: osys.c osys.h
+	cl -c -MD -O2 $*.c
+
+wildargs.obj: xtra/wildargs.c
+	cl -c -MD -O2 xtra\wildargs.c
+
+libpng.lib: ../lib-cos/libpng/libpng.lib
+	copy ..\lib-cos\libpng\libpng.lib libpng.lib
+
+zlib.lib: ../lib-cos/zlib/zlib.lib
+	copy ..\lib-cos\zlib\zlib.lib zlib.lib
+
+../lib-cos/libpng/libpng.lib: ../lib-cos/zlib/zlib.lib
+	cd ..\lib-cos\libpng
+	nmake -f scripts\makefile.vcwin32
+	cd ..\..\src
+
+../lib-cos/zlib/zlib.lib:
+	cd ..\lib-cos\zlib
+	nmake -f win32\Makefile.msc LOC="-DNO_GZCOMPRESS -DNO_GZIP" zlib.lib
+	cd ..\..\src

@@ -1,0 +1,33 @@
+
+CAVEAT EMPTORE
+==============
+(known bugs, problems, or limitations in the current version of OptiPNG)
+
+
+Legend
+------
+ - Minor bug, limitation, or incompletely-implemented feature.
+   Not dangerous.
+ ! Bug that may cause OptiPNG to act differently than intended,
+   but without causing accidental data loss.
+   Inconvenient, but not dangerous.
+!! Bug that may cause accidental data loss.
+   Dangerous.
+ * Another problematic issue, that is not necessarily a bug.
+
+
+Version 0.4.5   31-may-2004
+-------------
+ * To avoid some bugs present in the latest libpng library
+   (either libpng-1.0.15 or libpng-1.2.5), it is recommended to
+   link OptiPNG statically to a patched version of libpng-1.0.15,
+   supplied with the OptiPNG source distribution.
+   (This is NOT a bug in OptiPNG itself.)
+   When a newer, corrected libpng version will be officially
+   released, this note will become obsolescent.
+ - The color palette reductions are implemented only partially.
+   (This does NOT affect the integrity of PNG files.)
+ - The bit depth reductions below 8, for grayscale images, are
+   not implemented yet.
+ - The RGB(A)-to-palette reductions are not implemented yet.
+
