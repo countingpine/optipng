@@ -1,37 +1,53 @@
 /**
- ** cbitset.c -- Simple C routines for bitset handling.
+ ** cbitset.c
+ ** Simple C routines for bitset handling.
  **
- ** Copyright (C) 2001-2003 Cosmin Truta.
+ ** Copyright (C) 2001-2006 Cosmin Truta.
  **
  ** This software is distributed under the same licensing and warranty
- ** terms as OptiPNG. Please see the attached LICENSE for more info.
+ ** terms as OptiPNG.  Please see the attached LICENSE for more info.
  **/
 
 
-#include <stddef.h>
+#include <ctype.h>
 #include <limits.h>
+#include <stddef.h>
 #include "cbitset.h"
 
 
-#undef IS_GRAPH
-#define IS_GRAPH(_ch)  \
-    ((unsigned char)(_ch) > ' ')
+/* private helper: ASSERT */
+#ifndef ASSERT
+#ifdef CDEBUG
+#include <assert.h>
+#define ASSERT(cond) assert(cond)
+#else  /* !CDEBUG */
+#define ASSERT(cond) ((void)0)
+#endif /* ?CDEBUG */
+#endif /* ?ASSERT */
 
-#undef SKIP_NON_GRAPH
-#define SKIP_NON_GRAPH(_str, _i)  \
-    { while ((_str)[i] != 0 && !IS_GRAPH((_str)[_i])) ++_i; }
+
+/* private helper: SKIP_SPACES */
+#if 0
+#define SKIP_SPACES(_str)  \
+    { while (*(_str) != 0 && isspace(*(_str))) ++(_str); }
+#else
+#define SKIP_SPACES(_str)  \
+    { while (isspace(*(_str))) ++(_str); }
+#endif
 
 
 /**
  * Counts the number of elements in a bitset.
  **/
-int bitset_count(bitset set)
+int bitset_count(bitset_t set)
 {
-    int result = 0;
+    int result;
     unsigned int i;
 
-    if (!BITSET_IS_VALID(set))
+    if (BITSET_GET_OVERFLOW(set))
         return -1;
+
+    result = 0;
     for (i = 0; i < BITSET_SIZE; ++i)
         if (BITSET_GET(set, i))
             ++result;
@@ -40,97 +56,137 @@ int bitset_count(bitset set)
 
 
 /**
- * Converts a string to a bitset.
+ * Converts a string to a bitset value.
  **/
-bitset string_to_bitset(const char *str);
-/* not implemented */
+bitset_t string_to_bitset(const char *str, char **end_ptr)
+{
+    bitset_t result;
+    const char *ptr;
+    int overflow;
+
+    ASSERT(str != NULL);
+
+    ptr = str;
+    SKIP_SPACES(ptr);
+    if (*ptr != '0' && *ptr != '1')
+    {
+        if (end_ptr != NULL)
+            *end_ptr = (char *)str;
+        return BITSET_EMPTY;
+    }
+
+    result = BITSET_EMPTY;
+    overflow = 0;
+    for ( ; ; ++ptr)
+    {
+        if (*ptr == '0' || *ptr == '1')
+        {
+            result = (result << 1) | (*ptr - '0');
+            if (BITSET_GET_OVERFLOW(result))
+                overflow = 1;
+        }
+        else
+        {
+            if (end_ptr != NULL)
+                *end_ptr = (char *)ptr;
+            if (overflow)
+                BITSET_SET_OVERFLOW(result);
+            return result;
+        }
+    }
+}
 
 
 /**
- * Converts a bitset to a string.
+ * Converts a bitset value to a string.
  **/
-char *bitset_to_string(bitset set, char *str_buf)
+char *bitset_to_string(bitset_t set, char *str_buf, size_t str_buf_size)
 {
-    int i = BITSET_SIZE - 1;
-    unsigned int j = 0;
+    char *ptr;
+    int i;
 
-    if (!BITSET_IS_VALID(set) || str_buf == NULL)
-        return NULL;
+    ASSERT(str_buf != NULL);
 
-    while (i > 0 && !BITSET_GET(set, i))
-        --i;
-    while (i >= 0)
+    for (i = BITSET_SIZE - 1; i > 0; --i)
+        if (BITSET_GET(set, i))
+            break;
+    if ((size_t)(i + 1) >= str_buf_size)
+        return NULL;  /* insufficient buffer space */
+
+    ptr = str_buf;
+    for ( ; i >= 0; --i)
     {
         /* C ALERT ** (cond ? '1' : '0') is int instead of char */
-        str_buf[j] = (char)(BITSET_GET(set, i) ? '1' : '0');
-        --i;
-        ++j;
+        *ptr++ = (char)(BITSET_GET(set, i) ? '1' : '0');
     }
-    str_buf[j] = 0;
+    *ptr = 0;
     return str_buf;
 }
 
 
 /**
- * Converts a text to a bitset.
+ * Parses an enumeration string to a bitset value.
  **/
-bitset text_to_bitset(const char *text)
+int bitset_parse(const char *text, bitset_t *out_bitset)
 {
-    bitset result = BITSET_EMPTY;
-    unsigned int num1, num2, i, j;
+    unsigned int num1, num2, i;
     int is_range;
 
-    if (text == NULL)
-        return BITSET_EMPTY;
+    ASSERT(text != NULL);
+    ASSERT(out_bitset != NULL);
 
-    for (i = 0; ; ++i)
+    *out_bitset = BITSET_EMPTY;
+    for ( ; ; ++text)
     {
-        SKIP_NON_GRAPH(text, i);
-        if (text[i] == 0)
-            return result;
+        SKIP_SPACES(text);
+        if (*text == 0)
+            return 0;  /* success */
 
         num1 = UINT_MAX;  /* unassigned */
         num2 = 0;
         is_range = 0;
-        while ((text[i] >= '0' && text[i] <= '9') || (text[i] == '-'))
+        while ((*text >= '0' && *text <= '9') || (*text == '-'))
         {
-            if (text[i] == '-')  /* range */
+            if (*text == '-')  /* range */
             {
                 is_range = 1;
                 if (num1 == UINT_MAX)
                     num1 = 0;  /* default */
                 num2 = BITSET_SIZE - 1;  /* default */
-                ++i;
+                ++text;
             }
             else  /* number */
             {
-                for (num2 = 0; text[i] >= '0' && text[i] <= '9'; ++i)
+                for (num2 = 0; *text >= '0' && *text <= '9'; ++text)
                 {
-                    num2 = 10 * num2 + (text[i] - '0');
+                    num2 = 10 * num2 + (*text - '0');
                     if (num2 > BITSET_SIZE)  /* overflow protection */
                         num2 = BITSET_SIZE;
                 }
                 if (!is_range)
                     num1 = num2;
             }
-            SKIP_NON_GRAPH(text, i);
+            SKIP_SPACES(text);
         }
 
-        if (num2 >= BITSET_SIZE)  /* overflow protection */
+        if (num2 >= BITSET_SIZE)
+        {
             num2 = BITSET_SIZE - 1;
-        for (j = num1; j <= num2; ++j)
-            BITSET_SET(result, j);
+            BITSET_SET_OVERFLOW(*out_bitset);
+        }
+        for (i = num1; i <= num2; ++i)
+            BITSET_SET(*out_bitset, i);
 
-        if (text[i] == 0)
-            return result;
-        if (text[i] != ',' && text[i] != ';')  /* not a separator */
-            return BITSET_INVALID;
+        if (*text == 0)
+            return 0;  /* success */
+        if (*text != ',' && *text != ';')  /* not a separator */
+            return -1;  /* failure */
     }
 }
 
 
 /**
- * Converts a bitset to a text.
+ * Converts a bitset value to a parsable enumeration string.
  **/
-char *bitset_to_text(bitset set, char *text_buf);
+char *bitset_deparse(bitset_t set, char *text_buf, size_t text_buf_size);
 /* not implemented */

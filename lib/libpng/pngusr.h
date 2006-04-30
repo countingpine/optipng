@@ -10,12 +10,6 @@
 
 
 /*
- * Indicate a private build of libpng.
- */
-#define PNG_USER_PRIVATEBUILD
-
-
-/*
  * Track down memory leaks, if using MS Visual C++.
  */
 #if defined(_DEBUG) && defined(_MSC_VER)

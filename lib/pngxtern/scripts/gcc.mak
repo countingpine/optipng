@@ -10,16 +10,17 @@ PNGDIR = ../libpng
 # Compiler, linker, librarian and other tools
 CC = gcc
 LD = $(CC)
-AR = ar rcs
+AR_RC = ar rcs
 RANLIB = ranlib
-RM = rm -f
+RM_F = rm -f
 
 CDEBUG = -g
 LDDEBUG =
 CRELEASE = -O2
 LDRELEASE = -s
-CFLAGS = -I$(ZDIR) -I$(PNGDIR) -Wall $(CRELEASE)
-LDFLAGS = -L. -L$(ZDIR) -L$(PNGDIR) -lpng -lz -lm $(LDRELEASE)
+CFLAGS = -Wall $(CRELEASE)
+LDFLAGS = $(LDRELEASE)
+LIBS = -lpng -lz -lm
 
 # File extensions
 O=.o
@@ -32,27 +33,30 @@ OBJS = pngxread$(O) pngxrbmp$(O) pngxrgif$(O) pngxrpnm$(O) \
 # Targets
 all: pngxtern$(A)
 
+.c$(O):
+	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $<
+
 pngxtern$(A): $(OBJS)
-	$(AR) $@ $(OBJS)
+	$(AR_RC) $@ $(OBJS)
 	$(RANLIB) $@
 
 gifread$(O): gif/gifread.c gif/gifread.h
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $<
 
 pnmerror$(O): pnm/pnmerror.c pnm/pnmio.h
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $<
 
 pnmread$(O): pnm/pnmread.c pnm/pnmio.h
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $<
 
 pnmwrite$(O): pnm/pnmwrite.c pnm/pnmio.h
-	$(CC) $(CFLAGS) -c $<
+	$(CC) -c $(CFLAGS) $<
 
 clean:
-	$(RM) *$(O) pngxtern$(A)
+	$(RM_F) *$(O) pngxtern$(A)
 
-pngxread$(O): pngxtern.h
-pngxrbmp$(O): pngxtern.h 
-pngxrgif$(O): pngxtern.h 
-pngxrpnm$(O): pngxtern.h 
+pngxread$(O): pngxread.c pngxtern.h
+pngxrbmp$(O): pngxrbmp.c pngxtern.h 
+pngxrgif$(O): pngxrgif.c pngxtern.h 
+pngxrpnm$(O): pngxrpnm.c pngxtern.h 
 

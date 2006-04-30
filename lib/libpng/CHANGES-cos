@@ -1,0 +1,10 @@
+
+CHANGES-cos - changes from the original libpng
+
+version 1.2.10-optipng [April 24, 2006]
+  Prepended "#! /bin/sh" to ltmail.sh and contrib/pngminus/*.sh (Cosmin).
+  Removed the include directories and libraries from CFLAGS and LDFLAGS
+    in scripts/makefile.gcc (Nelson A. de Oliveira, Cosmin).
+  Removed the accidental leftover Makefile.in~ (Cosmin).
+  Removed the contrib/ directory (Cosmin).
+  Added pngusr.h (Cosmin).

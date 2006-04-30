@@ -21,22 +21,24 @@ PNGDIR   = ..\lib\libpng
 PNGXDIR  = ..\lib\pngxtern
 BACKHERE = ..\..\src
 
-OBJS = optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj wildargs.obj
+OBJS = optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj strutil.obj \
+       wildargs.obj
 LIBS = $(PNGXDIR)\$(PNGXLIB) $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
 
 
 $(OPTIPNG): $(OBJS) $(LIBS)
-	$(LD) $(LDFLAGS) $(OBJS) $(LIBS) noeh32.lib
+	$(LD) $(LDFLAGS) $(OBJS) $(LIBS)  # noeh32.lib
 
 
 .c.obj:
 	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR) $*.c
 
-optipng.obj  : optipng.c   opng.h osys.h cbitset.h cexcept.h
-opngio.obj   : opngio.c    opng.h
+optipng.obj  : optipng.c opngver.h opng.h cexcept.h cbitset.h osys.h strutil.h
+opngio.obj   : opngio.c opng.h
 opngreduc.obj: opngreduc.c opng.h
-cbitset.obj  : cbitset.c   cbitset.h
-osys.obj     : osys.c      osys.h
+cbitset.obj  : cbitset.c cbitset.h
+osys.obj     : osys.c osys.h
+strutil.obj  : strutil.c strutil.h
 
 wildargs.obj : xtra\wildargs.c
 	$(CC) -c $(CFLAGS) xtra\wildargs.c

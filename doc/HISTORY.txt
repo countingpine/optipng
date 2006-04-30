@@ -5,12 +5,30 @@ OptiPNG - Revision history
 Legend
 ------
 ++ Added or improved feature that might affect compression ratio
-   or speed.
+   and/or speed.
  + Added or improved feature.
  - Removed feature.
  * Other modification (e.g. architectural improvements).
  ! Fixed bug.
 !! Fixed dangerous bug that might cause accidental data loss.
+
+
+Version 0.5.1   30-apr-2006
+-------------
+++ Implemented bit depth reduction for palette images.
+ + Upgraded libpng to version 1.2.10-optipng [private]
+ + Improved the BMP support.
+ + Added a Unix man page.
+   (Thanks to Nelson A. de Oliveira for the contribution.)
+ + Allowed abbreviation of command-line options.
+ + Changed user option -log to accept a file name as an argument.
+ * Changed user option -no to -simulate.
+ ! Fixed an error in handling .bak files on Unix.
+   (Thanks to Adam Szojda and Nelson A. de Oliveira for the report.)
+ ! Fixed a small typo in the help screen.
+   (Thanks to A. Costa and Nelson A. de Oliveira for the report.)
+ + Added the GUIDE and THANKS documents.
+ * Converted some text document files to HTML.
 
 
 Version 0.5     14-jan-2006
@@ -133,7 +151,8 @@ Version 0.3.2   11-mar-2003
 Version 0.3.1   25-feb-2003
 -------------
  ! Fixed the encoding of interlaced images when they become
-   bigger than the input.
+   larger than the input.
+   (Thanks to James H. Cloos, Jr. for the report.)
  + Added the HISTORY document (this file).
 
 

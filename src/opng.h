@@ -2,42 +2,26 @@
  * opng.h - auxiliary functions used by OptiPNG and proposed for libpng.
  *
  * Copyright (C) 2001-2006 Cosmin Truta.
- * The program is distributed under the same licensing and warranty terms
+ * This software is distributed under the same licensing and warranty terms
  * as libpng.
  *
- * These functions are not currently offered by libpng.
- * The author encourages their addition to libpng.
- *
  * The prefix of the newly-added macros is OPNG_;
- * the prefix of the newly_added functions is opng_.
+ * the prefix of the newly-added functions is opng_.
  * If something goes into libpng, its prefix will change to PNG_/png_.
  * Until then, we step over the public access by #defining PNG_INTERNAL.
  */
 
 
-/* The following functions/macros are part of libpng-private:
- *   png_get_int_16  / png_save_int_16
- *   png_get_uint_16 / png_save_uint_16
- *   png_get_int_32  / png_save_int_32
- *   png_get_uint_32 / png_save_uint_32
- * However, they should be public, for the following reasons:
- * - Any application may benefit from them when accessing various
- *   PNG chunks.
- * - They are safe: when called, they do not affect the validity of
- *   the libpng internal structures.
- * - They are independent and do not introduce extra coupling in
- *   libpng.
- */
-
 #define PNG_INTERNAL
 
 #include "png.h"
-#include "pngxtern.h"
 
 #if !(PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
 #error This program requires the BUNDLED libpng version 1.2.x-optipng
 #endif
 
+
+#define OPNG_IO_STATE_SUPPORTED          /* implemented here */
 
 #define OPNG_IMAGE_REDUCTIONS_SUPPORTED  /* implemented here */
 
@@ -53,10 +37,6 @@
 
 #ifndef PNG_FREE_ME_SUPPORTED
 #error This program requires libpng with PNG_FREE_ME_SUPPORTED
-#endif
-
-#ifndef OPNG_IMAGE_REDUCTIONS_SUPPORTED
-#error This program requires libpng-cos with OPNG_IMAGE_REDUCTIONS_SUPPORTED
 #endif
 
 
@@ -76,34 +56,32 @@
 #endif
 
 
-/*
- * The following code introduces io_state and the related constants.
- * io_state is a field in which the current i/o state is stored,
- * and may be accessed when performing an event-based i/o handling.
- */
-#define OPNG_IO_UNKNOWN   0x0000
-#define OPNG_IO_READING   0x0001
-#define OPNG_IO_WRITING   0x0002
-#define OPNG_IO_LEN       0x0010
-#define OPNG_IO_HDR       0x0020
-#define OPNG_IO_DATA      0x0040
-#define OPNG_IO_CRC       0x0080
-#define OPNG_IO_SIG       0x0100
-#define OPNG_IO_MASK_OP   0x000f  /* reading/writing */
-#define OPNG_IO_MASK_LOC  0x0ff0  /* sig/len/data/crc */
-
-/*
- * This function may be called from the custom implementation of the read/write
- * functions hooked via png_set_read_fn() or png_set_write_fn().
- */
+/* To be added to png.h */
+#ifdef OPNG_IO_STATE_SUPPORTED
 extern PNG_EXPORT(png_uint_32,opng_get_io_state)
    PNGARG((png_structp png_ptr));
-/* There is no opng_set_io_state */
+
+extern PNG_EXPORT(png_bytep,opng_get_io_chunk_name)
+   PNGARG((png_structp png_ptr));
+
+/* The flags returned by png_get_io_state() are the following: */
+#define OPNG_IO_NONE        0x0000  /* no I/O at this moment */
+#define OPNG_IO_READING     0x0001  /* currently reading */
+#define OPNG_IO_WRITING     0x0002  /* currently writing */
+#define OPNG_IO_SIGNATURE   0x0010  /* currently at the file signature */
+#define OPNG_IO_CHUNK_HDR   0x0020  /* currently at the chunk header */
+#define OPNG_IO_CHUNK_DATA  0x0040  /* currently at the chunk data */
+#define OPNG_IO_CHUNK_CRC   0x0080  /* currently at the chunk crc */
+#define OPNG_IO_MASK_OP     0x000f  /* current operation: reading/writing */
+#define OPNG_IO_MASK_LOC    0x00f0  /* current location: sig/hdr/data/crc */
+#endif /* ?OPNG_IO_STATE_SUPPORTED */
+
 
 /*
+ * To be deleted when adding the above code to png.h.
+ *
  * These opng_ functions replace the corresponding png_ functions
  * supplied by libpng.
- * CAUTION: These functions must be called before performing any I/O operation.
  */
 extern PNG_EXPORT(void,opng_set_read_fn) PNGARG((png_structp png_ptr,
    png_voidp io_ptr, png_rw_ptr read_data_fn));
@@ -111,6 +89,8 @@ extern PNG_EXPORT(void,opng_set_write_fn) PNGARG((png_structp png_ptr,
    png_voidp io_ptr, png_rw_ptr write_data_fn, png_flush_ptr output_flush_fn));
 
 
+/* To be added to png.h */
+#ifdef OPNG_IMAGE_REDUCTIONS_SUPPORTED
 /*
  * Indicate whether the image information is valid.
  * (The image information is valid if the critical information
@@ -122,7 +102,7 @@ extern PNG_EXPORT(int,opng_validate_image)
 
 /*
  * Reduce the image (bit depth + color type + palette) without
- * losing any information. The image data must be present
+ * losing any information.  The image data must be present
  * (e.g. after calling png_set_rows(), or after loading IDAT).
  */
 extern PNG_EXPORT(png_uint_32,opng_reduce_image)
@@ -132,19 +112,19 @@ extern PNG_EXPORT(png_uint_32,opng_reduce_image)
  * PNG reduction flags.
  */
 #define OPNG_REDUCE_16_TO_8          0x0001
-#define OPNG_REDUCE_8_TO_421         0x0002
+#define OPNG_REDUCE_8_TO_4_2_1       0x0002
 #define OPNG_REDUCE_RGB_TO_GRAY      0x0010  /* also RGBA to GA */
 #define OPNG_REDUCE_RGB_TO_PALETTE   0x0020  /* also RGBA to palette/tRNS */
 #define OPNG_REDUCE_PALETTE_TO_GRAY  0x0040  /* also palette/tRNS to GA */
 #define OPNG_REDUCE_STRIP_ALPHA      0x0080  /* also create tRNS if needed */
-#define OPNG_REDUCE_PALETTE_FAST     0x0100  /* remove trailing bogus entries
+#define OPNG_REDUCE_PALETTE_FAST     0x0100  /* remove trailing sterile entries
                                                 and update tRNS */
-#define OPNG_REDUCE_PALETTE_FULL     0x0200  /* remove all bogus entries
+#define OPNG_REDUCE_PALETTE_FULL     0x0200  /* remove all sterile entries
                                                 and optimize tRNS */
 #define OPNG_REDUCE_NONE             0x0000
 
 #define OPNG_REDUCE_BIT_DEPTH  \
-   (OPNG_REDUCE_16_TO_8 | OPNG_REDUCE_8_TO_421)
+   (OPNG_REDUCE_16_TO_8 | OPNG_REDUCE_8_TO_4_2_1)
 
 #define OPNG_REDUCE_COLOR_TYPE  \
    (OPNG_REDUCE_RGB_TO_GRAY | OPNG_REDUCE_RGB_TO_PALETTE |  \
@@ -156,3 +136,4 @@ extern PNG_EXPORT(png_uint_32,opng_reduce_image)
 #define OPNG_REDUCE_ALL \
    (OPNG_REDUCE_BIT_DEPTH | OPNG_REDUCE_COLOR_TYPE | OPNG_REDUCE_PALETTE)
 
+#endif /* ?OPNG_IMAGE_REDUCTIONS_SUPPORTED */

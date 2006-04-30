@@ -1,6 +1,7 @@
-/* pngxtern.h - external file format processing for libpng.
+/*
+ * pngxtern.h - external file format processing for libpng.
  *
- * Copyright (C) 2001-2005 Cosmin Truta.
+ * Copyright (C) 2001-2006 Cosmin Truta.
  * The program is distributed under the same licensing and warranty
  * terms as libpng.
  */

@@ -1,0 +1,200 @@
+.TH OPTIPNG 1 "30 April 2006" "OptiPNG Version 0.5.1"
+.SH NAME
+.B OptiPNG
+\- advanced optimization program for
+.B Portable Network Graphics (PNG)
+.SH SYNOPSIS
+.B optipng
+[\fB\-?\fP | \fB\-h\fP | \fB\-help\fP]
+.br
+.B optipng
+[\fIoptions...\fP] \fIfiles...\fP
+.SH DESCRIPTION
+.B OptiPNG
+is a PNG optimizer that recompresses image files to a smaller size without
+losing any information.
+In addition, this program performs a suite of useful functions like integrity
+checks, meta-data recovery and pixmap-to-PNG conversion.
+.SH FILES
+The input files are image files of following types:
+.P
+\- Native format: PNG.
+.P
+\- External pixmap formats (currently supported formats: GIF, BMP and PNM).
+.P
+.B OptiPNG
+processes each input file as follows:
+.P
+\- If it is a PNG file:
+.IP
+If it is possible to create an optimized version of the given PNG file,
+the optimized file replaces the original one. The original file can be
+backed up, at the user's option.
+.P
+\- Otherwise (i.e. if it is an external pixmap format):
+.IP
+An optimized PNG version of the given image file is created.
+The output file name is created from the original file name and the
+\fC.png\fP extension.
+.P
+For example:
+.IP
+\fCoptipng file1.png file2.gif\fP
+.P
+will create an optimized \fCfile1.png\fP and an optimized \fCfile2.png\fP.
+(The original \fCfile1.png\fP is replaced by the optimized one;
+the original \fCfile2.gif\fP is left intact.)
+.SH OPTIONS
+.SS "Basic options"
+.TP
+\fB-?\fP, \fB\-h\fP, \fB\-help\fP
+Show a complete summary of options.
+.TP
+\fB\-o\fP \fIlevel\fP
+Select the optimization level.
+.br
+Use \fB\-o0\fP to disable IDAT recompression trials.
+.br
+Use \fB\-o1\fP to enable a single IDAT recompression trial.
+.br
+Use a higher \fIlevel\fP to enable more trials
+(the higher the \fIlevel\fP, the more trials).
+.br
+The behavior and the default value of this user option may change across
+different program versions. Use option \fB\-h\fP to see the details pertaining
+to your specific version.
+.TP
+\fB\-i\fP \fItype\fP
+Select the interlace type (0\-1).
+.br
+Use \fB\-i0\fP to produce a non-interlaced output.
+.br
+Use \fB\-i1\fP to produce an interlaced (\fIAdam7\fP) output.
+.br
+If this option is not used, the output will have the same interlace type as
+the input.
+.TP
+\fB\-k\fP, \fB\-keep\fP
+Keep a backup of the modified file(s).
+.br
+The files that use the backup names prior to the program execution are
+\fInot\fP overwritten.
+.TP
+\fB\-q\fP, \fB\-quiet\fP
+Run in quiet mode.
+.TP
+\fB\-v\fP
+Run in verbose mode / Show copyright, version and build info.
+.SS "Advanced options"
+.TP
+\fB\-zc\fP \fIlevels\fP
+Select the zlib compression levels.
+.br
+The behavior and the default value of this user option may change across
+different program versions. Use option \fB\-h\fP to see the details pertaining
+to your specific version.
+.TP
+\fB\-zm\fP \fIlevels\fP
+Select the zlib memory levels.
+.br
+The behavior and the default value of this user option may change across
+different program versions. Use option \fB\-h\fP to see the details pertaining
+to your specific version.
+.TP
+\fB\-zs\fP \fIstrategies\fP
+Select the zlib compression strategies.
+.br
+The behavior and the default value of this user option may change across
+different program versions. Use option \fB\-h\fP to see the details pertaining
+to your specific version.
+.TP
+\fB\-zw\fP \fIwindow size\fP
+Select the zlib window size (32k,16k,8k,4k,2k,1k,512,256).
+.br
+The window size can be specified either in bytes (e.g. 16384) or kilobytes
+(e.g. 16k).
+.TP
+\fB\-f\fP \fIfilters\fP
+Select the PNG delta filters.
+.br
+The behavior and the default value of this user option may change across
+different program versions. The filter values 0, 1, 2, 3, 4 correspond to
+the PNG standard filters (\fINone\fP, \fILeft\fP, \fIUp\fP, \fIAverage\fP
+and \fIPaeth\fP, respectively). The other values are used to specify adaptive
+filtering. Use option \fB\-h\fP to see the details pertaining to your specific
+version.
+.TP
+\fB\-nb\fP
+Do not apply bit depth reduction.
+.TP
+\fB\-nc\fP
+Do not apply color type reduction.
+.TP
+\fB\-np\fP
+Do not apply palette reduction.
+.TP
+\fB\-nz\fP
+Do not perform IDAT recompression (also disable reductions).
+.TP
+\fB\-fix\fP
+Enable error recovery.
+.TP
+\fB\-force\fP
+Write a new output file, even if it is larger than the input file.
+.TP
+\fB\-full\fP
+Produce a full report on IDAT.
+This option might slow down the trials.
+.TP
+\fB\-log\fP \fIfile\fP
+Append log messages to \fIfile\fP.
+.TP
+\fB\-preserve\fP
+Preserve file attributes (time stamps, file access rights, etc.) where
+applicable.
+.TP
+\fB\-simulate\fP
+Run in simulation mode: perform the trials, but do not create output files.
+.TP
+\fB\-\-\fP
+Stop option switch parsing
+.SS "Notes"
+The option names are case-insensitive and can be abbreviated.
+Any abbreviation must uniquely identify the full option name and must be no
+shorter than two letters, unless one letter is explicitly permitted. For
+example, \fB\-quiet\fP can be abbreviated as \fB\-q\fP or \fB\-qu\fP, while
+\fB\-preserve\fP can be abbreviated as \fB\-pr\fP but not as \fB\-p\fP.
+.P
+Some options may have arguments that follow the option name, with or without
+a whitespace used as a separator; e.g.
+.IP
+\fCoptipng \-i1 \-o3 file.png  <=>  optipng \-i 1 \-o 3 file.png\fP
+.P
+Range arguments are cummulative; e.g.
+.IP
+\fC\-f0 \-f3\-5  <=>  \-f0,3\-5\fP
+.br
+\fC\-zs0 \-zs1 \-zs2\-3  <=>  \-zs0,1,2,3  <=>  \-zs0\-3\fP
+.P
+The zlib window size is automatically set to a minimum that does not affect the
+compression ratio.
+.P
+The output file will have all IDAT in a single chunk, even if no recompression
+is performed.
+.P
+Extremely exhaustive searches are not generally recommended.
+.SH EXAMPLES
+.TP
+\fCoptipng file.png\fP
+.TP
+\fCoptipng \-o5 file.png\fP
+.TP
+\fCoptipng \-o7 file.png\fP
+.TP
+\fCoptipng \-i1 \-o7 \-v \-full \-sim experiment.png \-log experiment.log\fP
+.SH AUTHOR
+\fBOptiPNG\fP is written and maintained by Cosmin Truta.
+.PP
+This manual page was originally written by Nelson A. de Oliveira for the Debian
+project. It was later corrected and updated by Cosmin Truta, and is now part of
+the \fBOptiPNG\fP distribution.

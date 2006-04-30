@@ -23,14 +23,14 @@ CDEBUG = $(CDEBUG) -N
 LDEBUG = $(LDEBUG) -N
 !endif
 
-# -X- turn on dependency generation in the object file
-# -w  set all warnings on
 # -O2 optimize for speed
-# -Z  global optimization
-CFLAGS = -O2 -Z -X- -w -I$(ZDIR) -I$(PNGDIR) $(CDEBUG)
+# -d  merge duplicate strings
+# -k- turn off standard stack frame
+# -w  display all warnings
+CFLAGS = -O2 -d -k- -w $(CDEBUG)
 
 # -M  generate map file
-LDFLAGS = -M -L$(ZDIR) $(LDEBUG)
+LDFLAGS = -M $(LDEBUG)
 
 LIBNAME = pngxtern.lib
 
@@ -61,7 +61,7 @@ LIBOBJS = \
 all: $(LIBNAME)
 
 .c.obj:
-	$(CC) -c $(CFLAGS) $<
+	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $<
 
 pngxread.obj: pngxread.c pngxtern.h
 pngxrbmp.obj: pngxrbmp.c pngxtern.h

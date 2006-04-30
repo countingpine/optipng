@@ -7,10 +7,13 @@
 CC = cl
 LD = link
 AR = lib
-CFLAGS  = -nologo -MD -O2 -W3 -I..\zlib -I..\libpng
+CFLAGS  = -nologo -MD -O2 -W3
 LDFLAGS = -nologo
 ARFLAGS = -nologo
 RM = del
+
+ZDIR   = ..\zlib
+PNGDIR = ..\libpng
 
 #uncomment next to put error messages in a file
 #ERRFILE= >> pngerrs.log
@@ -27,7 +30,7 @@ pngxtern.lib: $(OBJS)
 	$(AR) $(ARFLAGS) -out:$@ $(OBJS) $(ERRFILE)
 
 .c.obj:
-	$(CC) -c $(CFLAGS) $< $(ERRFILE)
+	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $< $(ERRFILE)
 
 pngxread.obj: pngxread.c pngxtern.h
 pngxrbmp.obj: pngxrbmp.c pngxtern.h

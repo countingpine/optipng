@@ -1,26 +1,11 @@
 /*
  * pngxrpnm.c - libpng external I/O: PNM reader.
- * Copyright (C) 2001-2005 Cosmin Truta.
+ * Copyright (C) 2001-2006 Cosmin Truta.
  */
 
 #include "pngxtern.h"
 #include "pnm/pnmio.h"
 #include <ctype.h>
-
-
-#if (defined __STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-#ifndef STDC99
-#define STDC99
-#endif
-#endif
-
-#if defined STDC99 || defined __GNUC__
-typedef unsigned long long ulonglong;
-#elif defined WIN32 || defined _WIN32 || defined __WIN32__
-typedef unsigned __int64 ulonglong;
-#else
-#error Cannot define ulonglong
-#endif
 
 
 static /* PRIVATE */ png_structp pngx_err_ptr = NULL;
@@ -146,14 +131,13 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *fp)
          {
             for (j = k = 0; k < pnmsample_size * pnminfo.width; ++j, k+=2)
             {
-               unsigned int b = pnmrow[j];
+               png_uint_32 b = pnmrow[j];
                if (b > pnminfo.maxval)
                {
                   b = pnminfo.maxval;
                   pnmoverflow = 1;
                }
-               b = (unsigned int)
-                  (((ulonglong)b * 65535U + pnminfo.maxval/2) / pnminfo.maxval);
+               b = (b * 65535U + pnminfo.maxval/2) / pnminfo.maxval;
                row_pointers[i][k] = (png_byte)(b / 256);
                row_pointers[i][k + 1] = (png_byte)(b % 256);
             }

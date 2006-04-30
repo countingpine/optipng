@@ -15,15 +15,15 @@ zlib
     - available at: http://www.zlib.net/
 
 libpng
-  * version: 1.2.8-optipng
-  * changes: libpng/CHANGES (tip: search for "optipng")
+  * version: 1.2.10-optipng
+  * changes: libpng/CHANGES-cos
     - details: lib-diff/libpng.diff
   * derived from original
-    - version: 1.2.8
+    - version: 1.2.10
     - available at: http://www.libpng.org/pub/png/libpng.html
 
 pngxtern
-  * version: 0.2
+  * version: 0.2.1.1
   * supports: BMP, GIF and PNM (PBM, PGM, PPM)
     - BMP read support derived from bmp2png by MIYASAKA Masaru
     - GIF read support derived from giftopnm by David Koblas
