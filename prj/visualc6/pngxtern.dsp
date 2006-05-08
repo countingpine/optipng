@@ -213,7 +213,15 @@ SOURCE=..\..\lib\pngxtern\pngxrgif.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\lib\pngxtern\pngxrjpg.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\lib\pngxtern\pngxrpnm.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lib\pngxtern\pngxrtif.c
 # End Source File
 # Begin Source File
 

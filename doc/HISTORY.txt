@@ -13,6 +13,13 @@ Legend
 !! Fixed dangerous bug that might cause accidental data loss.
 
 
+Version 0.5.2    7-may-2006
+-------------
+ + Improved handling of inexact PNM-to-PNG conversions.
+ ! Fixed a typo that was breaking the build on some Unix platforms.
+   (Thanks to Aaron Reitz for the report.)
+
+
 Version 0.5.1   30-apr-2006
 -------------
 ++ Implemented bit depth reduction for palette images.

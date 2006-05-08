@@ -19,8 +19,8 @@ PNGDIR = ..\libpng
 #ERRFILE= >> pngerrs.log
 
 # Variables
-OBJS = pngxread.obj pngxrbmp.obj pngxrgif.obj pngxrpnm.obj \
-       gifread.obj pnmerror.obj pnmread.obj pnmwrite.obj
+OBJS = pngxread.obj pngxrbmp.obj pngxrgif.obj pngxrjpg.obj pngxrpnm.obj \
+       pngxrtif.obj gifread.obj pnmerror.obj pnmread.obj pnmwrite.obj
 
 # Targets
 all: pngxtern.lib
@@ -35,7 +35,9 @@ pngxtern.lib: $(OBJS)
 pngxread.obj: pngxread.c pngxtern.h
 pngxrbmp.obj: pngxrbmp.c pngxtern.h
 pngxrgif.obj: pngxrgif.c pngxtern.h gif\gifread.h
+pngxrjpg.obj: pngxrjpg.c pngxtern.h
 pngxrpnm.obj: pngxrpnm.c pngxtern.h pnm\pnmio.h
+pngxrtif.obj: pngxrtif.c pngxtern.h
 
 gifread.obj:  gif\gifread.c  gif\gifread.h
 	$(CC) -c $(CFLAGS) gif\gifread.c  $(ERRFILE)

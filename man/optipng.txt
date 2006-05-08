@@ -179,4 +179,4 @@ AUTHOR
        the Debian project. It was later corrected and updated by Cosmin Truta,
        and is now part of the OptiPNG distribution.
 
-OptiPNG Version 0.5.1            30 April 2006                      OPTIPNG(1)
+OptiPNG Version 0.5.2             7 May 2006                        OPTIPNG(1)

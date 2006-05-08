@@ -1,6 +1,6 @@
 /*
  * pngxread.c - libpng external I/O: read utility functions.
- * Copyright (C) 2001-2005 Cosmin Truta.
+ * Copyright (C) 2001-2006 Cosmin Truta.
  */
 
 #include "pngxtern.h"
@@ -45,29 +45,6 @@ pngx_sig_is_png_jng_mng(png_bytep sig, png_size_t len)
 }
 
 
-int PNGAPI
-pngx_sig_is_jpeg(png_bytep sig, png_size_t len)
-{
-   if (len < 4)
-      return -1;
-   /* FF D8 FF E0 --> JFIF */
-   /* FF D8 FF E1 --> EXIF */
-   if (sig[0] == 0xff && sig[1] == 0xd8 && sig[2] == 0xff &&
-       (sig[3] & 0xfe) == 0xe0)
-      return 1;
-   return 0;
-}
-
-
-png_charp PNGAPI
-pngx_read_jpeg(png_structp png_ptr, png_infop info_ptr, FILE *fp)
-{
-   if (&png_ptr || &info_ptr || &fp)
-      png_error(png_ptr, "JPEG read support is not implemented");
-   return "JPEG";
-}
-
-
 png_charp PNGAPI
 pngx_read_external(png_structp png_ptr, png_infop info_ptr, FILE *fp)
 {
@@ -88,6 +65,8 @@ pngx_read_external(png_structp png_ptr, png_infop info_ptr, FILE *fp)
       return pngx_read_jpeg(png_ptr, info_ptr, fp);
    if (pngx_sig_is_pnm(buf, num) > 0)
       return pngx_read_pnm(png_ptr, info_ptr, fp);
+   if (pngx_sig_is_tiff(buf, num) > 0)
+      return pngx_read_tiff(png_ptr, info_ptr, fp);
 
    png_error(png_ptr, "Unrecognized image file format");
    return NULL;

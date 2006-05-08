@@ -27,8 +27,8 @@ O=.o
 A=.a
 
 # Variables
-OBJS = pngxread$(O) pngxrbmp$(O) pngxrgif$(O) pngxrpnm$(O) \
-       gifread$(O) pnmerror$(O) pnmread$(O) pnmwrite$(O)
+OBJS = pngxread$(O) pngxrbmp$(O) pngxrgif$(O) pngxrjpg$(O) pngxrpnm$(O) \
+       pngxrtif$(O) gifread$(O) pnmerror$(O) pnmread$(O) pnmwrite$(O)
 
 # Targets
 all: pngxtern$(A)
@@ -56,7 +56,9 @@ clean:
 	$(RM_F) *$(O) pngxtern$(A)
 
 pngxread$(O): pngxread.c pngxtern.h
-pngxrbmp$(O): pngxrbmp.c pngxtern.h 
-pngxrgif$(O): pngxrgif.c pngxtern.h 
-pngxrpnm$(O): pngxrpnm.c pngxtern.h 
+pngxrbmp$(O): pngxrbmp.c pngxtern.h
+pngxrgif$(O): pngxrgif.c pngxtern.h
+pngxrjpg$(O): pngxrjpg.c pngxtern.h
+pngxrpnm$(O): pngxrpnm.c pngxtern.h
+pngxrtif$(O): pngxrtif.c pngxtern.h
 

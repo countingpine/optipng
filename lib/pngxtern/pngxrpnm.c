@@ -32,7 +32,7 @@ pngx_pnm_warning(pnm_struct *pnm_ptr, const char *msg)
 int PNGAPI
 pngx_sig_is_pnm(png_bytep sig, png_size_t len)
 {
-   if (len < 4)
+   if (len < 8)  /* the smallest valid PNM file is the 8-byte PBM (P4) */
       return -1;
    if ((sig[0] == 'P') &&
        (sig[1] >= '1') && (sig[1] <= '6') &&
@@ -51,11 +51,13 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *fp)
    unsigned int *pnmrow;
    png_uint_32 rowbytes;
    png_bytepp row_pointers;
+   unsigned int sig_bit;
    unsigned int i, j, k;
 
    pngx_err_ptr = png_ptr;
    pnm_error    = pngx_pnm_error;
    pnm_warning  = pngx_pnm_warning;
+   pnmoverflow  = 0;
 
    pnm_read_header(fp, &pnminfo);
 
@@ -64,13 +66,11 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *fp)
    else
       pnmsample_size = 1;
    if (pnminfo.maxval > 65535)
-      png_error(png_ptr, "Bit depth too big in PNM");
-   if (pnminfo.maxval > 255)
+      png_error(png_ptr, "Sample depth too big in PNM");
+   else if (pnminfo.maxval > 255)
       pnmsample_size *= 2;
-   if (65535 % pnminfo.maxval != 0)
-      png_warning(png_ptr,
-         "Possibly inexact sample conversion from PNM to PNG");
-   pnmoverflow = 0;
+   else if (pnminfo.maxval <= 0)  /* this should be checked inside pnmio */
+      png_error(png_ptr, "[internal error] Invalid sample depth in PNM");
 
    pnmrow = (unsigned int *)
       png_malloc(png_ptr, pnmsample_size * pnminfo.width * sizeof(unsigned int));
@@ -80,6 +80,20 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *fp)
       (pnminfo.maxval <= 255) ? 8 : 16,
       (pnmsample_size <= 2) ? PNG_COLOR_TYPE_GRAY : PNG_COLOR_TYPE_RGB,
       PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+
+   for (sig_bit = 16; (1U << sig_bit) - 1 > pnminfo.maxval; --sig_bit)
+      ;
+   if ((1U << sig_bit) - 1 != pnminfo.maxval)
+      png_warning(png_ptr,
+         "Possibly inexact sample conversion from PNM to PNG");
+   else if (sig_bit != 8 && sig_bit != 16
+            && (pnmsample_size > 1 || 8 % sig_bit != 0))
+   {
+      png_color_8 sbit;
+      sbit.red = sbit.green = sbit.blue = sbit.gray = (png_byte)sig_bit;
+      sbit.alpha = 0;
+      png_set_sBIT(png_ptr, info_ptr, &sbit);
+   }
 
    rowbytes = png_get_rowbytes(png_ptr, info_ptr);
    row_pointers = (png_bytepp)

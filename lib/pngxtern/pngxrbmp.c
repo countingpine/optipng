@@ -93,16 +93,14 @@
 static unsigned int
 bmp_get_word(png_bytep ptr)
 {
-   return
-      (unsigned int)ptr[0] + ((unsigned int)ptr[1] << 8);
+   return (unsigned int)ptr[0] + ((unsigned int)ptr[1] << 8);
 }
 
 static png_uint_32
 bmp_get_dword(png_bytep ptr)
 {
-   return
-      ((png_uint_32)ptr[0])       + ((png_uint_32)ptr[1] << 8) +
-      ((png_uint_32)ptr[2] << 16) + ((png_uint_32)ptr[3] << 24);
+   return ((png_uint_32)ptr[0])       + ((png_uint_32)ptr[1] << 8) +
+          ((png_uint_32)ptr[2] << 16) + ((png_uint_32)ptr[3] << 24);
 }
 
 
@@ -112,7 +110,7 @@ bmp_get_dword(png_bytep ptr)
 int PNGAPI
 pngx_sig_is_bmp(png_bytep sig, png_size_t len)
 {
-   if (len < 2)
+   if (len <= 4)
       return -1;
    return (bmp_get_word(sig) == BMP_SIGNATURE);
 }

@@ -1,4 +1,4 @@
-OptiPNG 0.5.1: Advanced PNG optimizer.
+OptiPNG 0.5.2: Advanced PNG optimizer.
 Copyright (C) 2001-2006 Cosmin Truta.
 
 This program is open-source software. See LICENSE for more details.

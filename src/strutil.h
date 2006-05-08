@@ -157,18 +157,6 @@ int string_prefix_cmp(const char *str, const char *prefix, size_t minlen);
 int string_prefix_case_cmp(const char *str, const char *prefix, size_t minlen);
 
 
-/**
- * Skips the leading space characters.
- * The function returns the first non-space character in str.
- ** C++ ALERT
- * The following prototypes should be declared in C++:
- *  char *string_skip_spaces(char *str);
- *  const char *string_skip_spaces(const char *str);
- **/
-char *string_skip_spaces(const char *str);
-char *string_break_if(const char *str, int (*char_predicate)(int));
-
-
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif

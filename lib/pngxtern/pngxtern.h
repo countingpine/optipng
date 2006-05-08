@@ -62,6 +62,12 @@ extern PNG_EXPORT(int, pngx_sig_is_pnm)
 extern PNG_EXPORT(png_charp,pngx_read_pnm)
    PNGARG((png_structp png_ptr, png_infop info_ptr, FILE *fp));
 
+/** TIFF **/
+extern PNG_EXPORT(int, pngx_sig_is_tiff)
+   PNGARG((png_bytep sig, png_size_t len));
+extern PNG_EXPORT(png_charp,pngx_read_tiff)
+   PNGARG((png_structp png_ptr, png_infop info_ptr, FILE *fp));
+
 
 /** Utilities **/
 extern PNG_EXPORT(png_voidp, pngx_zmalloc)

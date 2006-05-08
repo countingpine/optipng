@@ -36,7 +36,7 @@ int string_case_cmp(const char *str1, const char *str2)
         ch1 = toupper(*str1++);
         ch2 = toupper(*str2++);
         if (ch1 != ch2)
-            return c1 - ch2;
+            return ch1 - ch2;
         if (ch1 == 0)  /* no need to check if ch2 == 0 */
             return 0;
     }
@@ -64,7 +64,7 @@ int string_num_case_cmp(const char *str1, const char *str2, size_t num)
         ch1 = toupper(*str1++);
         ch2 = toupper(*str2++);
         if (ch1 != ch2)
-            return c1 - ch2;
+            return ch1 - ch2;
         if (ch1 == 0)  /* no need to check if ch2 == 0 */
             return 0;
     }

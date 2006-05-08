@@ -44,6 +44,11 @@ typedef int bitset_t;
     ((_set) |=  (1 << BITSET_SIZE))
 
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /**
  * Counts the number of elements in a bitset.
  * If there is no overflow, the function returns the number of '1' bits.
@@ -110,6 +115,11 @@ int bitset_parse(const wchar_t *text, bitset_t *out_bitset);
 char *bitset_deparse(bitset_t set, char *text_buf, size_t text_buf_size);
 #if 0
 wchar_t *bitset_deparse(bitset_t set, wchar_t *text_buf, size_t text_buf_size);
+#endif
+
+
+#ifdef __cplusplus
+}  /* extern "C" */
 #endif
 
 
