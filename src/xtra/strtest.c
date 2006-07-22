@@ -26,6 +26,8 @@ static void help(void)
         "\tstring_case_cmp, string_num_case_cmp,\n"
         "\tstring_lower, string_upper,\n"
         "\tstring_prefix_cmp, string_prefix_case_cmp\n"
+        "\tstring_prefix_min_cmp, string_prefix_min_case_cmp\n"
+        "\tstring_suffix_cmp, string_suffix_case_cmp\n"
     );
     exit(EXIT_FAILURE);
 }
@@ -83,10 +85,24 @@ static void test_string_prefix_cmp(void)
         printf("Enter minimum length: ");
         gets(buf3);
         sscanf(buf3, "%u", &min_len);
-        printf("string_prefix_cmp(\"%s\", \"%s\", %d) = %d\n",
-            buf1, buf2, min_len, string_prefix_cmp(buf1, buf2, min_len));
-        printf("string_prefix_case_cmp(\"%s\", \"%s\", %d) = %d\n",
-            buf1, buf2, min_len, string_prefix_case_cmp(buf1, buf2, min_len));
+        printf("string_prefix_cmp(\"%s\", \"%s\") = %d\n",
+            buf1, buf2,
+            string_prefix_cmp(buf1, buf2));
+        printf("string_prefix_case_cmp(\"%s\", \"%s\") = %d\n",
+            buf1, buf2,
+            string_prefix_case_cmp(buf1, buf2));
+        printf("string_prefix_min_cmp(\"%s\", \"%s\", %d) = %d\n",
+            buf1, buf2, min_len,
+            string_prefix_min_cmp(buf1, buf2, min_len));
+        printf("string_prefix_min_case_cmp(\"%s\", \"%s\", %d) = %d\n",
+            buf1, buf2, min_len,
+            string_prefix_min_case_cmp(buf1, buf2, min_len));
+        printf("string_suffix_cmp(\"%s\", \"%s\") = %d\n",
+            buf1, buf2,
+            string_suffix_cmp(buf1, buf2));
+        printf("string_suffix_case_cmp(\"%s\", \"%s\") = %d\n",
+            buf1, buf2,
+            string_suffix_case_cmp(buf1, buf2));
     }
 }
 
@@ -107,7 +123,11 @@ int main(int argc, char *argv[])
           || strcmp(routine, "string_upper") == 0)
         test_string_lower_upper();
     else if (strcmp(routine, "string_prefix_cmp") == 0
-          || strcmp(routine, "string_prefix_case_cmp") == 0)
+          || strcmp(routine, "string_prefix_case_cmp") == 0
+          || strcmp(routine, "string_prefix_min_cmp") == 0
+          || strcmp(routine, "string_prefix_min_case_cmp") == 0
+          || strcmp(routine, "string_suffix_cmp") == 0
+          || strcmp(routine, "string_suffix_case_cmp") == 0)
         test_string_prefix_cmp();
     else
         help();

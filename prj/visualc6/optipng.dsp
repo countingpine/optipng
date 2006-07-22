@@ -137,11 +137,11 @@ SOURCE=..\..\src\opng.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\src\opngver.h
+SOURCE=..\..\src\osys.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\src\osys.h
+SOURCE=..\..\src\proginfo.h
 # End Source File
 # Begin Source File
 

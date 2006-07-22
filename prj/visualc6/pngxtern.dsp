@@ -201,6 +201,10 @@ SOURCE=..\..\lib\pngxtern\gif\gifread.c
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\lib\pngxtern\minitiff\minitiff.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\lib\pngxtern\pngxrbmp.c
 # End Source File
 # Begin Source File
@@ -239,6 +243,14 @@ SOURCE=..\..\lib\pngxtern\pnm\pnmread.c
 
 SOURCE=..\..\lib\pngxtern\pnm\pnmwrite.c
 # End Source File
+# Begin Source File
+
+SOURCE=..\..\lib\pngxtern\minitiff\tiffread.c
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lib\pngxtern\minitiff\tiffwrite.c
+# End Source File
 # End Group
 # Begin Group "Header Files"
 
@@ -249,11 +261,19 @@ SOURCE=..\..\lib\pngxtern\gif\gifread.h
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\lib\pngxtern\minitiff\minitiff.h
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\lib\pngxtern\pngxtern.h
 # End Source File
 # Begin Source File
 
 SOURCE=..\..\lib\pngxtern\pnm\pnmio.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\..\lib\pngxtern\minitiff\tiffdef.h
 # End Source File
 # End Group
 # End Target

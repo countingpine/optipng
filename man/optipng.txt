@@ -1,7 +1,7 @@
 OPTIPNG(1)                                                          OPTIPNG(1)
 
 NAME
-       OptiPNG  -  advanced optimization program for Portable Network Graphics
+       OptiPNG  -  Advanced optimization program for Portable Network Graphics
        (PNG)
 
 SYNOPSIS
@@ -19,8 +19,8 @@ FILES
 
        - Native format: PNG.
 
-       -  External  pixmap  formats (currently supported formats: GIF, BMP and
-       PNM).
+       -  External  pixmap  formats  (currently  supported:  GIF, BMP, PNM and
+       TIFF).
 
        OptiPNG processes each input file as follows:
 
@@ -126,40 +126,41 @@ OPTIONS
               trials.
 
        -log file
-              Append log messages to file.
+              Append  log  messages  to file.  For security reasons, file must
+              have the extension .log.
 
        -preserve
               Preserve file attributes (time stamps, file access rights, etc.)
               where applicable.
 
        -simulate
-              Run in simulation mode: perform the trials, but  do  not  create
+              Run  in  simulation  mode: perform the trials, but do not create
               output files.
 
-       --     Stop option switch parsing
+       --     Stop option switch parsing.
 
    Notes
-       The  option  names  are  case-insensitive  and can be abbreviated.  Any
+       The option names are case-insensitive  and  can  be  abbreviated.   Any
        abbreviation must uniquely identify the full option name and must be no
-       shorter  than  two  letters, unless one letter is explicitly permitted.
-       For example, -quiet can be abbreviated as -q or  -qu,  while  -preserve
+       shorter than two letters, unless one letter  is  explicitly  permitted.
+       For  example,  -quiet  can be abbreviated as -q or -qu, while -preserve
        can be abbreviated as -pr but not as -p.
 
-       Some  options  may  have arguments that follow the option name, with or
+       Some options may have arguments that follow the option  name,  with  or
        without a whitespace used as a separator; e.g.
 
               optipng -i1 -o3 file.png  <=>  optipng -i 1 -o 3 file.png
 
-       Range arguments are cummulative; e.g.
+       Range arguments are cumulative; e.g.
 
               -f0 -f3-5  <=>  -f0,3-5
               -zs0 -zs1 -zs2-3  <=>  -zs0,1,2,3  <=>  -zs0-3
 
-       The zlib window size is automatically set to a minimum  that  does  not
+       The  zlib  window  size is automatically set to a minimum that does not
        affect the compression ratio.
 
-       The output file will have all IDAT in a single chunk, even if no recom-
-       pression is performed.
+       The output files will have all IDAT in  a  single  chunk,  even  if  no
+       recompression is performed.
 
        Extremely exhaustive searches are not generally recommended.
 
@@ -172,6 +173,23 @@ EXAMPLES
 
        optipng -i1 -o7 -v -full -sim experiment.png -log experiment.log
 
+BUGS
+       Lossless  image  reductions are not completely implemented.  (This does
+       NOT affect the integrity of the output files.)  Here  are  the  missing
+       pieces:
+
+              - The color palette reductions are implemented only partially.
+              -  The  bit  depth reductions below 8, for grayscale images, are
+              not implemented yet.
+              - The gray(alpha)-to-palette reductions are not implemented yet.
+
+       BMP support is limited to uncompressed images.
+
+       TIFF support is limited to uncompressed, PNG-compatible (grayscale, RGB
+       and RGBA) images.
+
+       Metadata is not imported from the external image formats.
+
 AUTHOR
        OptiPNG is written and maintained by Cosmin Truta.
 
@@ -179,4 +197,4 @@ AUTHOR
        the Debian project. It was later corrected and updated by Cosmin Truta,
        and is now part of the OptiPNG distribution.
 
-OptiPNG Version 0.5.2             7 May 2006                        OPTIPNG(1)
+OptiPNG Version 0.5.3            23 July 2006                       OPTIPNG(1)

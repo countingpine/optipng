@@ -108,7 +108,47 @@ char *string_upper(char *str)
 /**
  * Checks if "prefix" is a prefix of "str", with case sensitivity.
  **/
-int string_prefix_cmp(const char *str, const char *prefix, size_t minlen)
+int string_prefix_cmp(const char *str, const char *prefix)
+{
+    int cs, cp;
+
+    while ((cp = *prefix++) != 0)
+    {
+        if ((cs = *str++) == 0)
+            return -1;  /* str is shorter than prefix */
+        if (cs < cp)
+            return -1;
+        if (cs > cp)
+            return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * Checks if "prefix" is a prefix of "str", without case sensitivity.
+ **/
+int string_prefix_case_cmp(const char *str, const char *prefix)
+{
+    int cs, cp;
+
+    while ((cp = toupper(*prefix++)) != 0)
+    {
+        if ((cs = toupper(*str++)) == 0)
+            return -1;  /* str is shorter than prefix */
+        if (cs < cp)
+            return -1;
+        if (cs > cp)
+            return 1;
+    }
+    return 0;
+}
+
+
+/**
+ * Checks if "prefix" is a prefix of "str", with case sensitivity.
+ **/
+int string_prefix_min_cmp(const char *str, const char *prefix, size_t minlen)
 {
     int cs, cp;
     size_t matchlen;
@@ -130,7 +170,8 @@ int string_prefix_cmp(const char *str, const char *prefix, size_t minlen)
 /**
  * Checks if "prefix" is a prefix of "str", without case sensitivity.
  **/
-int string_prefix_case_cmp(const char *str, const char *prefix, size_t minlen)
+int
+string_prefix_min_case_cmp(const char *str, const char *prefix, size_t minlen)
 {
     int cs, cp;
     size_t matchlen;
@@ -146,4 +187,34 @@ int string_prefix_case_cmp(const char *str, const char *prefix, size_t minlen)
             return (cs < cp) ? -1 : 1;  /* different characters */
     }
     return (matchlen >= minlen) ? 0 : 1;
+}
+
+
+/**
+ * Checks if "suffix" is a suffix of "str", with case sensitivity.
+ **/
+int string_suffix_cmp(const char *str, const char *suffix)
+{
+    size_t str_len, suffix_len;
+
+    str_len = strlen(str);
+    suffix_len = strlen(suffix);
+    if (str_len < suffix_len)
+        return -1;  /* str is shorter than suffix */
+    return strcmp(str + str_len - suffix_len, suffix);
+}
+
+
+/**
+ * Checks if "suffix" is a suffix of "str", without case sensitivity.
+ **/
+int string_suffix_case_cmp(const char *str, const char *suffix)
+{
+    size_t str_len, suffix_len;
+
+    str_len = strlen(str);
+    suffix_len = strlen(suffix);
+    if (str_len < suffix_len)
+        return -1;  /* str is shorter than suffix */
+    return string_case_cmp(str + str_len - suffix_len, suffix);
 }

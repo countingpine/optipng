@@ -138,23 +138,35 @@ char *string_upper(char *str);
 
 
 /**
- * Checks if "prefix" is a prefix of "str", with case sensitivity.
- * @return  0  if "prefix" is a prefix of "str", and has at least
- *             "minlen" characters; otherwise:
+ * Checks if "prefix" is a prefix of "str", with/without case sensitivity.
+ * @return  0  if "prefix" is a prefix of "str"; otherwise:
  *         -1  if "str" is lexicographically smaller than "prefix";
  *          1  if "str" is lexicographically bigger than "prefix".
  **/
-int string_prefix_cmp(const char *str, const char *prefix, size_t minlen);
+int string_prefix_cmp(const char *str, const char *prefix);
+int string_prefix_case_cmp(const char *str, const char *prefix);
 
 
 /**
- * Checks if "prefix" is a prefix of "str", without case sensitivity.
- * @return  0  if "prefix" is a prefix of "str", and has at least
+ * Checks if "prefix" is a prefix of "str", with/without case sensitivity.
+ * @return  0  if "prefix" is a prefix of "str" and has at least
  *             "minlen" characters; otherwise:
  *         -1  if "str" is lexicographically smaller than "prefix";
  *          1  if "str" is lexicographically bigger than "prefix".
  **/
-int string_prefix_case_cmp(const char *str, const char *prefix, size_t minlen);
+int string_prefix_min_cmp(const char *str, const char *prefix, size_t minlen);
+int string_prefix_min_case_cmp(const char *str, const char *prefix,
+                               size_t minlen);
+
+
+/**
+ * Checks if "suffix" is a suffix of "str", with/without case sensitivity.
+ * @return  0  if "suffix" is a suffix of "str"; otherwise:
+ *         -1  if "str" is shorter or lexicographically smaller than "suffix";
+ *          1  if "str" is lexicographically bigger than "suffix".
+ **/
+int string_suffix_cmp(const char *str, const char *suffix);
+int string_suffix_case_cmp(const char *str, const char *suffix);
 
 
 #ifdef __cplusplus

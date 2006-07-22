@@ -361,8 +361,7 @@ static int LZWGetCode(int code_size, int flag, FILE *fp)
 {
        static unsigned char    buf[280];
        static int              curbit, lastbit, done, last_byte;
-       int                     i, j, ret;
-       unsigned char           count;
+       int                     count, i, j, ret;
 
        if (flag) {
                curbit = 0;

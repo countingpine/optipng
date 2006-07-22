@@ -1,4 +1,4 @@
-OptiPNG 0.5.2: Advanced PNG optimizer.
+OptiPNG 0.5.3: Advanced PNG optimizer.
 Copyright (C) 2001-2006 Cosmin Truta.
 
 This program is open-source software. See LICENSE for more details.
@@ -9,12 +9,12 @@ Portions of this software are based in part on the work of:
   Miyasaka Masaru (BMP support)
   David Koblas (GIF support)
 
-Compiled with libpng version 1.2.10-optipng and zlib version 1.2.3-optipng
+Compiled with libpng version 1.2.12-optipng and zlib version 1.2.3-optipng
 
 Usage:
     optipng [options] files ...
 Files:
-    Image files of type: PNG, BMP, GIF or PNM
+    Image files of type: PNG, BMP, GIF, PNM or TIFF
 Basic options:
     -h, -help		show this help
     -v			verbose mode / show copyright, version and build info
@@ -50,7 +50,7 @@ Optimization level presets:
     -o7  <=>  -zc1-9 -zm8-9 -zs0-3 -f0-5	(240 trials)
 Notes:
   - The option names are case-insensitive and can be abbreviated.
-  - Range arguments are cummulative; e.g.
+  - Range arguments are cumulative; e.g.
     -f0 -f3-5  <=>  -f0,3-5
     -zs0 -zs1 -zs2-3  <=>  -zs0,1,2,3  <=>  -zs0-3
   - The libpng heuristics consist of:

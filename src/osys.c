@@ -205,3 +205,57 @@ int osys_fname_cmp(const char *name1, const char *name2)
     return strcmp(name1, name2);
 #endif
 }
+
+
+/**
+ * Reads a block of data from the specified file offset.
+ * The file-position indicator is saved and restored after reading.
+ * The file buffer is flushed before and after reading.
+ * On success, the function returns the number of bytes read.
+ * On error, it returns 0.
+ **/
+size_t osys_fread_at(FILE *stream, long offset, int whence,
+    void *block, size_t blocksize)
+{
+    fpos_t pos;
+    size_t result;
+
+    if (fflush(stream) != 0 || block == NULL || blocksize == 0
+            || fgetpos(stream, &pos) != 0)
+        return 0;
+    if (fseek(stream, offset, whence) == 0)
+        result = fread(block, 1, blocksize, stream);
+    else
+        result = 0;
+    if (fflush(stream) != 0) result = 0;
+    if (fsetpos(stream, &pos) != 0) result = 0;
+    if (fflush(stream) != 0) result = 0;
+    return result;
+}
+
+
+/**
+ * Writes a block of data at the specified file offset.
+ * The file-position indicator is saved and restored after writing.
+ * The file buffer is flushed before and after writing.
+ * On success, the function returns the number of bytes written.
+ * On error, it returns 0.
+ **/
+size_t osys_fwrite_at(FILE *stream, long offset, int whence,
+    const void *block, size_t blocksize)
+{
+    fpos_t pos;
+    size_t result;
+
+    if (fflush(stream) != 0 || block == NULL || blocksize == 0
+            || fgetpos(stream, &pos) != 0)
+        return 0;
+    if (fseek(stream, offset, whence) == 0)
+        result = fwrite(block, 1, blocksize, stream);
+    else
+        result = 0;
+    if (fflush(stream) != 0) result = 0;
+    if (fsetpos(stream, &pos) != 0) result = 0;
+    if (fflush(stream) != 0) result = 0;
+    return result;
+}

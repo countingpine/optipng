@@ -46,7 +46,10 @@ OBJS = \
 	gifread.obj  \
 	pnmerror.obj \
 	pnmread.obj  \
-	pnmwrite.obj
+	pnmwrite.obj \
+	minitiff.obj \
+	tiffread.obj \
+	tiffwrite.obj
 
 LIBOBJS = \
 	+pngxread.obj \
@@ -58,7 +61,10 @@ LIBOBJS = \
 	+gifread.obj  \
 	+pnmerror.obj \
 	+pnmread.obj  \
-	+pnmwrite.obj
+	+pnmwrite.obj \
+	+minitiff.obj \
+	+tiffread.obj \
+	+tiffwrite.obj
 
 
 ## Targets
@@ -67,16 +73,20 @@ all: $(LIBNAME)
 .c.obj:
 	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $<
 
-pngxread.obj: pngxread.c pngxtern.h
-pngxrbmp.obj: pngxrbmp.c pngxtern.h
-pngxrgif.obj: pngxrgif.c pngxtern.h gif\gifread.h
-pngxrjpg.obj: pngxrjpg.c pngxtern.h
-pngxrpnm.obj: pngxrpnm.c pngxtern.h pnm\pnmio.h
-pngxrtif.obj: pngxrtif.c pngxtern.h
-gifread.obj:  gif\gifread.c  gif\gifread.h
-pnmerror.obj: pnm\pnmerror.c pnm\pnmio.h
-pnmread.obj:  pnm\pnmread.c  pnm\pnmio.h
-pnmwrite.obj: pnm\pnmwrite.c pnm\pnmio.h
+pngxread.obj:  pngxread.c pngxtern.h
+pngxwrite.obj: pngxwrite.c pngxtern.h
+pngxrbmp.obj:  pngxrbmp.c pngxtern.h
+pngxrgif.obj:  pngxrgif.c pngxtern.h gif\gifread.h
+pngxrjpg.obj:  pngxrjpg.c pngxtern.h
+pngxrpnm.obj:  pngxrpnm.c pngxtern.h pnm\pnmio.h
+pngxrtif.obj:  pngxrtif.c pngxtern.h
+gifread.obj:   gif\gifread.c gif\gifread.h
+pnmerror.obj:  pnm\pnmerror.c pnm\pnmio.h
+pnmread.obj:   pnm\pnmread.c pnm\pnmio.h
+pnmwrite.obj:  pnm\pnmwrite.c pnm\pnmio.h
+minitiff.obj:  minitiff\minitiff.c minitiff\minitiff.h
+tiffread.obj:  minitiff\tiffread.c minitiff\minitiff.h minitiff\tiffdef.h
+tiffwrite.obj: minitiff\tiffwrite.c minitiff\minitiff.h minitiff\tiffdef.h
 
 
 $(LIBNAME): $(OBJS)

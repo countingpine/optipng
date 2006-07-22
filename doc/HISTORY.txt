@@ -8,9 +8,20 @@ Legend
    and/or speed.
  + Added or improved feature.
  - Removed feature.
- * Other modification (e.g. architectural improvements).
+ * Other modification (e.g. architectural improvement).
  ! Fixed bug.
 !! Fixed dangerous bug that might cause accidental data loss.
+
+
+Version 0.5.3   23-jul-2006
+-------------
+ + Upgraded libpng to version 1.2.12-optipng [private]
+ + Implemented basic support for TIFF (grayscale, RGB and RGBA,
+   uncompressed).
+++ Avoided the redundant trial when the search space is singular
+   (e.g. when running "optipng -o1 example.tif").
+ + Prevented accidental file corruption when using option "-log".
+ ! Fixed (again) a small typo in the online help.
 
 
 Version 0.5.2    7-may-2006

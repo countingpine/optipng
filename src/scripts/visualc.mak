@@ -33,7 +33,7 @@ $(OPTIPNG): $(OBJS) $(LIBS)
 .c.obj:
 	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR) $*.c
 
-optipng.obj  : optipng.c opngver.h opng.h cexcept.h cbitset.h osys.h strutil.h
+optipng.obj  : optipng.c proginfo.h opng.h cexcept.h cbitset.h osys.h strutil.h
 opngio.obj   : opngio.c opng.h
 opngreduc.obj: opngreduc.c opng.h
 cbitset.obj  : cbitset.c cbitset.h

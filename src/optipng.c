@@ -22,9 +22,9 @@
  **    ANSI C or ISO C compiler and library.
  **    POSIX library for enhanced functionality.
  **    zlib version 1.2.1 or newer (version 1.2.3 is bundled).
- **    libpng version 1.2.9 or newer (version 1.2.10 is bundled).
- **    pngxtern (version 0.2 is bundled).
- **    cexcept version 1.0.0 or newer (version 2.0.0 is bundled).
+ **    libpng version 1.2.9 or newer (version 1.2.12 is bundled).
+ **    pngxtern (version 0.3 is bundled).
+ **    cexcept (version 2.0.0 is bundled).
  **/
 
 #include <ctype.h>
@@ -35,7 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "opngver.h"
+#include "proginfo.h"
 #include "opng.h"
 #include "pngxtern.h"
 #include "cexcept.h"
@@ -45,8 +45,8 @@
 
 
 static const char *msg_intro =
-   OPTIPNG_NAME " " OPTIPNG_VERSION ": Advanced PNG optimizer.\n"
-   OPTIPNG_COPYRIGHT ".\n\n";
+   PROGRAM_NAME " " PROGRAM_VERSION ": " PROGRAM_DESCRIPTION ".\n"
+   PROGRAM_COPYRIGHT ".\n\n";
 
 static const char *msg_license =
    "This program is open-source software. See LICENSE for more details.\n"
@@ -64,7 +64,7 @@ static const char *msg_short_help =
    "Usage:\n"
    "    optipng [options] files ...\n"
    "Files:\n"
-   "    Image files of type: PNG, BMP, GIF or PNM\n"
+   "    Image files of type: PNG, BMP, GIF, PNM or TIFF\n"
    "Basic options:\n"
    "    -h, -help\t\tshow the advanced help\n"
    "    -v\t\t\tverbose mode / show copyright, version and build info\n"
@@ -81,7 +81,7 @@ static const char *msg_help =
    "Usage:\n"
    "    optipng [options] files ...\n"
    "Files:\n"
-   "    Image files of type: PNG, BMP, GIF or PNM\n"
+   "    Image files of type: PNG, BMP, GIF, PNM or TIFF\n"
    "Basic options:\n"
    "    -h, -help\t\tshow this help\n"
    "    -v\t\t\tverbose mode / show copyright, version and build info\n"
@@ -128,7 +128,7 @@ static const char *msg_help =
    "    -o7  <=>  -zc1-9 -zm8-9 -zs0-3 -f0-5\t(240 trials)\n"
    "Notes:\n"
    "  - The option names are case-insensitive and can be abbreviated.\n"
-   "  - Range arguments are cummulative; e.g.\n"
+   "  - Range arguments are cumulative; e.g.\n"
    "    -f0 -f3-5  <=>  -f0,3-5\n"
    "    -zs0 -zs1 -zs2-3  <=>  -zs0,1,2,3  <=>  -zs0-3\n"
    "  - The libpng heuristics consist of:\n"
@@ -152,23 +152,27 @@ static const char *msg_help =
 
 #define COMPR_LEVEL_MIN     1
 #define COMPR_LEVEL_MAX     9
-static const char *optim_compr_level_presets[OPTIM_LEVEL_MAX + 1] =
+static const char *compr_level_presets[OPTIM_LEVEL_MAX + 1] =
    { "", "", "9", "9", "9", "9", "-", "-" };
+static const char *compr_level_mask = "1-9";
 
 #define MEM_LEVEL_MIN       1
 #define MEM_LEVEL_MAX       9
-static const char *optim_mem_level_presets[OPTIM_LEVEL_MAX + 1] =
+static const char *mem_level_presets[OPTIM_LEVEL_MAX + 1] =
    { "", "", "8", "8-", "8", "8-", "8", "8-" };
+static const char *mem_level_mask = "1-9";
 
 #define STRATEGY_MIN        0
 #define STRATEGY_MAX        3
-static const char *optim_strategy_presets[OPTIM_LEVEL_MAX + 1] =
+static const char *strategy_presets[OPTIM_LEVEL_MAX + 1] =
    { "", "", "-", "-", "-", "-", "-", "-" };
+static const char *strategy_mask = "0-3";
 
 #define FILTER_MIN          0
 #define FILTER_MAX          5
-static const char *optim_filter_presets[OPTIM_LEVEL_MAX + 1] =
+static const char *filter_presets[OPTIM_LEVEL_MAX + 1] =
    { "", "", "0,5", "0,5", "-", "-", "-", "-" };
+static const char *filter_mask = "0-5";
 
 
 /** The only ancillary chunks handled by libpng and OptiPNG **/
@@ -217,13 +221,16 @@ static struct opng_info_struct
    png_uint_32 crt_row, last_row;
    int crt_ipass, last_ipass;
    png_uint_32 reductions;
+   bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
    int best_compr_level, best_mem_level, best_strategy, best_filter;
+   int num_iterations;
 } opng_info;
 
 static struct cmdline_struct
 {
    int has_files;
    int help, ver;
+   int optim_level;
    int interlace;
    int keep, quiet;
    int nb, nc, np, nz;
@@ -273,6 +280,19 @@ opng_free(void *ptr)
    /* NOT happy about the standard behavior of free()... */
    if (ptr != NULL)
       free(ptr);
+}
+
+
+/** Bitset utility - find minimum value **/
+static int
+opng_bitset_min(bitset_t set)
+{
+   unsigned int i;
+
+   for (i = 0; i < BITSET_SIZE; ++i)
+      if (BITSET_GET(set, i))
+         return i;
+   return -1;  /* empty set */
 }
 
 
@@ -516,6 +536,7 @@ static void
 opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
 {
    static int crt_chunk_is_idat;
+   static long idat_offset;
    static png_uint_32 crt_idat_crc;
    FILE *fp = (FILE *)png_get_io_ptr(png_ptr);
    int io_state = opng_get_io_state(png_ptr);
@@ -578,14 +599,22 @@ opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
     */
    switch (io_state_loc)
    {
+      case OPNG_IO_SIGNATURE:
+      {
+         /* Initialize the static local variables here. */
+         idat_offset = 0;
+         break;
+      }
       case OPNG_IO_CHUNK_HDR:
       {
          if (crt_chunk_is_idat)
          {
-            assert(opng_info.total_idat_size > 0 &&
-                   opng_info.total_idat_size <= PNG_MAX_UINT);
+            OPNG_ENSURE(opng_info.total_idat_size <= PNG_MAX_UINT,
+               "Exceedingly large IDAT size - not handled");
             if (opng_info.num_idat_chunks == 1)  /* the first */
             {
+               /* Save the current file position. */
+               idat_offset = ftell(fp);
                /* Write the concatenated IDAT's length. */
                png_save_uint_32(data, opng_info.total_idat_size);
                /* Start computing the concatenated IDAT's CRC. */
@@ -602,9 +631,30 @@ opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
          {
             /* Sanity check: */
             /* Make sure IDAT is written completely, or not at all. */
-            OPNG_ENSURE(opng_info.num_idat_chunks == 0 ||
-                        opng_info.idat_size == opng_info.total_idat_size,
+            OPNG_ENSURE(opng_info.num_idat_chunks == 0
+               || opng_info.idat_size == opng_info.total_idat_size
+               || opng_info.total_idat_size == 0,
                "Inconsistent IDAT");
+            if (idat_offset != 0)
+            {
+               /* In some instances, it is necessary to write
+                * the IDAT chunk size in a non-streamable way.
+                */
+               png_byte buf[4];
+               size_t num;
+               /* Write the IDAT CRC. */
+               png_save_uint_32(buf, crt_idat_crc);
+               num = fwrite(buf, 1, 4, fp);
+               opng_info.file_size += 4;
+               /* Seek to the IDAT header and update the length. */
+               OPNG_ENSURE(opng_info.total_idat_size == 0, "Got lost...");
+               opng_info.total_idat_size = opng_info.idat_size;
+               png_save_uint_32(buf, opng_info.idat_size);
+               num += osys_fwrite_at(fp, idat_offset, SEEK_SET, buf, 4);
+               if (num != 8)
+                  png_error(png_ptr, "Can't finalize IDAT");
+               idat_offset = 0;  /* not needed anymore */
+            }
          }
          break;
       }
@@ -618,13 +668,15 @@ opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
       {
          if (crt_chunk_is_idat)
          {
-            if (opng_info.idat_size < opng_info.total_idat_size)
+            if (opng_info.idat_size < opng_info.total_idat_size ||
+                opng_info.total_idat_size == 0)
             {
                /* No IDAT CRC unless it's the last IDAT. */
                opng_info.file_size -= 4;
                return;
             }
             png_save_uint_32(data, crt_idat_crc);
+            idat_offset = 0;  /* not needed anymore */
          }
       }
    }
@@ -1052,43 +1104,123 @@ opng_copy_png(FILE *infile, FILE *outfile)
 }
 
 
-/** IDAT minimization via brute-force trials **/
+/** Iteration initialization **/
 static void
-opng_minimize_idat(void)
+opng_init_iteration(int cmdline_set, const char *preset, const char *mask,
+   int *output_set)
 {
-   bitset_t compr_level_set = cmdline.compr_level_set;
-   bitset_t mem_level_set   = cmdline.mem_level_set;
-   bitset_t strategy_set    = cmdline.strategy_set;
-   bitset_t filter_set      = cmdline.filter_set;
-   int compr_level, mem_level, strategy, filter;
+   bitset_t set;
 
-   /* Initialize the output. */
-   opng_info.best_file_size   = opng_info.best_idat_size = PNG_MAX_UINT + 1;
-   opng_info.best_compr_level = opng_info.best_mem_level =
-      opng_info.best_strategy = opng_info.best_filter = -1;
+   *output_set = cmdline_set;
+   if (*output_set == BITSET_EMPTY || cmdline.optim_level >= 0)
+   {
+      OPNG_ENSURE(bitset_parse(preset, &set) == 0, "Invalid iteration preset");
+      *output_set |= set;
+   }
+   OPNG_ENSURE(bitset_parse(mask, &set) == 0, "Invalid iteration mask");
+   *output_set &= set;
+}
+
+
+/** Iteration initialization **/
+static void
+opng_init_iterations(void)
+{
+   bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
+   int preset_index;
+   int t1, t2;
+
+   /* Calculate preset_index here, but leave cmdline.optim_level intact,
+    * because the effect of "optipng -o2 -z... -f..." is slightly different
+    * than the effect of "optipng -z... -f..." (without "-o").
+    */
+   preset_index = cmdline.optim_level;
+   if (preset_index < 0)
+      preset_index = OPTIM_LEVEL_DEFAULT;
+   else if (preset_index > OPTIM_LEVEL_MAX)
+      preset_index = OPTIM_LEVEL_MAX;
+
+   /* Load the iteration sets from the implicit (preset) values,
+    * and also from the explicit (user-specified) values.
+    */
+   opng_init_iteration(cmdline.compr_level_set,
+      compr_level_presets[preset_index], compr_level_mask, &compr_level_set);
+   opng_init_iteration(cmdline.mem_level_set,
+      mem_level_presets[preset_index], mem_level_mask, &mem_level_set);
+   opng_init_iteration(cmdline.strategy_set,
+      strategy_presets[preset_index], strategy_mask, &strategy_set);
+   opng_init_iteration(cmdline.filter_set,
+      filter_presets[preset_index], filter_mask, &filter_set);
 
    /* Replace the empty sets with the libpng's "best guess" heuristics. */
    if (compr_level_set == BITSET_EMPTY)
-      BITSET_SET(compr_level_set, Z_BEST_COMPRESSION);  /* 9 */
+      BITSET_SET(compr_level_set, Z_BEST_COMPRESSION);  /* -zc9 */
    if (mem_level_set == BITSET_EMPTY)
       BITSET_SET(mem_level_set, 8);
    if (opng_image.bit_depth < 8 || opng_image.palette != NULL)
    {
       if (strategy_set == BITSET_EMPTY)
-         BITSET_SET(strategy_set, Z_DEFAULT_STRATEGY);  /* 0 */
+         BITSET_SET(strategy_set, Z_DEFAULT_STRATEGY);  /* -zs0 */
       if (filter_set == BITSET_EMPTY)
-         BITSET_SET(filter_set, 0);
+         BITSET_SET(filter_set, 0);  /* -f0 */
    }
    else
    {
       if (strategy_set == BITSET_EMPTY)
-         BITSET_SET(strategy_set, Z_FILTERED);          /* 1 */
+         BITSET_SET(strategy_set, Z_FILTERED);  /* -zs1 */
       if (filter_set == BITSET_EMPTY)
-         BITSET_SET(filter_set, 5);
+         BITSET_SET(filter_set, 5);  /* -f0 */
    }
+
+   /* Store the results into opng_info. */
+   opng_info.compr_level_set = compr_level_set;
+   opng_info.mem_level_set   = mem_level_set;
+   opng_info.strategy_set    = strategy_set;
+   opng_info.filter_set      = filter_set;
+   t1 = bitset_count(compr_level_set) *
+        bitset_count(strategy_set & ~(Z_HUFFMAN_ONLY | Z_RLE));
+   t2 = bitset_count(strategy_set & (Z_HUFFMAN_ONLY | Z_RLE));
+   opng_info.num_iterations = (t1 + t2) *
+        bitset_count(mem_level_set) * bitset_count(filter_set);
+
+   if (opng_info.num_iterations <= 0)
+      Throw "Invalid iteration parameters (-zc, -zm, -zs, -f)";
+}
+
+
+/** Iteration **/
+static void
+opng_iterate(void)
+{
+   bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
+   int compr_level, mem_level, strategy, filter;
+   int counter;
+
+   OPNG_ENSURE(opng_info.num_iterations > 0, "Iteration not initialized");
+   if (opng_info.num_iterations == 1 && !cmdline.simulate
+       && (cmdline.force || !opng_info.input_is_png))
+   {
+      /* If there is one single trial, it is unnecessary to run it. */
+      opng_info.best_file_size   = opng_info.best_idat_size = 0;
+      opng_info.best_compr_level = opng_bitset_min(opng_info.compr_level_set);
+      opng_info.best_mem_level   = opng_bitset_min(opng_info.mem_level_set);
+      opng_info.best_strategy    = opng_bitset_min(opng_info.strategy_set);
+      opng_info.best_filter      = opng_bitset_min(opng_info.filter_set);
+      return;
+   }
+
+   /* Prepare for the big iteration. */
+   compr_level_set = opng_info.compr_level_set;
+   mem_level_set   = opng_info.mem_level_set;
+   strategy_set    = opng_info.strategy_set;
+   filter_set      = opng_info.filter_set;
+   opng_info.best_file_size   = opng_info.best_idat_size = PNG_MAX_UINT + 1;
+   opng_info.best_compr_level = opng_info.best_mem_level =
+      opng_info.best_strategy = opng_info.best_filter = -1;
 
    /* Iterate through the "hyper-rectangle" (zc, zm, zs, f). */
    opng_printf("Trying...\n");
+   counter = 0;
    for (filter = FILTER_MIN; filter <= FILTER_MAX; ++filter)
       if (BITSET_GET(filter_set, filter))
          for (strategy = STRATEGY_MIN; strategy <= STRATEGY_MAX; ++strategy)
@@ -1115,6 +1247,7 @@ opng_minimize_idat(void)
                           mem_level >= MEM_LEVEL_MIN; --mem_level)
                         if (BITSET_GET(mem_level_set, mem_level))
                         {
+                           ++counter;
                            opng_printf(
                               "  zc = %d  zm = %d  zs = %d  f = %d\t\t",
                               compr_level, mem_level, strategy, filter);
@@ -1149,9 +1282,8 @@ opng_minimize_idat(void)
                compr_level_set = saved_level_set;
             }
 
-   /* At least one trial must have been performed. */
-   if (opng_info.best_compr_level < 0)  /* any best_ value can be tested */
-      Throw "Invalid iteration parameters (-zc, -zm, -zs, -f)";
+   OPNG_ENSURE(counter == opng_info.num_iterations,
+      "Inconsistent iteration counter");
 
    if (opng_info.best_idat_size > PNG_MAX_UINT)
       Throw "No satisfactory IDAT was found";
@@ -1166,6 +1298,7 @@ opng_optimize_png(const char *filename)
    volatile enum {none, join, recompress, create} action;    /* by cexcept */
    png_uint_32 init_file_size, init_idat_size;
    char bak_filename[FILENAME_MAX], out_filename[FILENAME_MAX];
+   long out_file_size;
    const char *volatile err_msg;
 
    opng_printf("** Processing %s\n", filename);
@@ -1198,12 +1331,15 @@ opng_optimize_png(const char *filename)
    /* If the input is not PNG, enforce full compression. */
    if (!opng_info.input_is_png)
    {
-      action = create;
-      /* Also make sure it's possible to write the output. */
-      if (osys_fname_chext(out_filename, sizeof(out_filename), filename,
-          ".png") == NULL)
-         Throw "Can't create the output file (name too long)";
-      if (osys_fname_cmp(filename, out_filename) == 0)
+      if (string_suffix_case_cmp(filename, ".png") != 0)
+      {
+         action = create;
+         /* Also make sure it's possible to write the output. */
+         if (osys_fname_chext(out_filename, sizeof(out_filename), filename,
+             ".png") == NULL)
+            Throw "Can't create the output file (name too long)";
+      }
+      else  /* special case: non-PNG file with ".png" extension */
          action = recompress;
    }
 
@@ -1277,12 +1413,21 @@ opng_optimize_png(const char *filename)
    /* Find the best parameters and see if it's worth recompressing. */
    if (action == create || action == recompress || !cmdline.nz)
    {
-      opng_minimize_idat();
-      opng_printf("\nThe best parameters are:\n"
-         "  zc = %d  zm = %d  zs = %d  f = %d\t\tIDAT size = %lu\n",
+      opng_init_iterations();
+      opng_iterate();
+      OPNG_ENSURE(opng_info.best_compr_level >= 0 &&
+                  opng_info.best_mem_level >= 0   &&
+                  opng_info.best_strategy >= 0    &&
+                  opng_info.best_filter >= 0,
+                  "Incorrect iteration results");
+      opng_printf("\nSelecting parameters:\n"
+         "  zc = %d  zm = %d  zs = %d  f = %d",
          opng_info.best_compr_level, opng_info.best_mem_level,
-         opng_info.best_strategy, opng_info.best_filter,
-         (unsigned long)opng_info.best_idat_size);
+         opng_info.best_strategy, opng_info.best_filter);
+      if (opng_info.best_idat_size != 0)  /* trials have been run */
+         opng_printf("\t\tIDAT size = %lu",
+            (unsigned long)opng_info.best_idat_size);
+      opng_printf("\n");
       if (action != create)
       {
          if (opng_info.reductions != OPNG_REDUCE_NONE)
@@ -1306,14 +1451,16 @@ opng_optimize_png(const char *filename)
       opng_printf("\n%s is already optimized.\n\n", filename);
       return;
    }
-   if (cmdline.simulate)
-   {
-      opng_printf("\nSimulation mode: %s not changed.\n\n", filename);
-      return;
-   }
 
+   out_file_size = 0;
    if (action == join || action == recompress)
    {
+      if (cmdline.simulate)
+      {
+         opng_printf("\nSimulation mode: %s not changed.\n\n", filename);
+         return;
+      }
+
       /* Rename the input to a backup name and write the output. */
       if (rename(filename, bak_filename) != 0)
          Throw "Can't back up the input file";
@@ -1322,7 +1469,7 @@ opng_optimize_png(const char *filename)
          if ((outfile = fopen(filename, "wb")) == NULL)
             Throw "Can't open the output file";
 
-         if (action == join)  /* copy in to out, collapsing IDAT */
+         if (action == join)  /* copy input to output, collapsing IDAT */
          {
             if ((infile = fopen(bak_filename, "rb")) == NULL)
                Throw "Can't reopen the input file";
@@ -1344,6 +1491,7 @@ opng_optimize_png(const char *filename)
                opng_info.best_compr_level, opng_info.best_mem_level,
                opng_info.best_strategy, opng_info.best_filter);
          }
+         out_file_size = ftell(outfile);
       }
       Catch (err_msg)
       {
@@ -1373,6 +1521,12 @@ opng_optimize_png(const char *filename)
    {
       assert(action == create);  /* this is much similar to recompression */
 
+      if (cmdline.simulate)
+      {
+         opng_printf("\nSimulation mode: %s not created.\n\n", out_filename);
+         return;
+      }
+
       /* Create a new output file whose name is in out_filename. */
       assert(out_filename[0] == filename[0]);
       opng_info.total_idat_size = opng_info.best_idat_size;
@@ -1391,6 +1545,7 @@ opng_optimize_png(const char *filename)
          opng_write_png(outfile,
             opng_info.best_compr_level, opng_info.best_mem_level,
             opng_info.best_strategy, opng_info.best_filter);
+         out_file_size = ftell(outfile);
       }
       Catch (err_msg)
       {
@@ -1404,58 +1559,20 @@ opng_optimize_png(const char *filename)
          osys_fattr_cpy(out_filename, filename);
    }
 
-   opng_printf("\nNew file size = %lu bytes (",
-      (unsigned long)opng_info.file_size);
-   opng_print_size_difference(init_file_size, opng_info.file_size, 1);
-
-   opng_printf(")\nNew IDAT size = %lu bytes",
+   opng_printf("\nNew IDAT size = %lu bytes",
       (unsigned long)opng_info.idat_size);
    if (opng_info.input_is_png)
    {
       opng_printf(" (");
       opng_print_size_difference(init_idat_size, opng_info.idat_size, 0);
-      opng_printf(")\n\n");
+      opng_printf(")");
    }
-   else
-      opng_printf("\n\n");
-}
-
-
-/** Optimization level presets **/
-static void
-opng_load_level_presets(int optim_level)
-{
-   int load_defaults;
-   bitset_t preset;
-
-   if (optim_level < 0)
-   {
-      optim_level = OPTIM_LEVEL_DEFAULT;
-      load_defaults = 1;
-   }
-   else
-      load_defaults = 0;
-
-   if (!load_defaults || cmdline.compr_level_set == BITSET_EMPTY)
-   {
-      bitset_parse(optim_compr_level_presets[optim_level], &preset);
-      cmdline.compr_level_set |= preset;
-   }
-   if (!load_defaults || cmdline.mem_level_set == BITSET_EMPTY)
-   {
-      bitset_parse(optim_mem_level_presets[optim_level], &preset);
-      cmdline.mem_level_set |= preset;
-   }
-   if (!load_defaults || cmdline.strategy_set == BITSET_EMPTY)
-   {
-      bitset_parse(optim_strategy_presets[optim_level], &preset);
-      cmdline.strategy_set |= preset;
-   }
-   if (!load_defaults || cmdline.filter_set == BITSET_EMPTY)
-   {
-      bitset_parse(optim_filter_presets[optim_level], &preset);
-      cmdline.filter_set |= preset;
-   }
+   opng_printf("\nNew file size = %lu bytes (",
+      (unsigned long)opng_info.file_size);
+   opng_print_size_difference(init_file_size, opng_info.file_size, 1);
+   opng_printf(")\n\n");
+   OPNG_ENSURE(out_file_size == (long)opng_info.file_size,
+      "Inconsistent file size");
 }
 
 
@@ -1465,13 +1582,12 @@ parse_args(int argc, char *argv[])
 {
    char *arg;
    /* char */ int cmd;
-   int stop_switch, optim_level, i;
+   int stop_switch, i;
    bitset_t set, interlace_set, optim_level_set;
 
    /* Initialize. */
    memset(&cmdline, 0, sizeof(cmdline));
-   cmdline.interlace = -1;
-   optim_level = -1;
+   cmdline.optim_level = cmdline.interlace = -1;
    interlace_set = optim_level_set = BITSET_EMPTY;
 
    /* Parse the args. */
@@ -1498,7 +1614,7 @@ parse_args(int argc, char *argv[])
       cmd = 0;
 
       if (strcmp(arg, "?") == 0 ||
-          string_prefix_cmp("help", arg, 1) == 0)
+          string_prefix_min_cmp("help", arg, 1) == 0)
       {
          cmdline.help = 1;
       }
@@ -1506,31 +1622,34 @@ parse_args(int argc, char *argv[])
       {
          cmdline.ver = 1;
       }
-      else if (string_prefix_cmp("keep", arg, 1) == 0)
+      else if (string_prefix_min_cmp("keep", arg, 1) == 0)
       {
          cmdline.keep = 1;
       }
-      else if (string_prefix_cmp("quiet", arg, 1) == 0)
+      else if (string_prefix_min_cmp("quiet", arg, 1) == 0)
       {
          cmdline.quiet = 1;
       }
-      else if (string_prefix_cmp("fix", arg, 2) == 0)
+      else if (string_prefix_min_cmp("fix", arg, 2) == 0)
       {
          cmdline.fix = 1;
       }
-      else if (string_prefix_cmp("force", arg, 2) == 0)
+      else if (string_prefix_min_cmp("force", arg, 2) == 0)
       {
          cmdline.force = 1;
       }
-      else if (string_prefix_cmp("full", arg, 2) == 0)
+      else if (string_prefix_min_cmp("full", arg, 2) == 0)
       {
          cmdline.full = 1;
       }
-      else if (string_prefix_cmp("log", arg, 2) == 0)
+      else if (string_prefix_min_cmp("log", arg, 2) == 0)
       {
          cmdline.log = 1;
          if (++i < argc && argv[i][0] != '-')
          {
+            if (string_suffix_case_cmp(argv[i], ".log") != 0)
+               Throw "To prevent accidental data corruption,"
+                     " the log file name must end with \".log\"";
             if ((global.logfile = fopen(argv[i], "a")) == NULL)  /* append */
                Throw "Can't open log file";
             argv[i][0] = 0;  /* allow process_args() to skip it */
@@ -1538,11 +1657,11 @@ parse_args(int argc, char *argv[])
          else
             Throw "Missing log file name";
       }
-      else if (string_prefix_cmp("preserve", arg, 2) == 0)
+      else if (string_prefix_min_cmp("preserve", arg, 2) == 0)
       {
          cmdline.preserve = 1;
       }
-      else if (string_prefix_cmp("simulate", arg, 2) == 0)
+      else if (string_prefix_min_cmp("simulate", arg, 2) == 0)
       {
          cmdline.simulate = 1;
       }
@@ -1617,7 +1736,7 @@ parse_args(int argc, char *argv[])
          case 'o':  /* -o: optimization level */
          {
             if (bitset_parse(arg, &set) != 0 ||
-                sscanf(arg, "%d", &optim_level) < 1)
+                sscanf(arg, "%d", &cmdline.optim_level) < 1)
                Throw /* invalid */ "optimization level";
             if (bitset_count(optim_level_set |= set) != 1)
                Throw "multiple optimization levels are not permitted";
@@ -1697,16 +1816,8 @@ parse_args(int argc, char *argv[])
    }
 
    /* Finalize. */
-   if (optim_level < 0)
-      opng_load_level_presets(-1);
-   else if (optim_level <= OPTIM_LEVEL_MIN)
+   if (cmdline.optim_level == OPTIM_LEVEL_MIN)
       cmdline.nz = 1;
-   else
-   {
-      if (optim_level > OPTIM_LEVEL_MAX)
-         optim_level = OPTIM_LEVEL_MAX;
-      opng_load_level_presets(optim_level);
-   }
    if (cmdline.nz)
       cmdline.nb = cmdline.nc = cmdline.np = 1;
 }
