@@ -13,6 +13,15 @@ Legend
 !! Fixed dangerous bug that might cause accidental data loss.
 
 
+Version 0.5.4   11-aug-2006
+-------------
+ + Added user options -out and -dir, to specify the name of
+   the output file or directory.
+   (Thanks to Alexander Lucas for the suggestion.)
+ * Added support for builds based on the system-supplied libpng.
+   (Thanks to Nelson A. de Oliveira for the valuable help.)
+
+
 Version 0.5.3   23-jul-2006
 -------------
  + Upgraded libpng to version 1.2.12-optipng [private]
@@ -63,7 +72,7 @@ Version 0.5     14-jan-2006
    (This was NOT a bug, but a "feature" that confused some users.)
  ! Fixed an RGB-to-gray reduction problem that occured under some
    specific background colors.
- + Added support for builds based on the system-supplied zlib.
+ * Added support for builds based on the system-supplied zlib.
    (Thanks to Nelson A. de Oliveira for the suggestion.)
  * Modified LICENSE.  It is now a verbatim spell of the zlib license.
 

@@ -18,12 +18,19 @@ extern "C" {
 
 
 /**
- * Copies the file mode and the time stamp of the file
- * named by destname into the file named by srcname.
- * On success, returns 0.
- * On error, sets the global variable errno and returns -1.
+ * Allocates memory safely.
+ * On success, the function returns the address of the allocated block.
+ * On error, it prints a message to stderr and aborts.
+ * If the requested block size is 0, it does nothing and returns NULL.
  **/
-int osys_fattr_cpy(const char *destname, const char *srcname);
+void *osys_malloc(size_t size);
+
+
+/**
+ * Deallocates memory safely.
+ * The function does nothing if the given pointer is NULL.
+ **/
+void osys_free(void *ptr);
 
 
 /**
@@ -32,6 +39,19 @@ int osys_fattr_cpy(const char *destname, const char *srcname);
  * On error, returns NULL.
  **/
 char *osys_fname_mkbak(char *buffer, size_t bufsize, const char *fname);
+
+
+/**
+ * Creates a file name by changing the directory of a given file name.
+ * The new directory name can be the empty string, indicating that
+ * the new file name has no directory (or is in the default directory).
+ * The directory name may or may not contain the trailing directory
+ * separator (usually '/').
+ * On success, returns buffer.
+ * On error, returns NULL.
+ **/
+char *osys_fname_chdir(char *buffer, size_t bufsize,
+    const char *oldname, const char *newdir);
 
 
 /**
@@ -76,6 +96,24 @@ size_t osys_fread_at(FILE *stream, long offset, int whence,
  **/
 size_t osys_fwrite_at(FILE *stream, long offset, int whence,
     const void *block, size_t blocksize);
+
+
+/**
+ * Copies the file mode and the time stamp of the file
+ * named by destname into the file named by srcname.
+ * On success, returns 0.
+ * On error, sets the global variable errno and returns -1.
+ **/
+int osys_fattr_copy(const char *destname, const char *srcname);
+
+
+/**
+ * Creates a new directory with the given name.
+ * If the directory is successfully created, or if it already exists,
+ * the function returns 0.
+ * Otherwise, it sets the global variable errno and returns -1.
+ **/
+int osys_dir_make(const char *dirname);
 
 
 #ifdef __cplusplus

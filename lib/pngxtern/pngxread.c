@@ -5,6 +5,8 @@
 
 #include "pngxtern.h"
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 
 
 png_charp PNGAPI
@@ -81,22 +83,9 @@ pngx_zmalloc(png_structp png_ptr, png_uint_32 size)
    if (size == 0)
       return NULL;
 
-   result = (png_voidp)calloc(size, 1);
-   if (result == NULL && (png_ptr->flags & PNG_FLAG_MALLOC_NULL_MEM_OK) == 0)
-      png_error(png_ptr, "Out of memory!");
+   result = png_malloc(png_ptr, size);
+   if (result != NULL)
+      png_memset(result, 0, (png_size_t)size);
 
    return result;
-}
-
-
-void PNGAPI
-pngx_set_interlace_type(png_structp png_ptr, png_infop info_ptr,
-   int interlace_type)
-{
-   if (png_ptr != NULL && info_ptr != NULL)
-   {
-      if (interlace_type < 0 || interlace_type >= PNG_INTERLACE_LAST)
-         png_error(png_ptr, "Unknown interlace method in IHDR");
-      info_ptr->interlace_type = (png_byte)interlace_type;
-   }
 }

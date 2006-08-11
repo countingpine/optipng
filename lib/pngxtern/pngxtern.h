@@ -11,9 +11,8 @@
 #define PNGXTERN_H
 
 
-#define PNG_INTERNAL
-
 #include "png.h"
+#include <stdio.h>
 
 
 /*
@@ -25,6 +24,11 @@
 #include <assert.h>
 #define OPNG_ASSERT(cond) assert(cond)
 #define OPNG_ASSERT_MSG(cond, msg) assert(cond)
+#endif
+
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 
@@ -73,8 +77,10 @@ extern PNG_EXPORT(png_charp,pngx_read_tiff)
 extern PNG_EXPORT(png_voidp, pngx_zmalloc)
    PNGARG((png_structp png_ptr, png_uint_32 size));
 
-extern PNG_EXPORT(void, pngx_set_interlace_type)
-   PNGARG((png_structp png_ptr, png_infop info_ptr, int interlace_type));
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif
 
 
 #endif  /* PNGXTERN_H */

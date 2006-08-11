@@ -1,4 +1,4 @@
-OptiPNG 0.5.3: Advanced PNG optimizer.
+OptiPNG 0.5.4: Advanced PNG optimizer.
 Copyright (C) 2001-2006 Cosmin Truta.
 
 This program is open-source software. See LICENSE for more details.
@@ -35,9 +35,11 @@ Advanced options:
     -fix		enable error recovery
     -force		write a new output, even if it is larger than the input
     -full		produce a full report on IDAT (might reduce speed)
-    -log <file>		log messages to <file>
     -preserve		preserve file attributes if possible
     -simulate		run in simulation mode, do not create output files
+    -out <file>		write output file to <file>
+    -dir <directory>	write output file(s) to <directory>
+    -log <file>		log messages to <file>
     --			stop option switch parsing
 Optimization level presets:
     -o0  <=>  -nz

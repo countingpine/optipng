@@ -1,9 +1,12 @@
-/*
- * osys.c - system extensions
- *
- * Copyright (C) 2003-2006 Cosmin Truta.
- * This program is open-source software.  See LICENSE for more details.
- */
+/**
+ ** osys.c
+ ** System extensions.
+ **
+ ** Copyright (C) 2003-2006 Cosmin Truta.
+ **
+ ** This software is distributed under the same licensing and warranty
+ ** terms as OptiPNG.  Please see the attached LICENSE for more info.
+ **/
 
 #if defined UNIX || defined unix
 # define OSYS_UNIX
@@ -40,10 +43,44 @@
 # define OSYS_WINDOWS
 #endif
 
-#define OSYS_FNAME_CHR_SLASH '/'
-#define OSYS_FNAME_CHR_DOT   '.'
-#define OSYS_FNAME_STR_SLASH "/"
-#define OSYS_FNAME_STR_DOT   "."
+
+#include <stddef.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#if defined OSYS_UNIX || defined OSYS_DOS || defined OSYS_OS2
+# include <sys/types.h>
+# include <sys/stat.h>
+# include <dirent.h>
+# include <utime.h>
+#endif
+#if defined OSYS_WINDOWS
+# include <windows.h>
+# include <tchar.h>
+#endif
+
+#include "osys.h"
+
+
+#if defined OSYS_DOS || defined OSYS_OS2 || defined OSYS_WINDOWS
+# define OSYS_FNAME_CHR_SLASH '\\'
+# define OSYS_FNAME_STR_SLASH "\\"
+# define OSYS_FNAME_STRLIST_SLASH "/\\"
+#else
+# define OSYS_FNAME_CHR_SLASH '/'
+# define OSYS_FNAME_STR_SLASH "/"
+# if defined __CYGWIN__
+#  define OSYS_FNAME_STRLIST_SLASH "/\\"
+# else
+#  define OSYS_FNAME_STRLIST_SLASH "/"
+# endif
+#endif
+#define OSYS_FNAME_CHR_DOT '.'
+#define OSYS_FNAME_STR_DOT "."
+#define OSYS_FNAME_CHR_QUESTION '?'
+#define OSYS_FNAME_STR_QUESTION "?"
+#define OSYS_FNAME_CHR_STAR '*'
+#define OSYS_FNAME_STR_STAR "*"
 
 #if defined OSYS_DOS || defined OSYS_OS2 || defined OSYS_WINDOWS
 # define OSYS_FNAME_IGN_CASE 1
@@ -52,79 +89,38 @@
 #endif
 
 
-#include <stddef.h>
-#include <stdio.h>
-#include <string.h>
-#ifdef OSYS_UNIX
-# include <sys/types.h>
-# include <sys/stat.h>
-# include <utime.h>
-#endif
-#ifdef OSYS_WINDOWS
-# include <windows.h>
-#endif
+/**
+ * Allocates memory safely.
+ * On success, the function returns the address of the allocated block.
+ * On error, it prints a message to stderr and aborts.
+ * If the requested block size is 0, it does nothing and returns NULL.
+ **/
+void *osys_malloc(size_t size)
+{
+    void *result;
 
-#include "osys.h"
+    if (size == 0)
+        return NULL;
+    result = malloc(size);
+    if (result == 0)
+    {
+        fprintf(stderr, "Out of memory!\n");
+        fflush(stderr);
+        abort();
+    }
+    return result;
+}
 
 
 /**
- * Copies the file mode and the time stamp of the file
- * named by destname into the file named by srcname.
- * On success, returns 0.
- * On error, sets the global variable errno and returns -1.
+ * Deallocates memory safely.
+ * The function does nothing if the given pointer is NULL.
  **/
-int osys_fattr_cpy(const char *destname, const char *srcname)
+void osys_free(void *ptr)
 {
-#if defined OSYS_UNIX
-
-    struct stat sbuf;
-    int /* mode_t */ mode;
-    struct utimbuf utbuf;
-
-    if (stat(srcname, &sbuf) != 0)
-        return -1;
-
-    mode = (int)sbuf.st_mode;
-    utbuf.actime = sbuf.st_atime;
-    utbuf.modtime = sbuf.st_mtime;
-
-    if (utime(destname, &utbuf) == 0 && chmod(destname, mode) == 0)
-        return 0;
-    else
-        return -1;
-
-#elif defined OSYS_WINDOWS
-
-    HANDLE hFile;
-    FILETIME ftLastWrite;
-    BOOL result;
-
-    hFile = CreateFile(srcname, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, 0);
-    if (hFile == INVALID_HANDLE_VALUE)
-        return -1;
-    result = GetFileTime(hFile, NULL, NULL, &ftLastWrite);
-    CloseHandle(hFile);
-    if (!result)
-        return -1;
-
-    hFile = CreateFile(destname, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, 0);
-    if (hFile == INVALID_HANDLE_VALUE)
-        return -1;
-    result = SetFileTime(hFile, NULL, NULL, &ftLastWrite);
-    CloseHandle(hFile);
-    if (!result)
-        return -1;
-
-    return 0;
-
-    /* TODO: Copy file access mode. */
-
-#else
-
-    /* Do nothing. */
-    return 0;
-
-#endif
+    /* NOT happy about the standard behavior of free()... */
+    if (ptr != NULL)
+        free(ptr);
 }
 
 
@@ -149,6 +145,49 @@ char *osys_fname_mkbak(char *buffer, size_t bufsize, const char *fname)
     return buffer;
 
 #endif
+}
+
+
+/**
+ * Creates a file name by changing the directory of a given file name.
+ * The new directory name can be the empty string, indicating that
+ * the new file name has no directory (or is in the default directory).
+ * The directory name may or may not contain the trailing directory
+ * separator (usually '/').
+ * On success, returns buffer.
+ * On error, returns NULL.
+ **/
+char *osys_fname_chdir(char *buffer, size_t bufsize,
+    const char *oldname, const char *newdir)
+{
+    const char *fname, *ptr;
+    size_t dirlen;
+
+    /* Extract file name from oldname. */
+    for (fname = oldname; ; )
+    {
+        ptr = strpbrk(fname, OSYS_FNAME_STRLIST_SLASH);
+        if (ptr == NULL)
+            break;
+        fname = ptr + 1;
+    }
+
+    /* Make sure the buffer is large enough. */
+    dirlen = strlen(newdir);
+    if (dirlen + strlen(fname) + 2 >= bufsize)
+        return NULL;  /* overflow */
+
+    /* Copy the new directory name. Also append a slash if necessary. */
+    if (dirlen > 0)
+    {
+        strcpy(buffer, newdir);
+        if (strchr(OSYS_FNAME_STRLIST_SLASH, buffer[dirlen - 1]) == NULL)
+            buffer[dirlen++] = OSYS_FNAME_CHR_SLASH;  /* append slash to dir */
+    }
+
+    /* Append the file name. */
+    strcpy(buffer + dirlen, fname);
+    return buffer;  /* success */
 }
 
 
@@ -197,7 +236,7 @@ int osys_fname_cmp(const char *name1, const char *name2)
 {
 #if OSYS_FNAME_IGN_CASE
 # ifdef OSYS_WINDOWS
-    return lstrcmpi(name1, name2);
+    return lstrcmpiA(name1, name2);
 # else
     return stricmp(name1, name2);
 # endif
@@ -258,4 +297,130 @@ size_t osys_fwrite_at(FILE *stream, long offset, int whence,
     if (fsetpos(stream, &pos) != 0) result = 0;
     if (fflush(stream) != 0) result = 0;
     return result;
+}
+
+
+/**
+ * Copies the file mode and the time stamp of the file
+ * named by destname into the file named by srcname.
+ * On success, returns 0.
+ * On error, sets the global variable errno and returns -1.
+ **/
+int osys_fattr_copy(const char *destname, const char *srcname)
+{
+#if defined OSYS_UNIX || defined OSYS_DOS || defined OSYS_OS2
+
+    struct stat sbuf;
+    int /* mode_t */ mode;
+    struct utimbuf utbuf;
+
+    if (stat(srcname, &sbuf) != 0)
+        return -1;
+
+    mode = (int)sbuf.st_mode;
+    utbuf.actime = sbuf.st_atime;
+    utbuf.modtime = sbuf.st_mtime;
+
+    if (utime(destname, &utbuf) == 0 && chmod(destname, mode) == 0)
+        return 0;
+    else
+        return -1;
+
+#elif defined OSYS_WINDOWS
+
+    HANDLE hFile;
+    FILETIME ftLastWrite;
+    BOOL result;
+
+    hFile = CreateFileA(srcname, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, 0);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return -1;
+    result = GetFileTime(hFile, NULL, NULL, &ftLastWrite);
+    CloseHandle(hFile);
+    if (!result)
+        return -1;
+
+    hFile = CreateFileA(destname, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, 0, 0);
+    if (hFile == INVALID_HANDLE_VALUE)
+        return -1;
+    result = SetFileTime(hFile, NULL, NULL, &ftLastWrite);
+    CloseHandle(hFile);
+    if (!result)
+        return -1;
+
+    return 0;
+
+    /* TODO: Copy file access mode. */
+
+#else
+
+    /* Do nothing. */
+    return 0;
+
+#endif
+}
+
+
+/**
+ * Creates a new directory with the given name.
+ * If the directory is successfully created, or if it already exists,
+ * the function returns 0.
+ * Otherwise, it sets the global variable errno and returns -1.
+ **/
+int osys_dir_make(const char *dirname)
+{
+#if defined OSYS_UNIX || defined OSYS_DOS || defined OSYS_OS2
+
+    DIR *dir;
+
+    if ((dir = opendir(dirname)) != NULL)
+    {
+        closedir(dir);
+        return 0;
+    }
+
+# if defined OSYS_DOS || defined OSYS_OS2
+    return mkdir(dirname);
+# else
+    return mkdir(dirname, 0777);
+# endif
+
+#elif defined OSYS_WINDOWS
+
+    size_t len;
+    LPCTSTR format;
+    LPTSTR wildname;
+    HANDLE hFind;
+    WIN32_FIND_DATA wfd;
+
+    len = strlen(dirname);
+    if (len == 0)  /* current directory */
+        return 0;
+
+    /* See if dirname exists: find files in (dirname + "\\*"). */
+    wildname = (LPTSTR)malloc((len + 3) * sizeof(TCHAR));
+    if (wildname == NULL)  /* out of memory */
+        return -1;
+    if (strchr(OSYS_FNAME_STRLIST_SLASH, dirname[len - 1]) == NULL)
+        format = TEXT("%hs" OSYS_FNAME_STR_SLASH OSYS_FNAME_STR_STAR);
+    else
+        format = TEXT("%hs" OSYS_FNAME_STR_STAR);
+    wsprintf(wildname, format, dirname);
+    hFind = FindFirstFile(wildname, &wfd);
+    free(wildname);
+    if (hFind != INVALID_HANDLE_VALUE)
+    {
+        FindClose(hFind);
+        return 0;
+    }
+
+    /* There is no directory, so create one now. */
+    return CreateDirectoryA(dirname, NULL) ? 0 : -1;
+
+#else
+
+    /* Do nothing. */
+    return 0;
+
+#endif
 }

@@ -1,6 +1,6 @@
 /*
  * pngxrgif.c - libpng external I/O: GIF reader.
- * Copyright (C) 2001-2005 Cosmin Truta.
+ * Copyright (C) 2001-2006 Cosmin Truta.
  */
 
 #include "pngxtern.h"
@@ -36,19 +36,19 @@ pngx_sig_is_gif(png_bytep sig, png_size_t len)
 
 static void /* PRIVATE */
 pngx_set_GIF_palette(png_structp png_ptr, png_infop info_ptr,
-   unsigned char *color_table, int num_colors)
+   unsigned char *color_table, unsigned int num_colors)
 {
    png_color palette[256];
-   int i;
+   unsigned int i;
 
-   OPNG_ASSERT(num_colors <= 256);
+   OPNG_ASSERT(color_table != NULL && num_colors <= 256);
    for (i = 0; i < num_colors; ++i)
    {
        palette[i].red   = color_table[3 * i];
        palette[i].green = color_table[3 * i + 1];
        palette[i].blue  = color_table[3 * i + 2];
    }
-   png_set_PLTE(png_ptr, info_ptr, palette, num_colors);
+   png_set_PLTE(png_ptr, info_ptr, palette, (int)num_colors);
 }
 
 
@@ -63,13 +63,13 @@ pngx_set_GIF_transparent(png_structp png_ptr, png_infop info_ptr,
    for (i = 0; i < transparent; ++i)
       trans[i] = 255;
    trans[transparent] = 0;
-   png_set_tRNS(png_ptr, info_ptr, trans, transparent + 1, NULL);
+   png_set_tRNS(png_ptr, info_ptr, trans, (int)transparent + 1, NULL);
 }
 
 
 #if 0  /* ... need to implement ... */
 static void
-pngx_gif_blah(png_structp png_ptr, png_infop info_ptr,
+pngx_set_GIF_meta(png_structp png_ptr, png_infop info_ptr,
    struct GIFImage *image, struct GIFExtension *ext)
 {
    /* If the GIF specifies an aspect ratio, turn it into a pHYs chunk. */
@@ -88,16 +88,21 @@ pngx_gif_blah(png_structp png_ptr, png_infop info_ptr,
 png_charp PNGAPI
 pngx_read_gif(png_structp png_ptr, png_infop info_ptr, FILE *fp)
 {
+   /* GIF-specific data */
    static unsigned char *buf = NULL;
-   static unsigned int bufsize = 1024;
+   const unsigned int bufsize = 1024;
    struct GIFScreen screen;
    struct GIFImage image;
    struct GIFExtension ext;
    struct GIFGraphicCtlExt graphicExt;
+   int code;
    unsigned char *colorTable;
    unsigned int numColors;
-   int multiImage;
+   unsigned int transparent;
+   unsigned int numImages;
+   /* PNG-specific data */
    png_uint_32 width, height;
+   int interlace_type;
    png_bytepp row_pointers;
    png_uint_32 i;
 
@@ -109,79 +114,77 @@ pngx_read_gif(png_structp png_ptr, png_infop info_ptr, FILE *fp)
    /* Read the GIF screen. */
    GIFReadScreen(&screen, fp);
 
-   /* Set up the PNG header. */
+   /* Allocate memory. */
    width  = screen.Width;
    height = screen.Height;
-   png_set_IHDR(png_ptr, info_ptr,
-      width, height, 8, PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE,
-      PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
-
-   /* Allocate memory. */
-   row_pointers = (png_bytepp)
-      png_malloc(png_ptr, height * sizeof(png_bytep));
+   row_pointers = (png_bytepp)png_malloc(png_ptr, height * sizeof(png_bytep));
    for (i = 0; i < height; ++i)
    {
       row_pointers[i] = (png_bytep)png_malloc(png_ptr, width);
-      memset(row_pointers[i], screen.Background, width);
+      png_memset(row_pointers[i], screen.Background, width);
    }
+   /* Use a static buffer to avoid memory leaks in case of
+    * erroneous exits from previous pngx_read_gif() calls.
+    * Do NOT use an automatic buffer because the GIF routines
+    * might call realloc() later.
+    */
    if (buf == NULL)
-      buf = (unsigned char *)malloc(bufsize);
+      buf = (unsigned char *)png_malloc(png_ptr, bufsize);
 
    GIFInitImage(&image, &screen, row_pointers);
    GIFInitExtension(&ext, &screen, buf, bufsize);
-   png_set_rows(png_ptr, info_ptr, row_pointers);
-   multiImage = 0;
-
-   /* If there is a global palette, use it, before errors appear. */
-   if (screen.GlobalColorFlag)
-      pngx_set_GIF_palette(png_ptr, info_ptr,
-         screen.GlobalColorTable, screen.GlobalNumColors);
+   transparent = (unsigned int)-1;
+   numImages   = 0;
 
    /* Iterate over the GIF file. */
-   for ( ;; )
+   for ( ; ; )
    {
-      switch (GIFReadNextBlock(&image, &ext, fp))
+      code = GIFReadNextBlock(&image, &ext, fp);
+      if (code == GIF_IMAGE)  /* ',' */
       {
-         case GIF_TERMINATOR:  /* ';' */
+         if (image.Rows != NULL)
          {
-            if (image.Rows != NULL)
-               png_error(png_ptr, "Empty GIF file");
-            return "GIF";
+            interlace_type = image.InterlaceFlag ?
+               PNG_INTERLACE_ADAM7 : PNG_INTERLACE_NONE;
+            colorTable = GIFGetColorTable(&image, &numColors);
+
+            /* Create and populate the PNG structures. */
+            png_set_IHDR(png_ptr, info_ptr,
+               width, height, 8, PNG_COLOR_TYPE_PALETTE, interlace_type,
+               PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+            png_set_rows(png_ptr, info_ptr, row_pointers);
+            pngx_set_GIF_palette(png_ptr, info_ptr, colorTable, numColors);
+            if (transparent < 256)
+               pngx_set_GIF_transparent(png_ptr, info_ptr, transparent);
+
+            /* Inform the GIF routines not to read the upcoming images. */
+            image.Rows = NULL;
          }
-         case GIF_IMAGE:       /* ',' */
-         {
-            if (image.Rows != NULL)
-            {
-               if (image.InterlaceFlag)
-                  pngx_set_interlace_type(png_ptr, info_ptr,
-                     PNG_INTERLACE_ADAM7);
-               colorTable = GIFGetColorTable(&image, &numColors);
-               if (colorTable != screen.GlobalColorTable)
-                  pngx_set_GIF_palette(png_ptr, info_ptr,
-                     colorTable, numColors);
-               image.Rows = NULL;  /* only the first image is needed */
-            }
-            else
-            {
-               if (!multiImage)
-               {
-                  png_error(png_ptr,
-                     "Multi-image/animated GIF cannot be properly converted to PNG");
-                  multiImage = 1;
-               }
-            }
-            break;
-         }
-         case GIF_EXTENSION:   /* '!' */
-         {
-            if (image.Rows != NULL && ext.Label == GIF_GRAPHICCTL)
-            {
-               GIFGetGraphicCtl(&ext, &graphicExt);
-               if (graphicExt.TransparentFlag)
-                  pngx_set_GIF_transparent(png_ptr, info_ptr,
-                     graphicExt.Transparent);
-            }
-         }
+         ++numImages;
+         if (numImages == 2)
+            png_warning(png_ptr,
+               "Multi-image/animated GIF cannot be entirely converted to PNG");
       }
+      else if (code == GIF_EXTENSION && ext.Label == GIF_GRAPHICCTL)  /* '!' */
+      {
+         GIFGetGraphicCtl(&ext, &graphicExt);
+         if (image.Rows != NULL && graphicExt.TransparentFlag)
+            if (transparent >= 256)
+               transparent = graphicExt.Transparent;
+      }
+      else if (code == GIF_TERMINATOR)  /* ';' */
+         break;
    }
+
+   png_free(png_ptr, buf);
+   buf = NULL;
+   if (image.Rows != NULL)
+      png_error(png_ptr, "No image in GIF file");
+
+   /* FIXME:
+    * Deallocate row_pointers to fix memory leak,
+    * if a png_error() occured before calling png_set_rows().
+    */
+
+   return "GIF";  /* success */
 }

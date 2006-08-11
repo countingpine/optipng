@@ -125,25 +125,33 @@ OPTIONS
        -full  Produce a full report on IDAT.  This option might slow down  the
               trials.
 
-       -log file
-              Append  log  messages  to file.  For security reasons, file must
-              have the extension .log.
-
        -preserve
               Preserve file attributes (time stamps, file access rights, etc.)
               where applicable.
 
        -simulate
-              Run  in  simulation  mode: perform the trials, but do not create
+              Run in simulation mode: perform the trials, but  do  not  create
               output files.
+
+       -out file
+              Write  output  file  to file.  The command line must not contain
+              more than one input file.
+
+       -dir directory
+              Write output file(s) to directory.
+
+       -log file
+              Log messages to file.  For safety reasons, file  must  have  the
+              extension .log.
 
        --     Stop option switch parsing.
 
    Notes
-       The option names are case-insensitive  and  can  be  abbreviated.   Any
+       The  option  names  are  case-insensitive  and can be abbreviated.  Any
        abbreviation must uniquely identify the full option name and must be no
-       shorter than two letters, unless one letter  is  explicitly  permitted.
-       For  example,  -quiet  can be abbreviated as -q or -qu, while -preserve
+       shorter  than  two  letters, unless one letter is explicitly permitted.
+       For example, -quiet can be abbreviated as -q  or  -qu  (because  -q  is
+       explicitly  mentioned in the list of possible options), while -preserve
        can be abbreviated as -pr but not as -p.
 
        Some options may have arguments that follow the option  name,  with  or
@@ -197,4 +205,4 @@ AUTHOR
        the Debian project. It was later corrected and updated by Cosmin Truta,
        and is now part of the OptiPNG distribution.
 
-OptiPNG Version 0.5.3            23 July 2006                       OPTIPNG(1)
+OptiPNG Version 0.5.4           11 August 2006                      OPTIPNG(1)

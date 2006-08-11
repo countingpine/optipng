@@ -13,12 +13,7 @@
 
 
 #define PNG_INTERNAL
-
 #include "png.h"
-
-#if !(PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
-#error This program requires the BUNDLED libpng version 1.2.x-optipng
-#endif
 
 
 #define OPNG_IO_STATE_SUPPORTED          /* implemented here */

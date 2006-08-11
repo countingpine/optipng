@@ -2,21 +2,31 @@
 OptiPNG - TODO list
 ===================
 
-- Text chunk optimization: smart selection between tEXt and zTXt.
-  Similarly for iTXt.
+- Compression improvements:
+  Use zlib's deflateTune().
+  Use 7zip's powerful deflation engine.
+  (This is not possible with libpng, so a custom encoder is needed.)
+
+- Speed improvements:
+  Avoid repeated filtering when trying a filter value more than once.
+  (This is not possible with libpng, so a custom encoder is needed.)
+
+- Text chunk optimization:
+  Smart selection between tEXt and zTXt.  Similarly for iTXt.
 
 - More file recovery features.
 
 - Optimization of an entire directory, with and without subdirectory
   recursion:
     optipng dir/
-    optipng -r dir/
+    optipng -recurse dir/
   Currently it is possible to optimize an entire directory as:
     optipng dir/*.png
   provided that file globbing works, either at the shell level (Unix)
   or in the program (linked with wildargs.obj on Windows).
 
-- Improved support for reading external image formats (e.g. TIFF).
+- Improved support for reading external image formats
+  (e.g. compressed BMP; compressed TIFF; other image formats).
 
 - Support for conversion to a desired bit depth and color type:
     optipng -b16 -c6 ...

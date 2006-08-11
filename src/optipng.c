@@ -113,9 +113,11 @@ static const char *msg_help =
    "    -fix\t\tenable error recovery\n"
    "    -force\t\twrite a new output, even if it is larger than the input\n"
    "    -full\t\tproduce a full report on IDAT (might reduce speed)\n"
-   "    -log <file>\t\tlog messages to <file>\n"
    "    -preserve\t\tpreserve file attributes if possible\n"
    "    -simulate\t\trun in simulation mode, do not create output files\n"
+   "    -out <file>\t\twrite output file to <file>\n"
+   "    -dir <directory>\twrite output file(s) to <directory>\n"
+   "    -log <file>\t\tlog messages to <file>\n"
    "    --\t\t\tstop option switch parsing\n"
    "Optimization level presets:\n"
    "    -o0  <=>  -nz\n"
@@ -228,15 +230,17 @@ static struct opng_info_struct
 
 static struct cmdline_struct
 {
-   int has_files;
+   unsigned int file_count;
    int help, ver;
    int optim_level;
    int interlace;
    int keep, quiet;
    int nb, nc, np, nz;
-   int fix, force, full, log, preserve, simulate;
+   int fix, force, full;
+   int preserve, simulate;
    bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
    int window_bits;
+   char *out_name, *dir_name, *log_name;
 } cmdline;
 
 static struct global_struct
@@ -257,33 +261,7 @@ static png_infop read_end_info_ptr, write_end_info_ptr;
    { if (!(cond)) opng_internal_error(msg); }
 
 
-/** This should never execute **/
-static void
-opng_internal_error(const char *msg)
-{
-   const char *fmt = "[internal error] %s\n";
-
-   fprintf(stderr, fmt, msg);
-   if (global.logfile != NULL)
-   {
-      fprintf(global.logfile, fmt, msg);
-      fflush(global.logfile);
-   }
-   abort();
-}
-
-
-/** Safe memory deallocation **/
-static void
-opng_free(void *ptr)
-{
-   /* NOT happy about the standard behavior of free()... */
-   if (ptr != NULL)
-      free(ptr);
-}
-
-
-/** Bitset utility - find minimum value **/
+/** Bitset utility (find minimum value) **/
 static int
 opng_bitset_min(bitset_t set)
 {
@@ -368,7 +346,7 @@ opng_print_image_info(int print_dim, int print_type, int print_interlaced)
 static void
 opng_print_percentage(png_uint_32 num, png_uint_32 denom)
 {
-   if (num <= PNG_MAX_UINT / 100 && denom <= PNG_MAX_UINT / 100)
+   if (num <= PNG_UINT_31_MAX / 100 && denom <= PNG_UINT_31_MAX / 100)
       num *= 100;
    else
       denom = (denom + 50) / 100;  /* reduce precision to prevent overflow */
@@ -439,7 +417,7 @@ opng_progress(void)
       /* This code is accurate only if opng_image.height >= 8 */
       height = opng_image.height;
       crt_row = opng_info.crt_row;
-      if (height > PNG_MAX_UINT / 64)
+      if (height > PNG_UINT_31_MAX / 64)
       {
          /* Reduce precision to prevent overflow. */
          height  = (height + 32) / 64;
@@ -467,7 +445,23 @@ opng_progress(void)
 }
 
 
-/** User error handling **/
+/** Internal error handler -- this should never execute **/
+static void
+opng_internal_error(png_const_charp msg)
+{
+   const char *fmt = "[internal error] %s\n";
+
+   fprintf(stderr, fmt, msg);
+   if (global.logfile != NULL)
+   {
+      fprintf(global.logfile, fmt, msg);
+      fflush(global.logfile);
+   }
+   abort();
+}
+
+
+/** Error handler **/
 static void
 opng_error(png_structp png_ptr, png_const_charp msg)
 {
@@ -479,7 +473,7 @@ opng_error(png_structp png_ptr, png_const_charp msg)
 }
 
 
-/** User warning **/
+/** Warning handler **/
 static void
 opng_warning(png_structp png_ptr, png_const_charp msg)
 {
@@ -505,7 +499,7 @@ opng_handle_as_unknown(png_bytep chunk_type)
 }
 
 
-/** User chunk keeping **/
+/** Chunk handler **/
 static void
 opng_set_keep_unknown_chunk(png_structp png_ptr, png_bytep chunk_type)
 {
@@ -519,7 +513,7 @@ opng_set_keep_unknown_chunk(png_structp png_ptr, png_bytep chunk_type)
 }
 
 
-/** User progress meter **/
+/** Progress meter **/
 static void
 opng_read_write_status(png_structp png_ptr, png_uint_32 row_num, int pass)
 {
@@ -531,7 +525,7 @@ opng_read_write_status(png_structp png_ptr, png_uint_32 row_num, int pass)
 }
 
 
-/** User reading/writing of data **/
+/** I/O handler **/
 static void
 opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
 {
@@ -577,7 +571,7 @@ opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
          {
             if ((opng_info.idat_size > opng_info.best_idat_size
                  && !cmdline.full)
-                || opng_info.idat_size > PNG_MAX_UINT)
+                || opng_info.idat_size > PNG_UINT_31_MAX)
                Throw NULL;
          }
       }
@@ -609,7 +603,7 @@ opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
       {
          if (crt_chunk_is_idat)
          {
-            OPNG_ENSURE(opng_info.total_idat_size <= PNG_MAX_UINT,
+            OPNG_ENSURE(opng_info.total_idat_size <= PNG_UINT_31_MAX,
                "Exceedingly large IDAT size - not handled");
             if (opng_info.num_idat_chunks == 1)  /* the first */
             {
@@ -793,14 +787,14 @@ opng_free_image_info(void)
       return;  /* nothing to clean up */
 
    for (i = 0; i < opng_image.height; ++i)
-      opng_free(opng_image.row_pointers[i]);
-   opng_free(opng_image.row_pointers);
-   opng_free(opng_image.palette);
-   opng_free(opng_image.hist);
-   opng_free(opng_image.trans);
+      osys_free(opng_image.row_pointers[i]);
+   osys_free(opng_image.row_pointers);
+   osys_free(opng_image.palette);
+   osys_free(opng_image.hist);
+   osys_free(opng_image.trans);
    for (j = 0; j < opng_image.num_unknowns; ++j)
-      opng_free(opng_image.unknowns[j].data);
-   opng_free(opng_image.unknowns);
+      osys_free(opng_image.unknowns[j].data);
+   osys_free(opng_image.unknowns);
    /* DO NOT deallocate background_ptr, sig_bit_ptr, trans_values_ptr.
     * See the above complaint about an inconsistency in libpng.
     */
@@ -922,7 +916,7 @@ opng_write_png(FILE *outfile,
    int compression_level, int memory_level,
    int compression_strategy, int filter)
 {
-   const char *volatile err_msg;  /* volatile is required by cexcept */
+   const char * volatile err_msg;  /* volatile is required by cexcept */
 
    static int filter_table[FILTER_MAX + 1] =
    {
@@ -1014,7 +1008,7 @@ opng_write_png(FILE *outfile,
    Catch (err_msg)
    {
       /* Set IDAT size to invalid. */
-      opng_info.idat_size = PNG_MAX_UINT + 1;
+      opng_info.idat_size = PNG_UINT_31_MAX + 1;
    }
 
    png_debug(0, "Destroying data structs\n");
@@ -1033,7 +1027,7 @@ opng_copy_png(FILE *infile, FILE *outfile)
    volatile png_bytep buf;  /* volatile is required by cexcept */
    png_uint_32 buf_size, length;
    png_byte chunk_name[4];
-   const char *volatile err_msg;
+   const char * volatile err_msg;
 
    assert(infile != NULL && outfile != NULL);
 
@@ -1054,18 +1048,19 @@ opng_copy_png(FILE *infile, FILE *outfile)
       /* Copy the signature. */
       if (fread(buf, 8, 1, infile) != 1 || png_sig_cmp(buf, 0, 8) != 0)
          Throw "Not a PNG file";
-#ifdef PNG_INTERNAL
+#if (PNG_LIBPNG_VER_MAJOR * 10 + PNG_LIBPNG_VER_MINOR >= 14) || \
+    (PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
       png_write_sig(write_ptr);
 #else
       /* Some systems that do not allow PNG_INTERNAL
        * require a replacement for png_write_sig().
        */
       {
-         static const png_byte png_signature[8] =
+         static png_byte png_signature[8] =
             {137, 80, 78, 71, 13, 10, 26, 10};
          extern void /* PRIVATE */
          opng_priv_read_write(png_structp png_ptr,
-            png_bytep data, png_size_t length)
+            png_bytep data, png_size_t length);
          opng_priv_read_write(write_ptr, png_signature, 8);
       }
 #endif
@@ -1080,7 +1075,7 @@ opng_copy_png(FILE *infile, FILE *outfile)
          if (length > buf_size)
          {
             /* Don't use realloc() because it is slower. */
-            opng_free(buf);
+            osys_free(buf);
             buf_size = length;
             buf = (png_bytep)png_malloc(write_ptr, buf_size);
          }
@@ -1096,7 +1091,7 @@ opng_copy_png(FILE *infile, FILE *outfile)
    {
    }
 
-   opng_free(buf);
+   osys_free(buf);
    png_destroy_write_struct(&write_ptr, NULL);
 
    if (err_msg != NULL)
@@ -1214,7 +1209,7 @@ opng_iterate(void)
    mem_level_set   = opng_info.mem_level_set;
    strategy_set    = opng_info.strategy_set;
    filter_set      = opng_info.filter_set;
-   opng_info.best_file_size   = opng_info.best_idat_size = PNG_MAX_UINT + 1;
+   opng_info.best_file_size   = opng_info.best_idat_size = PNG_UINT_31_MAX + 1;
    opng_info.best_compr_level = opng_info.best_mem_level =
       opng_info.best_strategy = opng_info.best_filter = -1;
 
@@ -1253,7 +1248,7 @@ opng_iterate(void)
                               compr_level, mem_level, strategy, filter);
                            opng_write_png(NULL,
                               compr_level, mem_level, strategy, filter);
-                           if (opng_info.idat_size > PNG_MAX_UINT)
+                           if (opng_info.idat_size > PNG_UINT_31_MAX)
                            {
                               opng_printf("IDAT too big");
                               if (cmdline.ver)  /* verbose */
@@ -1285,32 +1280,33 @@ opng_iterate(void)
    OPNG_ENSURE(counter == opng_info.num_iterations,
       "Inconsistent iteration counter");
 
-   if (opng_info.best_idat_size > PNG_MAX_UINT)
+   if (opng_info.best_idat_size > PNG_UINT_31_MAX)
       Throw "No satisfactory IDAT was found";
 }
 
 
 /** PNG file optimization **/
 static void
-opng_optimize_png(const char *filename)
+opng_optimize_png(const char *infile_name)
 {
    static FILE *infile, *outfile;        /* static or volatile is required */
    volatile enum {none, join, recompress, create} action;    /* by cexcept */
    png_uint_32 init_file_size, init_idat_size;
-   char bak_filename[FILENAME_MAX], out_filename[FILENAME_MAX];
-   long out_file_size;
-   const char *volatile err_msg;
+   char bakfile_name[FILENAME_MAX], outfile_name[FILENAME_MAX];
+   long outfile_size;
+   const char * volatile err_msg;
 
-   opng_printf("** Processing %s\n", filename);
+   opng_printf("** Processing: %s\n", infile_name);
 
    memset(&opng_info, 0, sizeof(opng_info));
+   outfile_name[0] = '\0';
    action = none;
    if (cmdline.force)
       action = recompress;
 
    err_msg = NULL;  /* prepare for error handling */
 
-   if ((infile = fopen(filename, "rb")) == NULL)
+   if ((infile = fopen(infile_name, "rb")) == NULL)
       Throw "Can't open the input file";
    Try
    {
@@ -1331,11 +1327,11 @@ opng_optimize_png(const char *filename)
    /* If the input is not PNG, enforce full compression. */
    if (!opng_info.input_is_png)
    {
-      if (string_suffix_case_cmp(filename, ".png") != 0)
+      if (string_suffix_case_cmp(infile_name, ".png") != 0)
       {
          action = create;
          /* Also make sure it's possible to write the output. */
-         if (osys_fname_chext(out_filename, sizeof(out_filename), filename,
+         if (osys_fname_chext(outfile_name, sizeof(outfile_name), infile_name,
              ".png") == NULL)
             Throw "Can't create the output file (name too long)";
       }
@@ -1343,30 +1339,57 @@ opng_optimize_png(const char *filename)
          action = recompress;
    }
 
+   /* Handle user-defined output file or directory name (if any). */
+   if (cmdline.out_name != NULL)
+   {
+      if (sizeof(outfile_name) <= strlen(cmdline.out_name))
+         Throw "Output file name too long... can't process";
+      if (osys_fname_cmp(outfile_name, cmdline.out_name) != 0)
+         action = create;
+      strcpy(outfile_name, cmdline.out_name);
+   }
+   if (cmdline.dir_name != NULL)
+   {
+      const char *tmp_name;
+      if (outfile_name[0] != 0)
+      {
+         /* Use bakfile_name as a temporary buffer. */
+         strcpy(bakfile_name, outfile_name);
+         tmp_name = bakfile_name;
+      }
+      else
+         tmp_name = infile_name;
+      if (osys_fname_chdir(outfile_name, sizeof(outfile_name), tmp_name,
+          cmdline.dir_name) == NULL)
+         Throw "Can't create the output file (name too long)";
+      if (osys_fname_cmp(tmp_name, outfile_name) != 0)
+         action = create;
+   }
+
    /* Initialize the backup file name. */
    if (action == create)
    {
-      if (!cmdline.simulate && (outfile = fopen(out_filename, "rb")) != NULL)
+      if (!cmdline.simulate && (outfile = fopen(outfile_name, "rb")) != NULL)
       {
          fclose(outfile);
          if (!cmdline.keep)
             Throw "The output file exists, try backing it up (use -keep)";
       }
-      if (osys_fname_mkbak(bak_filename, sizeof(bak_filename),
-                           out_filename) == NULL)
-         bak_filename[0] = '\0';
+      if (osys_fname_mkbak(bakfile_name, sizeof(bakfile_name),
+                           outfile_name) == NULL)
+         bakfile_name[0] = '\0';
    }
    else
    {
-      if (osys_fname_mkbak(bak_filename, sizeof(bak_filename),
-                           filename) == NULL)
-         bak_filename[0] = '\0';
+      if (osys_fname_mkbak(bakfile_name, sizeof(bakfile_name),
+                           infile_name) == NULL)
+         bakfile_name[0] = '\0';
    }
    /* Check the name even in simulation mode, to ensure a uniform behavior. */
-   if (bak_filename[0] == '\0')
+   if (bakfile_name[0] == '\0')
       Throw "Can't create backup file (name too long)";
    /* Check the backup file before engaging into lengthy trials. */
-   if (!cmdline.simulate && (outfile = fopen(bak_filename, "rb")) != NULL)
+   if (!cmdline.simulate && (outfile = fopen(bakfile_name, "rb")) != NULL)
    {
       fclose(outfile);
       Throw "The backup file name exists, can't prepare the output file";
@@ -1401,11 +1424,11 @@ opng_optimize_png(const char *filename)
 
    init_file_size = opng_info.file_size;
    init_idat_size = opng_info.total_idat_size = opng_info.idat_size;
-   opng_printf("Input file size = %lu bytes\n",
-      (unsigned long)init_file_size);
    if (opng_info.input_is_png)
       opng_printf("Input IDAT size = %lu bytes\n",
          (unsigned long)init_idat_size);
+   opng_printf("Input file size = %lu bytes\n",
+      (unsigned long)init_file_size);
 
    if (opng_info.input_is_png && cmdline.nz && action == recompress)
       opng_printf("!Warning: IDAT recompression is enforced.\n");
@@ -1448,30 +1471,30 @@ opng_optimize_png(const char *filename)
 
    if (action == none)
    {
-      opng_printf("\n%s is already optimized.\n\n", filename);
+      opng_printf("\n%s is already optimized.\n\n", infile_name);
       return;
    }
 
-   out_file_size = 0;
+   outfile_size = 0;
    if (action == join || action == recompress)
    {
       if (cmdline.simulate)
       {
-         opng_printf("\nSimulation mode: %s not changed.\n\n", filename);
+         opng_printf("\nSimulation mode: %s not changed.\n\n", infile_name);
          return;
       }
 
       /* Rename the input to a backup name and write the output. */
-      if (rename(filename, bak_filename) != 0)
+      if (rename(infile_name, bakfile_name) != 0)
          Throw "Can't back up the input file";
       Try
       {
-         if ((outfile = fopen(filename, "wb")) == NULL)
+         if ((outfile = fopen(infile_name, "wb")) == NULL)
             Throw "Can't open the output file";
 
          if (action == join)  /* copy input to output, collapsing IDAT */
          {
-            if ((infile = fopen(bak_filename, "rb")) == NULL)
+            if ((infile = fopen(bakfile_name, "rb")) == NULL)
                Throw "Can't reopen the input file";
             Try
             {
@@ -1491,14 +1514,15 @@ opng_optimize_png(const char *filename)
                opng_info.best_compr_level, opng_info.best_mem_level,
                opng_info.best_strategy, opng_info.best_filter);
          }
-         out_file_size = ftell(outfile);
+         outfile_size = ftell(outfile);
       }
       Catch (err_msg)
       {
          if (outfile != NULL)
             fclose(outfile);
          /* Restore the original input file and rethrow the exception. */
-         if (remove(filename) != 0 || rename(bak_filename, filename) != 0)
+         if (remove(infile_name) != 0 ||
+             rename(bakfile_name, infile_name) != 0)
             opng_printf("!Warning: "
                "The original file was not recovered from the backup.\n");
          Throw err_msg;  /* rethrow */
@@ -1508,44 +1532,46 @@ opng_optimize_png(const char *filename)
       if (cmdline.preserve)
       {
          /* Preserve the file attributes, if possible. */
-         osys_fattr_cpy(filename, bak_filename);
+         osys_fattr_copy(infile_name, bakfile_name);
       }
       if (!cmdline.keep)
       {
          /* Remove the old file. */
-         if (remove(bak_filename) != 0)
+         if (remove(bakfile_name) != 0)
             Throw "Can't remove the backup file";
       }
    }
    else
    {
-      assert(action == create);  /* this is much similar to recompression */
+      assert(action == create);
 
       if (cmdline.simulate)
       {
-         opng_printf("\nSimulation mode: %s not created.\n\n", out_filename);
+         opng_printf("\nSimulation mode: %s not created.\n\n", outfile_name);
          return;
       }
 
-      /* Create a new output file whose name is in out_filename. */
-      assert(out_filename[0] == filename[0]);
+      /* Create a new output file whose name is in outfile_name. */
+      opng_printf("\nOutput file: %s\n", outfile_name);
       opng_info.total_idat_size = opng_info.best_idat_size;
-      if ((outfile = fopen(out_filename, "rb")) != NULL)
+      if ((outfile = fopen(outfile_name, "rb")) != NULL)
       {
          fclose(outfile);
          assert(cmdline.keep);
          /* Rename the input to a backup name and write the output. */
-         if (rename(out_filename, bak_filename) != 0)
+         if (rename(outfile_name, bakfile_name) != 0)
             Throw "Can't back up the output file";
       }
-      if ((outfile = fopen(out_filename, "wb")) == NULL)
+      if (cmdline.dir_name != NULL)
+         osys_dir_make(cmdline.dir_name);
+      if ((outfile = fopen(outfile_name, "wb")) == NULL)
          Throw "Can't open the output file";
       Try
       {
          opng_write_png(outfile,
             opng_info.best_compr_level, opng_info.best_mem_level,
             opng_info.best_strategy, opng_info.best_filter);
-         out_file_size = ftell(outfile);
+         outfile_size = ftell(outfile);
       }
       Catch (err_msg)
       {
@@ -1556,10 +1582,10 @@ opng_optimize_png(const char *filename)
          Throw err_msg;  /* rethrow */
 
       if (cmdline.preserve)
-         osys_fattr_cpy(out_filename, filename);
+         osys_fattr_copy(outfile_name, infile_name);
    }
 
-   opng_printf("\nNew IDAT size = %lu bytes",
+   opng_printf("\nOutput IDAT size = %lu bytes",
       (unsigned long)opng_info.idat_size);
    if (opng_info.input_is_png)
    {
@@ -1567,11 +1593,11 @@ opng_optimize_png(const char *filename)
       opng_print_size_difference(init_idat_size, opng_info.idat_size, 0);
       opng_printf(")");
    }
-   opng_printf("\nNew file size = %lu bytes (",
+   opng_printf("\nOutput file size = %lu bytes (",
       (unsigned long)opng_info.file_size);
    opng_print_size_difference(init_file_size, opng_info.file_size, 1);
    opng_printf(")\n\n");
-   OPNG_ENSURE(out_file_size == (long)opng_info.file_size,
+   OPNG_ENSURE(outfile_size == (long)opng_info.file_size,
       "Inconsistent file size");
 }
 
@@ -1580,7 +1606,7 @@ opng_optimize_png(const char *filename)
 static void
 parse_args(int argc, char *argv[])
 {
-   char *arg;
+   char *arg, *dash_arg;
    /* char */ int cmd;
    int stop_switch, i;
    bitset_t set, interlace_set, optim_level_set;
@@ -1594,17 +1620,17 @@ parse_args(int argc, char *argv[])
    stop_switch = 0;
    for (i = 1; i < argc; ++i)
    {
-      arg = argv[i];
+      arg = dash_arg = argv[i];
       if (arg[0] != '-' || stop_switch)
       {
-         cmdline.has_files = 1;
+         ++cmdline.file_count;
          continue;
       }
 
+      argv[i] = NULL;  /* allow process_args() to skip it */
       do ++arg;  /* multiple dashes are as good as one */
          while (arg[0] == '-');
-      argv[i][0] = 0;  /* allow process_args() to skip it */
-      if (argv[i][1] == '-' && arg[0] == 0)
+      if (arg[0] == 0 && dash_arg[0] == '-')  /* -- */
       {
          stop_switch = 1;
          continue;
@@ -1642,21 +1668,6 @@ parse_args(int argc, char *argv[])
       {
          cmdline.full = 1;
       }
-      else if (string_prefix_min_cmp("log", arg, 2) == 0)
-      {
-         cmdline.log = 1;
-         if (++i < argc && argv[i][0] != '-')
-         {
-            if (string_suffix_case_cmp(argv[i], ".log") != 0)
-               Throw "To prevent accidental data corruption,"
-                     " the log file name must end with \".log\"";
-            if ((global.logfile = fopen(argv[i], "a")) == NULL)  /* append */
-               Throw "Can't open log file";
-            argv[i][0] = 0;  /* allow process_args() to skip it */
-         }
-         else
-            Throw "Missing log file name";
-      }
       else if (string_prefix_min_cmp("preserve", arg, 2) == 0)
       {
          cmdline.preserve = 1;
@@ -1665,10 +1676,32 @@ parse_args(int argc, char *argv[])
       {
          cmdline.simulate = 1;
       }
-      else if (strcmp(arg, "no") == 0)
+      else if (string_prefix_min_cmp("out", arg, 2) == 0)
       {
-         opng_printf("!Warning: Option -no is deprecated. Use -simulate.\n\n");
-         cmdline.simulate = 1;
+         if (cmdline.out_name != NULL)
+            Throw "duplicate output file name";
+         if (++i >= argc)
+            Throw "missing output file name";
+         cmdline.out_name = argv[i];
+         argv[i] = NULL;  /* allow process_args() to skip it */
+      }
+      else if (string_prefix_min_cmp("dir", arg, 2) == 0)
+      {
+         if (cmdline.dir_name != NULL)
+            Throw "duplicate output dir name";
+         if (++i >= argc)
+            Throw "missing output dir name";
+         cmdline.dir_name = argv[i];
+         argv[i] = NULL;  /* allow process_args() to skip it */
+      }
+      else if (string_prefix_min_cmp("log", arg, 2) == 0)
+      {
+         if (cmdline.log_name != NULL)
+            Throw "duplicate log file name";
+         if (++i >= argc)
+            Throw "missing log file name";
+         cmdline.log_name = argv[i];
+         argv[i] = NULL;  /* allow process_args() to skip it */
       }
       else if (strcmp(arg, "nb") == 0)
       {
@@ -1699,16 +1732,16 @@ parse_args(int argc, char *argv[])
             if (arg[0] == 0)
             {
                if (++i < argc)
+               {
                   arg = argv[i];
+                  argv[i] = NULL;  /* allow process_args() to skip it */
+               }
                else
                   arg = "[NULL]";  /* trigger an error later */
             }
          }
          else  /* unrecognized option */
-         {
-            argv[i][0] = '-';  /* put back the '-' */
-            Throw argv[i];
-         }
+            Throw dash_arg;
       }
 
       /* The numeric/bitset parameter is now in arg. */
@@ -1811,11 +1844,16 @@ parse_args(int argc, char *argv[])
             OPNG_ENSURE(cmd == 0, "Error in command-line parsing");
          }
       }
-
-      arg[0] = 0;  /* allow process_args() to skip it */
    }
 
    /* Finalize. */
+   if (cmdline.out_name != NULL)
+   {
+      if (cmdline.file_count > 1)
+         Throw "-out requires a single input file";
+      if (cmdline.dir_name != NULL)
+         Throw "-out and -dir are mutually exclusive";
+   }
    if (cmdline.optim_level == OPTIM_LEVEL_MIN)
       cmdline.nz = 1;
    if (cmdline.nz)
@@ -1832,7 +1870,7 @@ process_args(int argc, char *argv[])
 
    for (i = 1; i < argc; ++i)
    {
-      if (argv[i][0] == 0)
+      if (argv[i] == NULL || argv[i][0] == 0)
          continue;
       Try
       {
@@ -1856,17 +1894,32 @@ main(int argc, char *argv[])
    int result;
 
    memset(&global, 0, sizeof(global));
+
    Try
    {
       parse_args(argc, argv);
    }
    Catch (err_msg)
    {
-      if (err_msg[0] < 'A' || err_msg[0] > 'Z')  /* special exception */
-         opng_printf("!Invalid option: %s\n", err_msg);
-      else
-         opng_printf("!%s\n", err_msg);
+      fprintf(stderr, "Invalid option: %s\n", err_msg);
       return EXIT_FAILURE;
+   }
+
+   if (cmdline.log_name != NULL)
+   {
+      if (string_suffix_case_cmp(cmdline.log_name, ".log") != 0)
+      {
+         fprintf(stderr, "To prevent accidental data corruption,"
+                         " the log file name must end with \".log\"\n");
+         /* ... but ".LOG", ".Log", etc. are allowed. */
+         return EXIT_FAILURE;
+      }
+      if ((global.logfile = fopen(cmdline.log_name, "a")) == NULL)
+      {
+         fprintf(stderr, "Can't open log file: %s\n", cmdline.log_name);
+         return EXIT_FAILURE;
+      }
+      /* logfile is open, so use opng_printf() from now on. */
    }
 
    result = EXIT_SUCCESS;
@@ -1881,17 +1934,17 @@ main(int argc, char *argv[])
    if (cmdline.help)
    {
       opng_printf(msg_help);
-      if (cmdline.has_files)
+      if (cmdline.file_count > 0)
       {
          opng_printf("!Warning: No files processed.\n");
-         cmdline.has_files = 0;
+         cmdline.file_count = 0;
          result = EXIT_FAILURE;
       }
    }
-   else if (!cmdline.ver && !cmdline.has_files)
+   else if (!cmdline.ver && cmdline.file_count == 0)
       opng_printf(msg_short_help);
 
-   if (cmdline.has_files)
+   if (cmdline.file_count > 0)
    {
       process_args(argc, argv);
       if (global.err_count > 0)

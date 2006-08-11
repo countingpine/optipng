@@ -1,7 +1,10 @@
 # Makefile for OptiPNG
-# Unix (generic) -- if you have gcc, use gcc.mak instead
+# Generic Unix, standards-compliant (POSIX, FHS, etc.)
 #
-# Usage: make -f scripts/unix.mak
+# If you wish to use the system-supplied libraries
+# (e.g. for security purposes), use unix-secure.mak.
+#
+# Usage: make -f scripts/unix-std.mak
 
 
 prefix=/usr/local

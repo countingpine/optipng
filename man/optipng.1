@@ -1,4 +1,4 @@
-.TH OPTIPNG 1 "23 July 2006" "OptiPNG Version 0.5.3"
+.TH OPTIPNG 1 "11 August 2006" "OptiPNG Version 0.5.4"
 .SH NAME
 .B OptiPNG
 \- Advanced optimization program for
@@ -147,10 +147,6 @@ Write a new output file, even if it is larger than the input file.
 Produce a full report on IDAT.
 This option might slow down the trials.
 .TP
-\fB\-log\fP \fIfile\fP
-Append log messages to \fIfile\fP.
-For security reasons, \fIfile\fP must have the extension \fC.log\fP.
-.TP
 \fB\-preserve\fP
 Preserve file attributes (time stamps, file access rights, etc.) where
 applicable.
@@ -158,13 +154,25 @@ applicable.
 \fB\-simulate\fP
 Run in simulation mode: perform the trials, but do not create output files.
 .TP
+\fB\-out\fP \fIfile\fP
+Write output file to \fIfile\fP.
+The command line must not contain more than one input file.
+.TP
+\fB\-dir\fP \fIdirectory\fP
+Write output file(s) to \fIdirectory\fP.
+.TP
+\fB\-log\fP \fIfile\fP
+Log messages to \fIfile\fP.
+For safety reasons, \fIfile\fP must have the extension \fC.log\fP.
+.TP
 \fB\-\-\fP
 Stop option switch parsing.
 .SS "Notes"
 The option names are case-insensitive and can be abbreviated.
 Any abbreviation must uniquely identify the full option name and must be no
 shorter than two letters, unless one letter is explicitly permitted. For
-example, \fB\-quiet\fP can be abbreviated as \fB\-q\fP or \fB\-qu\fP, while
+example, \fB\-quiet\fP can be abbreviated as \fB\-q\fP or \fB\-qu\fP (because
+\fB\-q\fP is explicitly mentioned in the list of possible options), while
 \fB\-preserve\fP can be abbreviated as \fB\-pr\fP but not as \fB\-p\fP.
 .P
 Some options may have arguments that follow the option name, with or without

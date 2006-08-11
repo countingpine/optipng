@@ -159,7 +159,7 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *fp)
       }
    }
 
-   free(pnmrow);
+   png_free(png_ptr, pnmrow);
 
    if (pnmoverflow)
       png_warning(png_ptr, "Overflow in PNM pixels");

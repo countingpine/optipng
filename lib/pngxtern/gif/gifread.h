@@ -1,7 +1,7 @@
 /*
  * gifread.c
  *
- * Copyright (C) 2003 Cosmin Truta.
+ * Copyright (C) 2003, 2006 Cosmin Truta.
  * This code was derived from "giftopnm.c" by David Koblas, and
  * it is distributed under the same copyright and warranty terms.
  *
@@ -100,10 +100,10 @@ struct GIFGraphicCtlExt
 
 /**
  * Reads the GIF screen and the global color table.
- * @param screen  (out)  a screen structure.
- * @param fp      (in)   a file.
+ * @param screen  (out)     a screen structure.
+ * @param stream  (in out)  a file stream.
  **/
-void GIFReadScreen(struct GIFScreen *screen, FILE *fp);
+void GIFReadScreen(struct GIFScreen *screen, FILE *stream);
 
 /**
  * Initializes the GIF image structure.
@@ -111,8 +111,8 @@ void GIFReadScreen(struct GIFScreen *screen, FILE *fp);
  * @param screen  (in)   a screen structure.
  * @param rows    (in)   an array of rows; can be NULL.
  **/
-void GIFInitImage(struct GIFImage *image,
-    struct GIFScreen *screen, unsigned char **rows);
+void GIFInitImage(struct GIFImage *image, struct GIFScreen *screen,
+                  unsigned char **rows);
 
 /**
  * Initializes the GIF extension structure.
@@ -122,18 +122,18 @@ void GIFInitImage(struct GIFImage *image,
  *                       can be NULL.
  * @param size    (in)   the size of <code>buf</code>.
  **/
-void GIFInitExtension(struct GIFExtension *ext,
-    struct GIFScreen *screen, unsigned char *buf, unsigned int size);
+void GIFInitExtension(struct GIFExtension *ext, struct GIFScreen *screen,
+                      unsigned char *buf, unsigned int size);
 
 /**
  * Reads the next GIF block (image or extension) structure.
- * @param image  (out)  an image structure; can be NULL.
- * @param ext    (out)  an extension structure; can be NULL.
- * @param fp     (in)   a file.
- * @return              the block code.
+ * @param image   (out)     an image structure; can be NULL.
+ * @param ext     (out)     an extension structure; can be NULL.
+ * @param stream  (in out)  a file stream.
+ * @return                  the block code.
  **/
-int GIFReadNextBlock(struct GIFImage *image,
-    struct GIFExtension *ext, FILE *fp);
+int GIFReadNextBlock(struct GIFImage *image, struct GIFExtension *ext,
+                     FILE *stream);
 
 /**
  * Constructs a GIF graphic control extension structure
@@ -142,7 +142,7 @@ int GIFReadNextBlock(struct GIFImage *image,
  * @param graphicExt  (out)  a graphic control extension structure.
  **/
 void GIFGetGraphicCtl(struct GIFExtension *ext,
-    struct GIFGraphicCtlExt *graphicExt);
+                      struct GIFGraphicCtlExt *graphicExt);
 
 /**
  * Returns the (local or global) color table.
@@ -153,7 +153,7 @@ void GIFGetGraphicCtl(struct GIFExtension *ext,
  * @return                  the color table.
  **/
 unsigned char *GIFGetColorTable(struct GIFImage *image,
-    unsigned int *numColors);
+                                unsigned int *numColors);
 
 
 /**
@@ -161,18 +161,6 @@ unsigned char *GIFGetColorTable(struct GIFImage *image,
  **/
 extern void (*GIFError)(const char *msg);
 extern void (*GIFWarning)(const char *msg);
-
-
-/**
- * Debug support.
- **/
-#ifndef GIF_TRACE
-#if 0
-#define GIF_TRACE(args) printf args
-#else
-#define GIF_TRACE(args) ((void)0)
-#endif
-#endif
 
 
 #endif  /* GIFREAD_H */

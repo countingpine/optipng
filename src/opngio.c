@@ -43,6 +43,11 @@ opng_priv_read_crt_len, opng_priv_write_crt_len;
 static const char *opng_priv_errmsg =
    "Internal OPNGIO error: incorrect use of the opng_ functions";
 
+/* It's better to avoid direct access to the libpng internal structures,
+ * considering that optipng.c doesn't currently use opng_get_io_chunk_name().
+ */
+#define OPNGIO_NO_CHUNK_NAME
+
 
 /* Update io_state and call the user-supplied read/write functions. */
 void /* PRIVATE */
@@ -103,7 +108,9 @@ opng_priv_read_write(png_structp png_ptr, png_bytep data, png_size_t length)
          if (*io_crt_chunk_hdr_len_ptr < 8)
             return;
          *io_crt_len_ptr = png_get_uint_32(io_crt_chunk_hdr);
+#ifndef OPNGIO_NO_CHUNK_NAME
          memcpy(png_ptr->chunk_name, io_crt_chunk_hdr + 4, 4);
+#endif
       }
       else  /* io_state_op == OPNG_IO_WRITING */
       {
@@ -112,7 +119,9 @@ opng_priv_read_write(png_structp png_ptr, png_bytep data, png_size_t length)
          if (*io_crt_chunk_hdr_len_ptr < 8)
             return;
          *io_crt_len_ptr = png_get_uint_32(io_crt_chunk_hdr);
+#ifndef OPNGIO_NO_CHUNK_NAME
          memcpy(png_ptr->chunk_name, io_crt_chunk_hdr + 4, 4);
+#endif
          io_data_fn(png_ptr, io_crt_chunk_hdr, 8);
       }
       *io_crt_chunk_hdr_len_ptr = 0;
@@ -164,7 +173,13 @@ opng_get_io_state(png_structp png_ptr)
 png_bytep PNGAPI
 opng_get_io_chunk_name(png_structp png_ptr)
 {
+#ifndef OPNGIO_NO_CHUNK_NAME
    return png_ptr->chunk_name;
+#else
+   png_error(png_ptr,
+      "[internal error] opng_get_io_chunk_name() is not implemented");
+   return NULL;
+#endif
 }
 
 

@@ -7,11 +7,11 @@
  *
  * CAUTION:
  * This code is intended to be integrated into libpng.  It is written
- * as if it were a part of libpng, which means that it accesses the
- * internal libpng structures directly.
- * IT IS IMPORTANT TO LINK THIS CODE STATICALLY to libpng, in order to
- * avoid possible data corruption problems that may occur when linking
- * to a dynamic libpng build, due to a possible png_struct mismatch.
+ * as if it were a part of libpng, therefore it accesses the internal
+ * libpng structures directly.
+ * IT IS IMPORTANT to either link this code to libpng statically, or
+ * to maintain the libpng ABI thoroughly.  Otherwise, the internal
+ * verification routine will halt the execution.
  *
  * When integrating this code into libpng, it is recommended to rename
  * this source file to "pngreduc.c", and to rename the var/func/macro
@@ -41,6 +41,64 @@ __error__ "OPNG_IMAGE_REDUCTIONS_SUPPORTED" requires support for bKGD,hIST,sBIT,
 #endif
 
 
+#if !(PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
+/*
+ * First and foremost, make sure that direct access to libpng's
+ * internal structures does not break the consistency of data.
+ * (This function should go away when opngreduc.c is incorporated
+ * into libpng.)
+ */
+static void
+_opng_validate_internal(png_structp png_ptr, png_infop info_ptr)
+{
+   png_uint_32 width, height;
+   int bit_depth, color_type;
+   png_color_16p background;
+   png_uint_16p hist;
+   png_color_8p sig_bit;
+   png_bytep trans;
+   int num_trans;
+   png_color_16p trans_values;
+
+   /* Check info_ptr. */
+   if (png_get_valid(png_ptr, info_ptr, (png_uint_32)-1) != info_ptr->valid)
+      goto error;
+   png_get_IHDR(png_ptr, info_ptr,
+      &width, &height, &bit_depth, &color_type, NULL, NULL, NULL);
+   /* This particular check should never fail, but we're doing it anyway. */
+   if (width != info_ptr->width || height != info_ptr->height ||
+       bit_depth != info_ptr->bit_depth || color_type != info_ptr->color_type)
+      goto error;
+   if (png_get_rows(png_ptr, info_ptr) != info_ptr->row_pointers)
+      goto error;
+   if (png_get_bKGD(png_ptr, info_ptr, &background))
+      if (background != &info_ptr->background)
+         goto error;
+   if (png_get_hIST(png_ptr, info_ptr, &hist))
+      if (hist != info_ptr->hist)
+         goto error;
+   if (png_get_sBIT(png_ptr, info_ptr, &sig_bit))
+      if (sig_bit != &info_ptr->sig_bit)
+         goto error;
+   if (png_get_tRNS(png_ptr, info_ptr, &trans, &num_trans, &trans_values))
+      if (trans != info_ptr->trans || num_trans != info_ptr->num_trans ||
+          trans_values != &info_ptr->trans_values)
+         goto error;
+
+   /* Also check png_ptr.  (It's not much, but we're doing what we can.) */
+   if (png_get_compression_buffer_size(png_ptr) != png_ptr->zbuf_size)
+      goto error;
+
+   /* Everything looks okay. */
+   return;
+
+error:
+   png_error(png_ptr,
+      "[internal error] Inconsistent internal structures (incorrect libpng?)");
+}
+#endif
+
+
 /*
  * Indicate whether the image information is valid.
  * (The image information is valid if the critical information
@@ -60,12 +118,18 @@ opng_validate_image(png_structp png_ptr, png_infop info_ptr)
    if (png_ptr == NULL || info_ptr == NULL)
       return 0;
 
+#if !(PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
+   _opng_validate_internal(png_ptr, info_ptr);
+#endif
+
    /* Validate IHDR. */
    /* We cannot use png_get_IHDR() because it issues an error. */
    if (info_ptr->width > 0 && info_ptr->height > 0)
    {
-      if (info_ptr->width > PNG_MAX_UINT || info_ptr->height > PNG_MAX_UINT ||
-          info_ptr->bit_depth == 0 || info_ptr->bit_depth > 16 ||
+      if (info_ptr->width > PNG_UINT_31_MAX ||
+          info_ptr->height > PNG_UINT_31_MAX ||
+          info_ptr->bit_depth == 0 ||
+          info_ptr->bit_depth > 16 ||
           info_ptr->interlace_type >= PNG_INTERLACE_LAST)
           /* need more checks... */
          error = 1;

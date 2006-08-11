@@ -23,7 +23,7 @@ libpng
     - available at: http://www.libpng.org/pub/png/libpng.html
 
 pngxtern
-  * version: 0.3
+  * version: 0.3.1
   * supports: BMP, GIF, PNM (PBM, PGM, PPM) and TIFF
     - BMP read support derived from bmp2png by MIYASAKA Masaru
     - GIF read support derived from giftopnm by David Koblas

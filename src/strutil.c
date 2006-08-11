@@ -56,7 +56,7 @@ int string_num_case_cmp(const char *str1, const char *str2, size_t num)
 {
     int ch1, ch2;
 
-    for ( ; num > 0; --num)
+    for ( ; num > 0; num--)
     {
         /* Use toupper, not tolower,
          * in case that two lowercase letters correspond to the same uppercase.
@@ -83,7 +83,7 @@ char *string_lower(char *str)
 {
     char *sptr;
 
-    for (sptr = str; *sptr != 0; ++sptr)
+    for (sptr = str; *sptr != 0; sptr++)
         *sptr = (char)tolower(*sptr);
     return str;
 }
@@ -98,7 +98,7 @@ char *string_upper(char *str)
 {
     char *sptr;
 
-    for (sptr = str; *sptr != 0; ++sptr)
+    for (sptr = str; *sptr != 0; sptr++)
         *sptr = (char)toupper(*sptr);
     return str;
 }
@@ -106,7 +106,7 @@ char *string_upper(char *str)
 
 
 /**
- * Checks if "prefix" is a prefix of "str", with case sensitivity.
+ * Checks if the given string has the given prefix, with case sensitivity.
  **/
 int string_prefix_cmp(const char *str, const char *prefix)
 {
@@ -126,7 +126,7 @@ int string_prefix_cmp(const char *str, const char *prefix)
 
 
 /**
- * Checks if "prefix" is a prefix of "str", without case sensitivity.
+ * Checks if the given string has the given prefix, without case sensitivity.
  **/
 int string_prefix_case_cmp(const char *str, const char *prefix)
 {
@@ -146,7 +146,7 @@ int string_prefix_case_cmp(const char *str, const char *prefix)
 
 
 /**
- * Checks if "prefix" is a prefix of "str", with case sensitivity.
+ * Checks if the given string has the given prefix, with case sensitivity.
  **/
 int string_prefix_min_cmp(const char *str, const char *prefix, size_t minlen)
 {
@@ -168,7 +168,7 @@ int string_prefix_min_cmp(const char *str, const char *prefix, size_t minlen)
 
 
 /**
- * Checks if "prefix" is a prefix of "str", without case sensitivity.
+ * Checks if the given string has the given prefix, without case sensitivity.
  **/
 int
 string_prefix_min_case_cmp(const char *str, const char *prefix, size_t minlen)
@@ -191,7 +191,7 @@ string_prefix_min_case_cmp(const char *str, const char *prefix, size_t minlen)
 
 
 /**
- * Checks if "suffix" is a suffix of "str", with case sensitivity.
+ * Checks if the given string has the given suffix, with case sensitivity.
  **/
 int string_suffix_cmp(const char *str, const char *suffix)
 {
@@ -206,7 +206,7 @@ int string_suffix_cmp(const char *str, const char *suffix)
 
 
 /**
- * Checks if "suffix" is a suffix of "str", without case sensitivity.
+ * Checks if the given string has the given suffix, without case sensitivity.
  **/
 int string_suffix_case_cmp(const char *str, const char *suffix)
 {

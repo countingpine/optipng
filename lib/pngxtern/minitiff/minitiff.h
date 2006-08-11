@@ -1,7 +1,7 @@
 /**
  * minitiff.h
  * Minimal I/O interface to the Tagged Image File Format (TIFF).
- * Version 0.1, Release 2006-July-11.
+ * Version 0.1, Release 2006-July-21.
  *
  * Copyright (C) 2006 Cosmin Truta.
  *
