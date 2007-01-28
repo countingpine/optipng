@@ -1,17 +1,17 @@
 # Makefile for OptiPNG
 # Generic Unix, standards-compliant (POSIX, FHS, etc.)
 #
-# If you wish to use the system-supplied libraries
-# (e.g. for security purposes), use unix-secure.mak.
+# If you wish to use the system-supplied zlib and libpng libraries
+# (e.g. for security purposes), use unix-secure.mak
 #
 # Usage: make -f scripts/unix-std.mak
 
 
 prefix=/usr/local
-exec_prefix=${prefix}
-bindir=${exec_prefix}/bin
-mandir=${prefix}/man
-man1dir=${mandir}/man1
+exec_prefix=$(prefix)
+bindir=$(exec_prefix)/bin
+mandir=$(prefix)/man
+man1dir=$(mandir)/man1
 
 CC = cc
 LD = $(CC)
@@ -68,17 +68,17 @@ $(ZDIR)/$(ZLIB):
 
 
 install: $(OPTIPNG)
-	-@if [ ! -d ${bindir} ]; then mkdir -p ${bindir}; fi
-	-@if [ ! -d ${man1dir} ]; then mkdir -p ${man1dir}; fi
-	-@rm -f ${bindir}/$(OPTIPNG)
-	-@rm -f ${man1dir}/optipng.1
-	cp -p $(OPTIPNG) ${bindir}
-	cp -p ../man/optipng.1 ${man1dir}
+	mkdir -p $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(man1dir)
+	-@rm -f $(DESTDIR)$(bindir)/$(OPTIPNG)
+	-@rm -f $(DESTDIR)$(man1dir)/optipng.1
+	cp -p $(OPTIPNG) $(DESTDIR)$(bindir)
+	cp -p ../man/optipng.1 $(DESTDIR)$(man1dir)
 
 
 uninstall:
-	rm -f ${bindir}/$(OPTIPNG)
-	rm -f ${man1dir}/optipng.1
+	rm -f $(DESTDIR)$(bindir)/$(OPTIPNG)
+	rm -f $(DESTDIR)$(man1dir)/optipng.1
 
 
 clean:

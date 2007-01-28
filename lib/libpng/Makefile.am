@@ -8,7 +8,7 @@
 # -version-number settings below so that the new values have
 # the correct major part (first field).
 
-PNGLIB_BASENAME= libpng@PNGLIB_MAJOR@
+PNGLIB_BASENAME= libpng@PNGLIB_MAJOR@@PNGLIB_MINOR@
 
 # libpng does not follow GNU file name conventions
 AUTOMAKE_OPTIONS = foreign
@@ -42,10 +42,10 @@ libpng12_la_CPPFLAGS = @LIBPNG_DEFINES@
 
 # MAJOR UPGRADE: the version-number settings below must be changed.
 libpng12_la_LDFLAGS = -no-undefined -export-dynamic \
-	-version-number 0:@PNGLIB_MINOR@:0
+	-version-number 0:@PNGLIB_RELEASE@:0
 # -rpath is needed as automake doesn't know the directory
 libpng_la_LDFLAGS = -rpath '$(libdir)' -no-undefined -export-dynamic \
-	-version-number 3:@PNGLIB_MINOR@:0
+	-version-number 3:@PNGLIB_RELEASE@:0
 
 if HAVE_LD_VERSION_SCRIPT
   # Versioned symbols and restricted exports
@@ -96,7 +96,7 @@ $(PNGLIB_BASENAME)-config: libpng-config
 
 libpng.sym: png.h pngconf.h
 	rm -f $@ $@.new
-	$(CPP) @LIBPNG_DEFINES@ $(CPPFLAGS) -DPNG_BUILDSYMS png.h | \
+	$(CPP) @LIBPNG_DEFINES@ $(CPPFLAGS) -DPNG_BUILDSYMS $(srcdir)/png.h | \
 		$(SED) -n -e 's|^.*PNG_FUNCTION_EXPORT[ 	]*\([a-zA-Z0-9_]*\).*$$|\1|p' \
 			-e 's|^.*PNG_DATA_EXPORT[ 	]*\([a-zA-Z0-9_]*\).*$$|\1|p' \
 			>$@.new
@@ -104,7 +104,7 @@ libpng.sym: png.h pngconf.h
 
 libpng.vers: libpng.sym
 	rm -f $@ $@.new
-	$(ECHO) PNG@PNGLIB_MAJOR@_0 '{global:' > $@.new
+	$(ECHO) PNG@PNGLIB_MAJOR@@PNGLIB_MINOR@_0 '{global:' > $@.new
 	$(SED) s/$$/\;/ libpng.sym >> $@.new
 	$(ECHO) 'local: *; };' >> $@.new
 	mv $@.new $@
@@ -125,7 +125,9 @@ install-exec-hook:
 	cd $(DESTDIR)$(libdir);\
 	for ext in a la so; do\
 		rm -f libpng.$$ext;\
-		$(LN_S) $(PNGLIB_BASENAME).$$ext libpng.$$ext;\
+                if test -f $(PNGLIB_BASENAME).$$ext; then\
+                       $(LN_S) $(PNGLIB_BASENAME).$$ext libpng.$$ext;\
+                fi;\
 	done
 
 uninstall-hook:

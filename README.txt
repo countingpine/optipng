@@ -1,6 +1,6 @@
 
-OptiPNG 0.5.4: Advanced PNG optimizer.
-Copyright (C) 2001-2006 Cosmin Truta.
+OptiPNG 0.5.5: Advanced PNG optimizer.
+Copyright (C) 2001-2007 Cosmin Truta.
 ======================================
 
 Goals
@@ -15,15 +15,20 @@ License
 
 URI
 ---
-  http://optipng.sourceforge.net/
+  Home page:
+    http://optipng.sourceforge.net/
+  Download:
+    http://sourceforge.net/project/showfiles.php?group_id=151404
+  Support:
+    http://sourceforge.net/tracker/?group_id=151404
 
 Build instructions
 ------------------
   Extract the source archive:
-    e.g. "tar -xzf optipng-0.5.4.tar.gz" or "unzip optipng-0.5.4.zip"
+    e.g. "tar -xzf optipng-0.5.5.tar.gz" or "unzip optipng-0.5.5.zip"
 
   Go to the source directory:
-    "cd optipng-0.5.4/src"
+    "cd optipng-0.5.5/src"
 
   Run the appropriate makefile from the scripts directory:
     e.g. "make -f scripts/gcc.mak" or "nmake -f scripts/visualc.mak"
@@ -48,3 +53,7 @@ Installation instructions
 Support
 -------
   Send email to cosmin (at) cs (dot) toronto (dot) edu
+  OR
+  Visit the SourceForge.net tracker:
+    http://sourceforge.net/tracker/?group_id=151404
+

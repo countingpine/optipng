@@ -43,10 +43,7 @@ OptiPNG - TODO list
     optipng -del private ...			# delete all private chunks
     optipng -del all ...			# delete all ancillary chunks
 
-- Timer:
-    optipng -timer ...
-  It may be enough to show the timer under the -v option, without
-  needing a new -timer option.
+- Parallelization on multi-processor/multi-core systems.
 
 - A nice GUI.
 

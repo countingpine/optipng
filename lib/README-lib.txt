@@ -15,11 +15,11 @@ zlib
     - available at: http://www.zlib.net/
 
 libpng
-  * version: 1.2.12-optipng
-  * changes: libpng/CHANGES (see the "1.2.12-optipng" section)
+  * version: 1.2.15-optipng
+  * changes: libpng/CHANGES (see the "1.2.15-optipng" section)
     - details: lib-diff/libpng.diff
   * derived from original
-    - version: 1.2.12
+    - version: 1.2.15
     - available at: http://www.libpng.org/pub/png/libpng.html
 
 pngxtern

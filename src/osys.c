@@ -2,11 +2,12 @@
  ** osys.c
  ** System extensions.
  **
- ** Copyright (C) 2003-2006 Cosmin Truta.
+ ** Copyright (C) 2003-2007 Cosmin Truta.
  **
  ** This software is distributed under the same licensing and warranty
  ** terms as OptiPNG.  Please see the attached LICENSE for more info.
  **/
+
 
 #if defined UNIX || defined unix
 # define OSYS_UNIX
@@ -44,6 +45,7 @@
 #endif
 
 
+#include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -54,9 +56,11 @@
 # include <dirent.h>
 # include <utime.h>
 #endif
+#if defined OSYS_DOS || defined OSYS_OS2
+# include <process.h>
+#endif
 #if defined OSYS_WINDOWS
 # include <windows.h>
-# include <tchar.h>
 #endif
 
 #include "osys.h"
@@ -82,7 +86,9 @@
 #define OSYS_FNAME_CHR_STAR '*'
 #define OSYS_FNAME_STR_STAR "*"
 
-#if defined OSYS_DOS || defined OSYS_OS2 || defined OSYS_WINDOWS
+#if defined OSYS_DOS || defined OSYS_OS2 || \
+    defined OSYS_WINDOWS || defined __CYGWIN__
+# define OSYS_FNAME_DOS
 # define OSYS_FNAME_IGN_CASE 1
 #else  /* OSYS_UNIX and possibly others */
 # define OSYS_FNAME_IGN_CASE 0
@@ -106,7 +112,7 @@ void *osys_malloc(size_t size)
     {
         fprintf(stderr, "Out of memory!\n");
         fflush(stderr);
-        abort();
+        osys_terminate();
     }
     return result;
 }
@@ -121,6 +127,34 @@ void osys_free(void *ptr)
     /* NOT happy about the standard behavior of free()... */
     if (ptr != NULL)
         free(ptr);
+}
+
+
+/**
+ * Prints an error message to stderr and terminates the program
+ * execution immediately, exiting with EXIT_FAILURE.
+ * This function does not raise SIGABRT, and it does not generate
+ * other files (like core dumps, where applicable).
+ **/
+void osys_terminate(void)
+{
+    fprintf(stderr,
+        "The execution of this program has been terminated abnormally.\n");
+    fflush(stderr);
+
+#if defined OSYS_UNIX || defined OSYS_DOS || defined OSYS_OS2
+
+    _exit(EXIT_FAILURE);
+
+#elif defined OSYS_WINDOWS
+
+    ExitProcess(EXIT_FAILURE);
+
+#else
+
+    exit(EXIT_FAILURE);
+
+#endif
 }
 
 
@@ -164,7 +198,12 @@ char *osys_fname_chdir(char *buffer, size_t bufsize,
     size_t dirlen;
 
     /* Extract file name from oldname. */
-    for (fname = oldname; ; )
+    fname = oldname;
+#ifdef OSYS_FNAME_DOS
+    if (isalpha(fname[0]) && fname[1] == ':')
+        fname += 2;  /* skip drive name */
+#endif
+    for ( ; ; )
     {
         ptr = strpbrk(fname, OSYS_FNAME_STRLIST_SLASH);
         if (ptr == NULL)
@@ -181,6 +220,11 @@ char *osys_fname_chdir(char *buffer, size_t bufsize,
     if (dirlen > 0)
     {
         strcpy(buffer, newdir);
+#ifdef OSYS_FNAME_DOS
+        if (dirlen == 2 && buffer[1] == ':' && isalpha(buffer[0]))
+            (void)0;  /* do nothing */
+        else
+#endif
         if (strchr(OSYS_FNAME_STRLIST_SLASH, buffer[dirlen - 1]) == NULL)
             buffer[dirlen++] = OSYS_FNAME_CHR_SLASH;  /* append slash to dir */
     }
@@ -369,53 +413,65 @@ int osys_fattr_copy(const char *destname, const char *srcname)
  **/
 int osys_dir_make(const char *dirname)
 {
-#if defined OSYS_UNIX || defined OSYS_DOS || defined OSYS_OS2
-
-    DIR *dir;
-
-    if ((dir = opendir(dirname)) != NULL)
-    {
-        closedir(dir);
-        return 0;
-    }
-
-# if defined OSYS_DOS || defined OSYS_OS2
-    return mkdir(dirname);
-# else
-    return mkdir(dirname, 0777);
-# endif
-
-#elif defined OSYS_WINDOWS
-
     size_t len;
-    LPCTSTR format;
-    LPTSTR wildname;
-    HANDLE hFind;
-    WIN32_FIND_DATA wfd;
 
     len = strlen(dirname);
     if (len == 0)  /* current directory */
         return 0;
 
-    /* See if dirname exists: find files in (dirname + "\\*"). */
-    wildname = (LPTSTR)malloc((len + 3) * sizeof(TCHAR));
-    if (wildname == NULL)  /* out of memory */
-        return -1;
-    if (strchr(OSYS_FNAME_STRLIST_SLASH, dirname[len - 1]) == NULL)
-        format = TEXT("%hs" OSYS_FNAME_STR_SLASH OSYS_FNAME_STR_STAR);
-    else
-        format = TEXT("%hs" OSYS_FNAME_STR_STAR);
-    wsprintf(wildname, format, dirname);
-    hFind = FindFirstFile(wildname, &wfd);
-    free(wildname);
-    if (hFind != INVALID_HANDLE_VALUE)
-    {
-        FindClose(hFind);
+#ifdef OSYS_FNAME_DOS
+    if (len == 2 && dirname[1] == ':' && isalpha(dirname[0]))  /* [DRIVE]: */
         return 0;
+#endif
+
+#if defined OSYS_UNIX || defined OSYS_DOS || defined OSYS_OS2
+
+    {
+        DIR *dir;
+
+        if ((dir = opendir(dirname)) != NULL)
+        {
+            closedir(dir);
+            return 0;
+        }
+
+        /* There is no directory, so create one now. */
+# if defined OSYS_DOS || defined OSYS_OS2
+        return mkdir(dirname);
+# else
+        return mkdir(dirname, 0777);
+# endif
     }
 
-    /* There is no directory, so create one now. */
-    return CreateDirectoryA(dirname, NULL) ? 0 : -1;
+#elif defined OSYS_WINDOWS
+
+    {
+        char *wildname;
+        HANDLE hFind;
+        WIN32_FIND_DATA wfd;
+
+        /* See if dirname exists: find files in (dirname + "\\*"). */
+        if (len + 3 < len)  /* overflow */
+            return -1;
+        wildname = (char *)malloc(len + 3);
+        if (wildname == NULL)  /* out of memory */
+            return -1;
+        strcpy(wildname, dirname);
+        if (strchr(OSYS_FNAME_STRLIST_SLASH, wildname[len - 1]) == NULL)
+            wildname[len++] = OSYS_FNAME_CHR_SLASH;
+        wildname[len++] = OSYS_FNAME_CHR_STAR;
+        wildname[len] = '\0';
+        hFind = FindFirstFileA(wildname, &wfd);
+        free(wildname);
+        if (hFind != INVALID_HANDLE_VALUE)
+        {
+            FindClose(hFind);
+            return 0;
+        }
+
+        /* There is no directory, so create one now. */
+        return CreateDirectoryA(dirname, NULL) ? 0 : -1;
+    }
 
 #else
 

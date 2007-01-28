@@ -202,7 +202,7 @@ AUTHOR
        OptiPNG is written and maintained by Cosmin Truta.
 
        This manual page was originally written by Nelson A.  de  Oliveira  for
-       the Debian project. It was later corrected and updated by Cosmin Truta,
-       and is now part of the OptiPNG distribution.
+       the  Debian  Project.  It was later updated by Cosmin Truta, and is now
+       part of the OptiPNG distribution.
 
-OptiPNG Version 0.5.4           11 August 2006                      OPTIPNG(1)
+OptiPNG Version 0.5.5           28 January 2007                     OPTIPNG(1)

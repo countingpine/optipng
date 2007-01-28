@@ -1,7 +1,7 @@
 /*
  * opngreduc.c - libpng extension: image reductions
  *
- * Copyright (C) 2003-2006 Cosmin Truta.
+ * Copyright (C) 2003-2007 Cosmin Truta.
  * The code is distributed under the same licensing and warranty terms
  * as libpng.
  *
@@ -45,8 +45,8 @@ __error__ "OPNG_IMAGE_REDUCTIONS_SUPPORTED" requires support for bKGD,hIST,sBIT,
 /*
  * First and foremost, make sure that direct access to libpng's
  * internal structures does not break the consistency of data.
- * (This function should go away when opngreduc.c is incorporated
- * into libpng.)
+ * (This quick-and-dirty function should go away when opngreduc.c
+ * is incorporated into libpng.)
  */
 static void
 _opng_validate_internal(png_structp png_ptr, png_infop info_ptr)
@@ -81,8 +81,9 @@ _opng_validate_internal(png_structp png_ptr, png_infop info_ptr)
       if (sig_bit != &info_ptr->sig_bit)
          goto error;
    if (png_get_tRNS(png_ptr, info_ptr, &trans, &num_trans, &trans_values))
-      if (trans != info_ptr->trans || num_trans != info_ptr->num_trans ||
-          trans_values != &info_ptr->trans_values)
+      if ((trans != NULL &&
+           (trans != info_ptr->trans || num_trans != info_ptr->num_trans)) ||
+          (trans_values != NULL && trans_values != &info_ptr->trans_values))
          goto error;
 
    /* Also check png_ptr.  (It's not much, but we're doing what we can.) */
@@ -245,10 +246,10 @@ opng_insert_palette_entry(png_colorp palette, int *num_palette,
    }
 
    /* Check for overflow. */
-   if (*num_palette + 1 == max_tuples)
+   if (*num_palette >= max_tuples)
    {
-       *num_palette = *num_trans = *index = -1;
-       return -1;
+      *num_palette = *num_trans = *index = -1;
+      return -1;
    }
 
    /* Insert new tuple at [low]. */
@@ -267,6 +268,7 @@ opng_insert_palette_entry(png_colorp palette, int *num_palette,
       trans[low] = (png_byte)alpha;
       ++(*num_trans);
    }
+   *index = low;
    return 1;
 }
 
@@ -775,11 +777,11 @@ opng_reduce_rgb_to_palette(png_structp png_ptr, png_infop info_ptr,
    png_uint_32 result;
    png_bytepp row_ptr;
    png_bytep sample_ptr, alpha_row;
-   png_uint_32 height, width, i, j;
+   png_uint_32 height, width, channels, i, j;
    png_color palette[256];
    png_byte trans[256];
    int num_palette, num_trans, index;
-   unsigned int channels;
+   png_color_16p background;
    unsigned int
       red, green, blue, alpha, prev_red, prev_green, prev_blue, prev_alpha;
 
@@ -829,6 +831,15 @@ opng_reduce_rgb_to_palette(png_structp png_ptr, png_infop info_ptr,
             }
          }
       }
+   }
+   if ((num_palette >= 0) && (info_ptr->valid & PNG_INFO_bKGD))
+   {
+      /* bKGD must also have its own palette entry. */
+      background = &info_ptr->background;
+      opng_insert_palette_entry(palette, &num_palette, trans, &num_trans, 256,
+          background->red, background->green, background->blue, 255, &index);
+      if (index >= 0)
+         background->index = (png_byte)index;
    }
 
    /* Check if the uncompressed paletted image (pixels + PLTE + tRNS)
@@ -893,6 +904,7 @@ opng_reduce_rgb_to_palette(png_structp png_ptr, png_infop info_ptr,
    png_set_PLTE(png_ptr, info_ptr, palette, num_palette);
    if (num_trans > 0)
       png_set_tRNS(png_ptr, info_ptr, trans, num_trans, NULL);
+   /* bKGD (if present) is already updated. */
 
    png_free(png_ptr, alpha_row);
 

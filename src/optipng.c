@@ -2,7 +2,7 @@
  ** OptiPNG: Advanced PNG optimization program.
  ** http://optipng.sourceforge.net/
  **
- ** Copyright (C) 2001-2006 Cosmin Truta.
+ ** Copyright (C) 2001-2007 Cosmin Truta.
  ** The program is distributed under the same licensing and warranty
  ** terms as libpng.
  **
@@ -22,7 +22,7 @@
  **    ANSI C or ISO C compiler and library.
  **    POSIX library for enhanced functionality.
  **    zlib version 1.2.1 or newer (version 1.2.3 is bundled).
- **    libpng version 1.2.9 or newer (version 1.2.12 is bundled).
+ **    libpng version 1.2.9 or newer (version 1.2.15 is bundled).
  **    pngxtern (version 0.3 is bundled).
  **    cexcept (version 2.0.0 is bundled).
  **/
@@ -452,12 +452,13 @@ opng_internal_error(png_const_charp msg)
    const char *fmt = "[internal error] %s\n";
 
    fprintf(stderr, fmt, msg);
+   fflush(stderr);
    if (global.logfile != NULL)
    {
       fprintf(global.logfile, fmt, msg);
       fflush(global.logfile);
    }
-   abort();
+   osys_terminate();
 }
 
 
@@ -1048,7 +1049,7 @@ opng_copy_png(FILE *infile, FILE *outfile)
       /* Copy the signature. */
       if (fread(buf, 8, 1, infile) != 1 || png_sig_cmp(buf, 0, 8) != 0)
          Throw "Not a PNG file";
-#if (PNG_LIBPNG_VER_MAJOR * 10 + PNG_LIBPNG_VER_MINOR >= 14) || \
+#if (PNG_LIBPNG_VER >= 10400) || \
     (PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
       png_write_sig(write_ptr);
 #else
@@ -1082,7 +1083,8 @@ opng_copy_png(FILE *infile, FILE *outfile)
          if (fread(buf, 1, length, infile) != length)  /* data */
             Throw "Read error";
          png_write_chunk(write_ptr, chunk_name, buf, length);
-         fread(buf, 4, 1, infile);  /* crc */
+         if (fread(buf, 4, 1, infile) != 1)  /* crc */
+            Throw "Read error";
       } while (memcmp(chunk_name, sig_IEND, 4) != 0);
 
       err_msg = NULL;  /* everything is ok */
@@ -1173,8 +1175,8 @@ opng_init_iterations(void)
    opng_info.strategy_set    = strategy_set;
    opng_info.filter_set      = filter_set;
    t1 = bitset_count(compr_level_set) *
-        bitset_count(strategy_set & ~(Z_HUFFMAN_ONLY | Z_RLE));
-   t2 = bitset_count(strategy_set & (Z_HUFFMAN_ONLY | Z_RLE));
+        bitset_count(strategy_set & ~((1 << Z_HUFFMAN_ONLY) | (1 << Z_RLE)));
+   t2 = bitset_count(strategy_set &  ((1 << Z_HUFFMAN_ONLY) | (1 << Z_RLE)));
    opng_info.num_iterations = (t1 + t2) *
         bitset_count(mem_level_set) * bitset_count(filter_set);
 
@@ -1419,7 +1421,8 @@ opng_optimize_png(const char *infile_name)
        opng_image.interlace_type != cmdline.interlace)
    {
       opng_image.interlace_type = cmdline.interlace;
-      action = recompress;
+      if (action != create)
+         action = recompress;
    }
 
    init_file_size = opng_info.file_size;

@@ -27,7 +27,7 @@ LIBS = $(PNGXDIR)\$(PNGXLIB) $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
 
 
 $(OPTIPNG): $(OBJS) $(LIBS)
-	$(LD) $(LDFLAGS) $(OBJS) $(LIBS) user32.lib
+	$(LD) $(LDFLAGS) $(OBJS) $(LIBS)
 
 
 .c.obj:

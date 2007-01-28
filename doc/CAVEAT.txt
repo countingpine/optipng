@@ -1,22 +1,20 @@
 
-CAVEAT EMPTORE
-==============
-(known bugs, problems, or limitations in the current version of OptiPNG)
+CAVEAT EMPTOR
+=============
+(known bugs, problems or limitations)
 
 
 Legend
 ------
  - Minor bug, limitation, or incompletely-implemented feature.
-   Not dangerous.
- ! Bug that may cause OptiPNG to act differently than intended,
-   but without causing accidental data loss.
-   Inconvenient, but not dangerous.
-!! Bug that may cause accidental data loss.
-   Dangerous.
+ ! Bug that may lead to a behavior different than expected,
+   but without any serious consequence.
+!! Bug that may cause accidental data loss, security hazard,
+   or another serious consequence.
  * Another problematic issue, that is not necessarily a bug.
 
 
-Version 0.5.4   11-aug-2006
+Version 0.5.5   28-jan-2007
 -------------
  - Lossless image reductions are not completely implemented.
    (This does NOT affect the integrity of PNG files.)

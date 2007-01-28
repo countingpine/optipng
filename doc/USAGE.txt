@@ -1,5 +1,5 @@
-OptiPNG 0.5.4: Advanced PNG optimizer.
-Copyright (C) 2001-2006 Cosmin Truta.
+OptiPNG 0.5.5: Advanced PNG optimizer.
+Copyright (C) 2001-2007 Cosmin Truta.
 
 This program is open-source software. See LICENSE for more details.
 
@@ -9,7 +9,7 @@ Portions of this software are based in part on the work of:
   Miyasaka Masaru (BMP support)
   David Koblas (GIF support)
 
-Compiled with libpng version 1.2.12-optipng and zlib version 1.2.3-optipng
+Compiled with libpng version 1.2.15-optipng and zlib version 1.2.3-optipng
 
 Usage:
     optipng [options] files ...

@@ -4,13 +4,32 @@ OptiPNG - Revision history
 
 Legend
 ------
-++ Added or improved feature that might affect compression ratio
-   and/or speed.
+++ Added or improved performance-related feature
+   (might improve compression ratio or processing speed).
  + Added or improved feature.
  - Removed feature.
- * Other modification (e.g. architectural improvement).
  ! Fixed bug.
-!! Fixed dangerous bug that might cause accidental data loss.
+!! Fixed dangerous bug
+   (data/metadata loss or serious security hazard).
+ * Other modification (e.g. architectural improvement).
+
+
+Version 0.5.5   28-jan-2007
+-------------
+ + Upgraded libpng to version 1.2.15-optipng [private]
+++ Used a previously-missed RGB-to-palette reduction opportunity
+   for images containing 256 distinct colors.
+   (Thanks to Joachim Kluge for the report.)
+!! Fixed conversion of bKGD info during rgb-to-palette reductions.
+   (Thanks to Matthew Fearnley for the report.)
+ ! Fixed pre-computation of iterations.
+   (Thanks to Matthew Fearnley for the report.)
+ ! Eliminated a false alarm when processing RGB images with tRNS
+   in Unix-secure mode.  (Thanks to Till Mass for the report, and
+   thanks to Nelson A. de Oliveira for the fix.)
+ ! Fixed behavior of -out and -dir when changing interlacing.
+   (Thanks to Martin Packman for the report.)
+ ! Fixed behavior of "-dir [DRIVE]:" on Windows.
 
 
 Version 0.5.4   11-aug-2006
@@ -185,7 +204,7 @@ Version 0.3.1   25-feb-2003
 
 Version 0.3     24-feb-2003
 -----------
- This is the first public release of OptiPNG.
+This is the first public release of OptiPNG.
 ++ Added support for iterating through zlib memory levels.
 ++ Added support for collapsing IDAT, avoiding calls to
    png_set_compression_buffer_size().

@@ -1,9 +1,12 @@
-/*
- * osys.h - system extensions
- *
- * Copyright (C) 2003-2006 Cosmin Truta.
- * This program is open-source software.  See LICENSE for more details.
- */
+/**
+ ** osys.h
+ ** System extensions.
+ **
+ ** Copyright (C) 2003-2007 Cosmin Truta.
+ **
+ ** This software is distributed under the same licensing and warranty
+ ** terms as OptiPNG.  Please see the attached LICENSE for more info.
+ **/
 
 
 #ifndef OSYS_H
@@ -31,6 +34,15 @@ void *osys_malloc(size_t size);
  * The function does nothing if the given pointer is NULL.
  **/
 void osys_free(void *ptr);
+
+
+/**
+ * Prints an error message to stderr and terminates the program
+ * execution immediately, exiting with EXIT_FAILURE.
+ * This function does not raise SIGABRT, and it does not generate
+ * other files (like core dumps, where applicable).
+ **/
+void osys_terminate(void);
 
 
 /**
