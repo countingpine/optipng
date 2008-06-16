@@ -41,8 +41,8 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
-# ADD CPP /nologo /MD /W3 /O2 /I "..\..\lib\zlib" /I "..\..\lib\libpng" /I "..\..\lib\pngxtern" /D "NDEBUG" /D "WIN32" /FD /c
+# ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "NDEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /c
+# ADD CPP /nologo /MD /W3 /O2 /I "..\..\lib\zlib" /I "..\..\lib\libpng" /I "..\..\lib\pngxtern" /D "NDEBUG" /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /FD /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -66,8 +66,8 @@ LINK32=link.exe
 # PROP Intermediate_Dir "Debug"
 # PROP Ignore_Export_Lib 0
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
-# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /I "..\..\lib\zlib" /I "..\..\lib\libpng" /I "..\..\lib\pngxtern" /D "_DEBUG" /D "WIN32" /FD /GZ /c
+# ADD BASE CPP /nologo /W3 /Gm /GX /ZI /Od /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "_DEBUG" /D "_CONSOLE" /D "_MBCS" /YX /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /I "..\..\lib\zlib" /I "..\..\lib\libpng" /I "..\..\lib\pngxtern" /D "_DEBUG" /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -94,10 +94,6 @@ SOURCE=..\..\src\cbitset.c
 # Begin Source File
 
 SOURCE=..\..\src\xtra\memleaks.cpp
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\src\opngio.c
 # End Source File
 # Begin Source File
 
@@ -133,7 +129,7 @@ SOURCE=..\..\src\cexcept.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\src\opng.h
+SOURCE=..\..\src\opngreduc.h
 # End Source File
 # Begin Source File
 

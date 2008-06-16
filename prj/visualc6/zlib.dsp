@@ -44,9 +44,9 @@ RSC=rc.exe
 # PROP Output_Dir "Win32_LIB_Release"
 # PROP Intermediate_Dir "Win32_LIB_Release"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
+# ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "NDEBUG" /FD /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
+# ADD CPP /nologo /MD /W3 /O2 /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "NDEBUG" /FD /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -69,9 +69,9 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Win32_LIB_Debug"
 # PROP Intermediate_Dir "Win32_LIB_Debug"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
+# ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "_DEBUG" /FD /GZ /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "_DEBUG" /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -94,9 +94,9 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Win32_LIB_ASM_Release"
 # PROP Intermediate_Dir "Win32_LIB_ASM_Release"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
+# ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "NDEBUG" /FD /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /D "ASMV" /D "ASMINF" /FD /c
+# ADD CPP /nologo /MD /W3 /O2 /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "NDEBUG" /D "ASMV" /D "ASMINF" /FD /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -119,9 +119,9 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Win32_LIB_ASM_Debug"
 # PROP Intermediate_Dir "Win32_LIB_ASM_Debug"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
+# ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "_DEBUG" /FD /GZ /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /D "ASMV" /D "ASMINF" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "_DEBUG" /D "ASMV" /D "ASMINF" /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
@@ -144,9 +144,9 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Release"
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
+# ADD BASE CPP /nologo /MD /W3 /O2 /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "NDEBUG" /FD /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MD /W3 /O2 /D "WIN32" /D "NDEBUG" /FD /c
+# ADD CPP /nologo /MD /W3 /O2 /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "NDEBUG" /FD /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
@@ -169,9 +169,9 @@ LIB32=link.exe -lib
 # PROP Output_Dir "Debug"
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
-# ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
+# ADD BASE CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "_DEBUG" /FD /GZ /c
 # SUBTRACT BASE CPP /YX /Yc /Yu
-# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_DEBUG" /FD /GZ /c
+# ADD CPP /nologo /MDd /W3 /Gm /ZI /Od /D "WIN32" /D "_CRT_SECURE_NO_WARNINGS" /D "_DEBUG" /FD /GZ /c
 # SUBTRACT CPP /YX /Yc /Yu
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"

@@ -24,10 +24,13 @@ extern "C" {
 /*****************************************************************************/
 
 
-#if defined(UNIX) || defined(unix) || defined(__unix) || defined(__unix__)
+#if defined(UNIX) || defined(__unix) || defined(__unix__)
 #  ifndef HAVE_STRINGS_H
 #    define HAVE_STRINGS_H
 #  endif
+#endif
+
+#if defined(HAVE_STRINGS_H)
 #  ifndef HAVE_STRCASECMP
 #    define HAVE_STRCASECMP
 #  endif
@@ -36,7 +39,7 @@ extern "C" {
 #  endif
 #endif
 
-#if defined(WIN32) || defined(_WIN32) || defined(_MSC_VER)
+#if defined(_MSDOS) || defined(_WIN32)
 #  ifndef HAVE__STRICMP
 #    define HAVE__STRICMP
 #  endif
@@ -51,7 +54,7 @@ extern "C" {
 #  endif
 #endif
 
-#if defined(__TURBOC__)
+#if defined(__MSDOS__) || defined(__OS2__) || defined(__WIN32__)
 #  ifndef HAVE_STRICMP
 #    define HAVE_STRICMP
 #  endif

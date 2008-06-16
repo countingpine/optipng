@@ -1,9 +1,9 @@
 /**
  * pnmio.h
  * Simple I/O interface to the Portable Any Map (PNM) image file format.
- * Version 0.2.1, Release 2005-Dec-01.
+ * Version 0.3, Release 2008-Jun-15.
  *
- * Copyright (C) 2002-2005 Cosmin Truta.
+ * Copyright (C) 2002-2008 Cosmin Truta.
  *
  * This software is provided 'as-is', without any express or implied
  * warranty.  In no event will the author(s) be held liable for any damages
@@ -27,6 +27,8 @@
 #ifndef PNMIO_H
 #define PNMIO_H
 
+#include <limits.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -35,21 +37,27 @@ extern "C" {
 
 
 /**
- * PNM type codes.
+ * PNM format codes
  **/
 enum
 {
-    PNM_P1 = 1, PNM_P2 = 2, PNM_P3 = 3,
-    PNM_P4 = 4, PNM_P5 = 5, PNM_P6 = 6
+    PNM_P1 = 1,  /* plain PBM */
+    PNM_P2 = 2,  /* plain PGM */
+    PNM_P3 = 3,  /* plain PPM */
+    PNM_P4 = 4,  /* raw PBM */
+    PNM_P5 = 5,  /* raw PGM */
+    PNM_P6 = 6,  /* raw PPM */
+    PNM_P7 = 7   /* PAM (only partially implemented) */
 };
 
 
 /**
- * The PNM data structure.
+ * PNM info structure
  **/
 typedef struct pnm_struct
 {
-    unsigned int type_code;
+    unsigned int format;
+    unsigned int depth;
     unsigned int width;
     unsigned int height;
     unsigned int maxval;
@@ -57,26 +65,59 @@ typedef struct pnm_struct
 
 
 /**
- * Error handling.
+ * PNM input functions
  **/
-extern void (*pnm_error)(pnm_struct *pnm_ptr, const char *msg);
-extern void (*pnm_warning)(pnm_struct *pnm_ptr, const char *msg);
+int pnm_fget_header(pnm_struct *pnm_ptr,
+                    FILE *stream);
+int pnm_fget_values(const pnm_struct *pnm_ptr,
+                    unsigned int *sample_values,
+                    unsigned int num_rows,
+                    FILE *stream);
+int pnm_fget_bytes(const pnm_struct *pnm_ptr,
+                    unsigned char *sample_bytes,
+                    size_t sample_size,
+                    unsigned int num_rows,
+                    FILE *stream);
 
 
 /**
- * Read functions.
+ * PNM output functions
  **/
-void pnm_read_header(FILE *fp, pnm_struct *pnm_ptr);
-void pnm_read_row(FILE *fp, pnm_struct *pnm_ptr, unsigned int *row_ptr);
-void pnm_read_image(FILE *fp, pnm_struct *pnm_ptr, ...);  /* not implemented */
+int pnm_fput_header(const pnm_struct *pnm_ptr,
+                    FILE *stream);
+int pnm_fput_values(const pnm_struct *pnm_ptr,
+                    const unsigned int *sample_values,
+                    unsigned int num_rows,
+                    FILE *stream);
+int pnm_fput_bytes(const pnm_struct *pnm_ptr,
+                    const unsigned char *sample_bytes,
+                    size_t sample_size,
+                    unsigned int num_rows,
+                    FILE *stream);
 
 
 /**
- * Write functions.
+ * PNM utility functions
  **/
-void pnm_write_header(FILE *fp, pnm_struct *pnm_ptr);
-void pnm_write_row(FILE *fp, pnm_struct *pnm_ptr, unsigned int *row_ptr);
-void pnm_write_image(FILE *fp, pnm_struct *pnm_ptr, ...); /* not implemented */
+int pnm_is_valid(const pnm_struct *pnm_ptr);
+size_t pnm_raw_sample_size(const pnm_struct *pnm_ptr);
+size_t pnm_mem_size(const pnm_struct *pnm_ptr,
+                    size_t sample_size,
+                    unsigned int num_rows);
+
+
+/**
+ * PNM limits
+ **/
+#define PNM_UCHAR_BIT 8
+#define PNM_UCHAR_MAX 0xffU
+#if UINT_MAX < 0xffffffffUL
+#define PNM_UINT_BIT 16
+#define PNM_UINT_MAX 0xffffU
+#else
+#define PNM_UINT_BIT 32
+#define PNM_UINT_MAX 0xffffffffU
+#endif
 
 
 #ifdef __cplusplus

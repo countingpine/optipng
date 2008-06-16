@@ -1,5 +1,5 @@
 /*
- * pngxwrite.c - libpng external I/O: read utility functions.
+ * pngxwrite.c - libpng external I/O: write utility functions.
  * Copyright (C) 2001-2005 Cosmin Truta.
  */
 

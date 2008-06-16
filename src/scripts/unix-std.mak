@@ -31,7 +31,7 @@ PNGDIR   = ../lib/libpng
 PNGXDIR  = ../lib/pngxtern
 BACKHERE = ../../src
 
-OBJS = optipng.o opngio.o opngreduc.o cbitset.o osys.o strutil.o
+OBJS = optipng.o opngreduc.o cbitset.o osys.o strutil.o
 LIBS = $(PNGXDIR)/$(PNGXLIB) $(PNGDIR)/$(PNGLIB) $(ZDIR)/$(ZLIB)
 
 
@@ -42,9 +42,9 @@ $(OPTIPNG): $(OBJS) $(LIBS)
 .c.o:
 	$(CC) -c $(CFLAGS) -DUNIX -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR) $*.c
 
-optipng.o  : optipng.c proginfo.h opng.h cexcept.h cbitset.h osys.h strutil.h
-opngio.o   : opngio.c opng.h
-opngreduc.o: opngreduc.c opng.h
+optipng.o  : optipng.c proginfo.h opngreduc.h \
+             cexcept.h cbitset.h osys.h strutil.h
+opngreduc.o: opngreduc.c opngreduc.h
 cbitset.o  : cbitset.c cbitset.h
 osys.o     : osys.c osys.h
 strutil.o  : strutil.c strutil.h

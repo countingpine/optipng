@@ -27,11 +27,16 @@ O=.o
 A=.a
 
 # Variables
-OBJS = pngxread$(O) pngxwrite$(O) \
-       pngxrbmp$(O) pngxrgif$(O) pngxrjpg$(O) pngxrpnm$(O) pngxrtif$(O) \
-       gifread$(O) \
-       pnmerror$(O) pnmread$(O) pnmwrite$(O) \
-       minitiff$(O) tiffread$(O) tiffwrite$(O)
+PNGX_OBJS = \
+        pngxio$(O) pngxmem$(O) pngxset$(O)
+PNGXTERN_OBJS = \
+        pngxread$(O) pngxwrite$(O) \
+        pngxrbmp$(O) pngxrgif$(O) pngxrjpg$(O) pngxrpnm$(O) pngxrtif$(O)
+PNGXTERN_XOBJS = \
+        gifread$(O) \
+        pnmin$(O) pnmout$(O) pnmutil$(O) \
+        minitiff$(O) tiffread$(O) tiffwrite$(O)
+OBJS = $(PNGX_OBJS) $(PNGXTERN_OBJS) $(PNGXTERN_XOBJS)
 
 # Targets
 all: pngxtern$(A)
@@ -46,13 +51,13 @@ pngxtern$(A): $(OBJS)
 gifread$(O): gif/gifread.c gif/gifread.h
 	$(CC) -c $(CFLAGS) $<
 
-pnmerror$(O): pnm/pnmerror.c pnm/pnmio.h
+pnmin$(O): pnm/pnmin.c pnm/pnmio.h
 	$(CC) -c $(CFLAGS) $<
 
-pnmread$(O): pnm/pnmread.c pnm/pnmio.h
+pnmout$(O): pnm/pnmout.c pnm/pnmio.h
 	$(CC) -c $(CFLAGS) $<
 
-pnmwrite$(O): pnm/pnmwrite.c pnm/pnmio.h
+pnmutil$(O): pnm/pnmutil.c pnm/pnmio.h
 	$(CC) -c $(CFLAGS) $<
 
 minitiff$(O): minitiff/minitiff.c minitiff/minitiff.h
@@ -67,11 +72,14 @@ tiffwrite$(O): minitiff/tiffwrite.c minitiff/minitiff.h minitiff/tiffdef.h
 clean:
 	$(RM_F) *$(O) pngxtern$(A)
 
-pngxread$(O):  pngxread.c pngxtern.h
-pngxwrite$(O): pngxwrite.c pngxtern.h
-pngxrbmp$(O):  pngxrbmp.c pngxtern.h
-pngxrgif$(O):  pngxrgif.c pngxtern.h
-pngxrjpg$(O):  pngxrjpg.c pngxtern.h
-pngxrpnm$(O):  pngxrpnm.c pngxtern.h
-pngxrtif$(O):  pngxrtif.c pngxtern.h
+pngxio$(O):    pngxio.c pngx.h
+pngxmem$(O):   pngxmem.c pngx.h
+pngxset$(O):   pngxset.c pngx.h
+pngxread$(O):  pngxread.c pngx.h pngxtern.h
+pngxwrite$(O): pngxwrite.c pngx.h pngxtern.h
+pngxrbmp$(O):  pngxrbmp.c pngx.h pngxtern.h
+pngxrgif$(O):  pngxrgif.c pngx.h pngxtern.h gif/gifread.h
+pngxrjpg$(O):  pngxrjpg.c pngx.h pngxtern.h
+pngxrpnm$(O):  pngxrpnm.c pngx.h pngxtern.h pnm/pnmio.h
+pngxrtif$(O):  pngxrtif.c pngx.h pngxtern.h minitiff/minitiff.h
 

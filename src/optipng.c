@@ -2,7 +2,7 @@
  ** OptiPNG: Advanced PNG optimization program.
  ** http://optipng.sourceforge.net/
  **
- ** Copyright (C) 2001-2007 Cosmin Truta.
+ ** Copyright (C) 2001-2008 Cosmin Truta.
  ** The program is distributed under the same licensing and warranty
  ** terms as libpng.
  **
@@ -22,8 +22,8 @@
  **    ANSI C or ISO C compiler and library.
  **    POSIX library for enhanced functionality.
  **    zlib version 1.2.1 or newer (version 1.2.3 is bundled).
- **    libpng version 1.2.9 or newer (version 1.2.15 is bundled).
- **    pngxtern (version 0.3 is bundled).
+ **    libpng version 1.2.9 or newer (version 1.2.29 is bundled).
+ **    pngxtern (version 0.6 is bundled).
  **    cexcept (version 2.0.0 is bundled).
  **/
 
@@ -36,8 +36,10 @@
 #include <string.h>
 
 #include "proginfo.h"
-#include "opng.h"
+#include "png.h"
+#include "pngx.h"
 #include "pngxtern.h"
+#include "opngreduc.h"
 #include "cexcept.h"
 #include "cbitset.h"
 #include "osys.h"
@@ -106,15 +108,19 @@ static const char *msg_help =
    "    -nb\t\t\tno bit depth reduction\n"
    "    -nc\t\t\tno color type reduction\n"
    "    -np\t\t\tno palette reduction\n"
-#if 0  /* text chunk optimization is not implemented */
-   "    -nt\t\t\tno text chunk optimization\n"
+#if 0  /* metadata optimization is not implemented */
+   "    -nm\t\t\tno metadata optimization\n"
 #endif
    "    -nz\t\t\tno IDAT recompression (also disable reductions)\n"
    "    -fix\t\tenable error recovery\n"
-   "    -force\t\twrite a new output, even if it is larger than the input\n"
+   "    -force\t\tenforce writing of a new output file\n"
    "    -full\t\tproduce a full report on IDAT (might reduce speed)\n"
    "    -preserve\t\tpreserve file attributes if possible\n"
    "    -simulate\t\trun in simulation mode, do not create output files\n"
+   "    -snip\t\tcut one image out of multi-image or animation files\n"
+#if 0  /* multi-image splitting is not implemented */
+   "    -split\t\tsplit multi-image/animation files into separate images\n"
+#endif
    "    -out <file>\t\twrite output file to <file>\n"
    "    -dir <directory>\twrite output file(s) to <directory>\n"
    "    -log <file>\t\tlog messages to <file>\n"
@@ -177,14 +183,32 @@ static const char *filter_presets[OPTIM_LEVEL_MAX + 1] =
 static const char *filter_mask = "0-5";
 
 
-/** The only ancillary chunks handled by libpng and OptiPNG **/
+/** Status flags **/
+#define INPUT_IS_PNG_FILE           0x0001
+#define INPUT_HAS_PNG_DATASTREAM    0x0002
+#define INPUT_HAS_PNG_SIGNATURE     0x0004
+#define INPUT_HAS_DIGITAL_SIGNATURE 0x0008
+#define INPUT_HAS_MULTIPLE_IMAGES   0x0010
+#define INPUT_HAS_NONCONFORMING_PNG 0x0020
+#define INPUT_HAS_JUNK              0x0040
+#define INPUT_HAS_ERRORS            0x0080
+#define OUTPUT_NEEDS_NEW_FILE       0x0100
+#define OUTPUT_NEEDS_NEW_IDAT       0x0200
+#define OUTPUT_RESERVED             0x7c00
+#define OUTPUT_HAS_ERRORS           0x8000U
+
+
+/** The critical chunks handled by OptiPNG **/
+static const png_byte sig_IDAT[4] = { 0x49, 0x44, 0x41, 0x54 };
+static const png_byte sig_IEND[4] = { 0x49, 0x45, 0x4e, 0x44 };
+/** The ancillary chunks handled by OptiPNG **/
 static const png_byte sig_bKGD[4] = { 0x62, 0x4b, 0x47, 0x44 };
 static const png_byte sig_hIST[4] = { 0x68, 0x49, 0x53, 0x54 };
 static const png_byte sig_sBIT[4] = { 0x73, 0x42, 0x49, 0x54 };
 static const png_byte sig_tRNS[4] = { 0x74, 0x52, 0x4e, 0x53 };
-/** The chunks for which OptiPNG provides special handling **/
-static const png_byte sig_IDAT[4] = { 0x49, 0x44, 0x41, 0x54 };
-static const png_byte sig_IEND[4] = { 0x49, 0x45, 0x4e, 0x44 };
+static const png_byte sig_dSIG[4] = { 0x64, 0x53, 0x49, 0x47 };
+/** The non-standard(!) chunks handled by OptiPNG **/
+static const png_byte sig_fdAT[4] = { 0x66, 0x64, 0x41, 0x54 };
 
 
 /** User exception setup -- see cexcept.h for more info **/
@@ -192,7 +216,7 @@ define_exception_type(const char *);
 struct exception_context the_exception_context[1];
 
 
-/** OptiPNG-specific info **/
+/** OptiPNG info **/
 static struct opng_image_struct
 {
    png_uint_32 width, height;
@@ -215,11 +239,11 @@ static struct opng_image_struct
 
 static struct opng_info_struct
 {
-   int input_is_png;
-   int valid;
-   png_uint_32 file_size, idat_size;
-   png_uint_32 best_file_size, best_idat_size, total_idat_size;
-   unsigned int num_idat_chunks;
+   unsigned int status;
+   unsigned long in_file_size, out_file_size;
+   long in_datastream_offset;
+   png_uint_32 in_idat_size, out_idat_size;
+   png_uint_32 best_idat_size, max_idat_size;
    png_uint_32 crt_row, last_row;
    int crt_ipass, last_ipass;
    png_uint_32 reductions;
@@ -237,7 +261,7 @@ static struct cmdline_struct
    int keep, quiet;
    int nb, nc, np, nz;
    int fix, force, full;
-   int preserve, simulate;
+   int preserve, simulate, snip;
    bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
    int window_bits;
    char *out_name, *dir_name, *log_name;
@@ -246,7 +270,7 @@ static struct cmdline_struct
 static struct global_struct
 {
    FILE *logfile;
-   unsigned int err_count, fix_count;
+   unsigned int err_count, fix_count, snip_count;
 } global;
 
 
@@ -258,7 +282,7 @@ static png_infop read_end_info_ptr, write_end_info_ptr;
 
 /** Internal debugging tool **/
 #define OPNG_ENSURE(cond, msg) \
-   { if (!(cond)) opng_internal_error(msg); }
+   { if (!(cond)) opng_internal_error(msg); }  /* strong check, no #ifdef's */
 
 
 /** Bitset utility (find minimum value) **/
@@ -279,125 +303,239 @@ static void
 opng_printf(const char *fmt, ...)
 {
    va_list arg_ptr;
-   FILE *confile;
 
-   va_start(arg_ptr, fmt);
-
-   /* If the message starts with '!', it is sent to stderr. */
-   if (fmt[0] == '!')
+   if (!cmdline.quiet)
    {
-      ++fmt;
-      confile = stderr;
+      va_start(arg_ptr, fmt);
+      vfprintf(stdout, fmt, arg_ptr);
+      va_end(arg_ptr);
    }
-   else
-      confile = stdout;
-   if (cmdline.quiet)
-      confile = NULL;
-
-   if (confile != NULL)
-      vfprintf(confile, fmt, arg_ptr);
    if (global.logfile != NULL)
    {
+      va_start(arg_ptr, fmt);
       vfprintf(global.logfile, fmt, arg_ptr);
+      va_end(arg_ptr);
       fflush(global.logfile);
    }
-
-   va_end(arg_ptr);
 }
 
 
-/** Image info display w/ logging **/
+/** Ratio display w/ logging **/
 static void
-opng_print_image_info(int print_dim, int print_type, int print_interlaced)
+opng_print_ratio(unsigned long num, unsigned long denom, int fancy)
 {
-   static const char *color_type_name[7] =
-   {
-      "grayscale", "[invalid]", "RGB", "palette",
-      "grayscale-alpha", "[invalid]", "RGB-alpha"
-   };
-   int something_printed = 0;
+   /* (1) num/denom = 0/0                  ==> print "??%"
+    * (2) num/denom = INFINITY             ==> print "INFTY%"
+    * (3) 0 <= num/denom < 99.995%         ==> use the percent format "99.99%"
+    *     if fancy:
+    * (4)    0.995 <= num/denom < 99.995   ==> use the factor format "9.99x"
+    * (5)    99.5 <= num/denom < INFINITY  ==> use the factor format "999x"
+    *     else:
+    * (6)    0.995 <= num/denom < INFINITY ==> use the percent format "999%"
+    *     end if
+    */
 
-   if (print_dim)
-   {
-      opng_printf("%ux%u",
-         (unsigned int)opng_image.width, (unsigned int)opng_image.height);
-      something_printed = 1;
-   }
-   if (print_type)
-   {
-      if (something_printed)
-         opng_printf(" ");
-      assert(opng_image.color_type < 7);
-      opng_printf("%d-bit %s", opng_image.bit_depth,
-         color_type_name[opng_image.color_type]);
-      something_printed = 1;
-   }
-   if (print_interlaced)
-   {
-      if (something_printed)
-         opng_printf(" ");
-      opng_printf((opng_image.interlace_type == PNG_INTERLACE_ADAM7) ?
-         "interlaced" : "non-interlaced");
-   }
-}
+   unsigned long integral, adj_num, adj_denom;
 
-
-/** Percentage display w/ logging **/
-static void
-opng_print_percentage(png_uint_32 num, png_uint_32 denom)
-{
-   if (num <= PNG_UINT_31_MAX / 100 && denom <= PNG_UINT_31_MAX / 100)
-      num *= 100;
-   else
-      denom = (denom + 50) / 100;  /* reduce precision to prevent overflow */
-
+   /* (1,2): num/denom = 0/0 or num/denom = INFINITY */
    if (denom == 0)
    {
-      opng_printf("INFTY%%");
+      opng_printf(num == 0 ? "??%%" : "INFTY%%");
       return;
    }
 
-   num += denom / 200;
-   opng_printf("%lu.%02u%%",
-      (unsigned long)(num / denom),
-      (unsigned int)(num % denom * 100 / denom));
+   /* (3): 0 <= num/denom < 99.995% */
+   /* num/denom < 99.995% <==> denom/(denom-num) < 20000 */
+   if (num < denom && denom / (denom - num) < 20000)
+   {
+      /* Round to nearest 0.01% and multiply the result by 10000%. */
+      if (denom <= ULONG_MAX / 10000)
+      {
+         /* Use the best precision possible. */
+         adj_num = num * 10000 + denom / 2;
+         adj_denom = denom * 100;
+         assert(adj_num / adj_denom < 100);
+      }
+      else
+      {
+         /* Reduce the precision to prevent overflow. */
+         adj_num = num + denom / 20000;
+         if (denom <= ULONG_MAX - 5000)
+            denom = (denom + 5000) / 10000;
+         else
+            denom = ULONG_MAX / 10000;
+         assert(denom > 0);
+         adj_denom = denom * 100;
+         if (adj_num / adj_denom >= 100)
+            adj_num = denom * 9999;  /* 100.00% --> 99.99% */
+      }
+      opng_printf("%lu.%02lu%%",
+         adj_num / adj_denom, adj_num % adj_denom / denom);
+      return;
+   }
+
+   /* Extract the integral out of the fraction for the remaining cases. */
+   integral = num / denom;
+   num = num % denom;
+   /* Round to nearest 0.01 and multiply the result by 100. */
+   /* num/denom < 0.995 <==> denom/(denom-num) < 200 */
+   if (denom / (denom - num) >= 200)
+   {
+      /* Round up, use the best precision possible. */
+      ++integral;
+      adj_num = 0;
+      adj_denom = denom;
+   }
+   else if (denom <= ULONG_MAX / 100)
+   {
+      /* Also use the best precision possible. */
+      adj_num = num * 100 + denom / 2;
+      adj_denom = denom;
+      assert(adj_num / adj_denom < 100);
+   }
+   else
+   {
+      /* Reduce the precision to prevent overflow. */
+      adj_num = num + denom / 200;
+      if (denom <= ULONG_MAX - 50)
+         adj_denom = (denom + 50) / 100;
+      else
+         adj_denom = ULONG_MAX / 100;
+      assert(adj_denom > 0);
+      if (adj_num / adj_denom >= 100)
+         adj_num = adj_denom * 99;  /* N + 100% --> N + 99% */
+   }
+
+   /* (6): 0.995 <= num/denom < INFINITY */
+   if (!fancy)
+   {
+      opng_printf("%lu%02lu%%", integral, adj_num / adj_denom);
+      return;
+   }
+
+   /* (4): 0.995 <= num/denom < 99.995 */
+   if (integral < 100)
+   {
+      opng_printf("%lu.%02lux", integral, adj_num / adj_denom);
+      return;
+   }
+
+   /* (5): 99.5 <= num/denom < INFINITY */
+   /* Round to nearest integral value, use the best precision possible. */
+   if (num % denom >= denom / 2)
+      ++integral;
+   opng_printf("%lux", integral);
 }
 
 
 /** Size change display w/ logging **/
 static void
-opng_print_size_difference(png_uint_32 init_size, png_uint_32 final_size,
-   int print_percentage)
+opng_print_size_difference(unsigned long init_size, unsigned long final_size,
+   int show_ratio)
 {
-   long difference = (long)final_size - (long)init_size;
-   int increase;
+   unsigned long difference;
+   int sign;
+
+   if (init_size <= final_size)
+   {
+      sign = 0;
+      difference = final_size - init_size;
+   }
+   else
+   {
+      sign = 1;
+      difference = init_size - final_size;
+   }
 
    if (difference == 0)
    {
       opng_printf("no change");
       return;
    }
-
-   increase = 1;
-   if (difference < 0)
-   {
-      difference = -difference;
-      increase = 0;
-   }
-
-   opng_printf("%ld bytes", difference);
-   if (print_percentage && init_size > 0)
+   if (difference == 1)
+      opng_printf("1 byte");
+   else
+      opng_printf("%lu bytes", difference);
+   if (show_ratio && init_size > 0)
    {
       opng_printf(" = ");
-      opng_print_percentage(difference, init_size);
+      opng_print_ratio(difference, init_size, 1);
    }
-   opng_printf(increase ? " increase" : " decrease");
+   opng_printf(sign == 0 ? " increase" : " decrease");
+}
+
+
+/** Image info display w/ logging **/
+static void
+opng_print_image_info(int show_dim, int show_depth, int show_type,
+   int show_interlaced)
+{
+   static const int type_channels[8] = {1, 0, 3, 1, 2, 0, 4, 0};
+   int channels, printed;
+
+   printed = 0;
+   if (show_dim)
+   {
+      printed = 1;
+      opng_printf("%lux%lu pixels",
+         (unsigned long)opng_image.width, (unsigned long)opng_image.height);
+   }
+   if (show_depth)
+   {
+      if (printed)
+         opng_printf(", ");
+      printed = 1;
+      channels = type_channels[opng_image.color_type & 7];
+      if (channels != 1)
+         opng_printf("%dx%d bits/pixel", channels, opng_image.bit_depth);
+      else if (opng_image.bit_depth != 1)
+         opng_printf("%d bits/pixel", opng_image.bit_depth);
+      else
+         opng_printf("1 bit/pixel");
+   }
+   if (show_type)
+   {
+      if (printed)
+         opng_printf(", ");
+      printed = 1;
+      if (opng_image.color_type & PNG_COLOR_MASK_PALETTE)
+      {
+         if (opng_image.num_palette == 1)
+            opng_printf("1 color");
+         else
+            opng_printf("%d colors", opng_image.num_palette);
+         if (opng_image.num_trans > 0)
+            opng_printf(" (%d transparent)", opng_image.num_trans);
+         opng_printf(" in palette");
+      }
+      else
+      {
+         opng_printf((opng_image.color_type & PNG_COLOR_MASK_COLOR) ?
+                     "RGB" : "grayscale");
+         if (opng_image.color_type & PNG_COLOR_MASK_ALPHA)
+            opng_printf("+alpha");
+         else if (opng_image.trans_values_ptr != NULL)
+            opng_printf("+transparency");
+      }
+   }
+   if (show_interlaced)
+   {
+      if (opng_image.interlace_type != PNG_INTERLACE_NONE)
+      {
+         if (printed)
+            opng_printf(", ");
+         opng_printf("interlaced");
+      }
+      /* Displaying "non-interlaced" is not really necessary for PNG images,
+       * and is almost meaningless for non-PNG images.
+       */
+   }
 }
 
 
 /** Progress calculation w/ printing and logging **/
-static int
-opng_progress(void)
+static void
+opng_print_progress(void)
 {
    static const int progress_factor[7] = {1, 1, 2, 4, 8, 16, 32};
    png_uint_32 height, crt_row, progress;
@@ -407,7 +545,7 @@ opng_progress(void)
        opng_info.crt_ipass >= opng_info.last_ipass)
    {
       opng_printf("100%%");
-      return 1;  /* finished */
+      return;  /* finished */
    }
 
    if (opng_image.interlace_type == PNG_INTERLACE_ADAM7)
@@ -432,45 +570,23 @@ opng_progress(void)
       /* Compute the percentage and make sure it's not beyond 100% */
       height *= 64;
       if (progress < height)
-         opng_print_percentage(progress, height);
+         opng_print_ratio(progress, height, 0);
       else  /* this may happen only if precision was reduced */
          opng_printf("100%%");  /* ... but it isn't really finished */
    }
    else  /* PNG_INTERLACE_NONE */
    {
       assert(opng_info.crt_ipass == 0);
-      opng_print_percentage(opng_info.crt_row, opng_image.height);
+      opng_print_ratio(opng_info.crt_row, opng_image.height, 0);
    }
-   return 0;  /* unfinished */
 }
 
 
-/** Internal error handler -- this should never execute **/
+/** Warning display **/
 static void
-opng_internal_error(png_const_charp msg)
+opng_print_warning(const char *msg)
 {
-   const char *fmt = "[internal error] %s\n";
-
-   fprintf(stderr, fmt, msg);
-   fflush(stderr);
-   if (global.logfile != NULL)
-   {
-      fprintf(global.logfile, fmt, msg);
-      fflush(global.logfile);
-   }
-   osys_terminate();
-}
-
-
-/** Error handler **/
-static void
-opng_error(png_structp png_ptr, png_const_charp msg)
-{
-   if (&png_ptr)  /* dummy, keep compilers happy */
-   {
-      opng_info.valid = 0;
-      Throw msg;
-   }
+   opng_printf("Warning: %s\n", msg);
 }
 
 
@@ -478,39 +594,295 @@ opng_error(png_structp png_ptr, png_const_charp msg)
 static void
 opng_warning(png_structp png_ptr, png_const_charp msg)
 {
-   if (&png_ptr)  /* dummy, keep compilers happy */
-   {
-      opng_info.valid = 0;
-      opng_printf("!Warning: %s\n", msg);
-   }
+   /* Error in input or output file; processing may continue. */
+   /* Recovery requires (re)compression of IDAT. */
+   if (png_ptr == read_ptr)
+      opng_info.status |= (INPUT_HAS_ERRORS | OUTPUT_NEEDS_NEW_IDAT);
+   opng_print_warning(msg);
 }
 
 
-/** Query for chunk handling **/
-static int
-opng_handle_as_unknown(png_bytep chunk_type)
+/** Error handler **/
+static void
+opng_error(png_structp png_ptr, png_const_charp msg)
 {
-   if ((chunk_type[0] & 0x20) == 0  /* critical chunk? */  ||
-       memcmp(chunk_type, sig_bKGD, 4) == 0 ||
-       memcmp(chunk_type, sig_hIST, 4) == 0 ||
-       memcmp(chunk_type, sig_sBIT, 4) == 0 ||
-       memcmp(chunk_type, sig_tRNS, 4) == 0)
-      return 0;
-   return 1;
+   /* Error in input or output file; processing must stop. */
+   /* Recovery requires (re)compression of IDAT. */
+   if (png_ptr == read_ptr)
+      opng_info.status |= (INPUT_HAS_ERRORS | OUTPUT_NEEDS_NEW_IDAT);
+   Throw msg;
+}
+
+
+/** Internal error handler -- this should never get executed! **/
+static void
+opng_internal_error(png_const_charp msg)
+{
+   fprintf(stderr, "\n[internal error] %s\n", msg);
+   fflush(stderr);
+   osys_terminate();
 }
 
 
 /** Chunk handler **/
 static void
-opng_set_keep_unknown_chunk(png_structp png_ptr, png_bytep chunk_type)
+opng_handle_chunk(png_structp png_ptr, png_bytep chunk_type)
 {
    png_byte chunk_name[5];
+   int keep;
 
+   if ((chunk_type[0] & 0x20) == 0  /* critical chunk? */
+       || memcmp(chunk_type, sig_bKGD, 4) == 0
+       || memcmp(chunk_type, sig_hIST, 4) == 0
+       || memcmp(chunk_type, sig_sBIT, 4) == 0
+       || memcmp(chunk_type, sig_tRNS, 4) == 0)
+      return;  /* let libpng handle it */
+
+   /* Everything else is handled as unknown by libpng. */
+   keep = PNG_HANDLE_CHUNK_ALWAYS;
+   if (memcmp(chunk_type, sig_dSIG, 4) == 0)  /* digital signature? */
+      opng_info.status |= INPUT_HAS_DIGITAL_SIGNATURE;
+   else if ((chunk_type[1] & 0x20) != 0)  /* non-compliant extension? */
+   {
+      opng_info.status |= INPUT_HAS_NONCONFORMING_PNG;
+      if (memcmp(chunk_type, sig_fdAT, 4) == 0)
+         opng_info.status |= INPUT_HAS_MULTIPLE_IMAGES;
+      if (cmdline.snip)
+      {
+         opng_info.status |= INPUT_HAS_JUNK;
+         keep = PNG_HANDLE_CHUNK_NEVER;
+      }
+   }
    memcpy(chunk_name, chunk_type, 4);
    chunk_name[4] = 0;
    if (!png_handle_as_unknown(png_ptr, chunk_name))
-      png_set_keep_unknown_chunks(png_ptr, PNG_HANDLE_CHUNK_ALWAYS,
-         chunk_name, 1);
+      png_set_keep_unknown_chunks(png_ptr, keep, chunk_name, 1);
+}
+
+
+/** Chunk filter **/
+static int
+opng_allow_chunk(png_bytep chunk_type)
+{
+   if (memcmp(chunk_type, sig_dSIG, 4) == 0)  /* digital signature? */
+      return 0;                               /* ... never allow    */
+   if ((chunk_type[1] & 0x20) != 0)  /* non-compliant extension?  */
+      return cmdline.snip ? 0 : 1;   /* ... allow if not snipping */
+   return 1;  /* allow everything else */
+}
+
+
+/** Initialization for input handler **/
+static void
+opng_init_read_data(void)
+{
+   /* Everything inside opng_info is set to zero,
+    * and nothing else needs to be done at this moment.
+    */
+}
+
+
+/** Initialization for output handler **/
+static void
+opng_init_write_data(void)
+{
+   opng_info.out_file_size = 0;
+   opng_info.out_idat_size = 0;
+   if (opng_info.max_idat_size == 0)
+      opng_info.max_idat_size = PNG_UINT_31_MAX;
+}
+
+
+/** Input handler **/
+static void
+opng_read_data(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+   FILE *stream = (FILE *)png_get_io_ptr(png_ptr);
+   int io_state = pngx_get_io_state(png_ptr);
+   int io_state_loc = io_state & PNGX_IO_MASK_LOC;
+   png_bytep chunk_sig;
+
+   /* Read the data. */
+   if (fread(data, 1, length, stream) != length)
+      png_error(png_ptr,
+         "Can't read the input file or unexpected end of file");
+
+   if (opng_info.in_file_size == 0)  /* first piece of PNG data */
+   {
+      OPNG_ENSURE(length == 8, "PNG I/O must start with the first 8 bytes");
+      opng_info.in_datastream_offset = ftell(stream) - 8;
+      opng_info.status |= INPUT_HAS_PNG_DATASTREAM;
+      if (io_state_loc == PNGX_IO_SIGNATURE)
+         opng_info.status |= INPUT_HAS_PNG_SIGNATURE;
+      if (opng_info.in_datastream_offset == 0)
+         opng_info.status |= INPUT_IS_PNG_FILE;
+      else if (opng_info.in_datastream_offset < 0)
+         png_error(png_ptr,
+            "Can't get the file-position indicator in input file");
+      opng_info.in_file_size = (unsigned long)opng_info.in_datastream_offset;
+   }
+   opng_info.in_file_size += length;
+
+   /* Handle the OptiPNG-specific events. */
+   OPNG_ENSURE((io_state & PNGX_IO_READING) && (io_state_loc != 0),
+      "Incorrect info in png_ptr->io_state");
+   if (io_state_loc == PNGX_IO_CHUNK_HDR)
+   {
+      /* In libpng 1.4.x and later, the chunk length and the chunk name
+       * are serialized in a single operation.  This is also ensured by
+       * the opngio add-on for libpng 1.2.x and earlier.
+       */
+      OPNG_ENSURE(length == 8, "Reading chunk header, expecting 8 bytes");
+      chunk_sig = data + 4;
+
+      if (memcmp(chunk_sig, sig_IDAT, 4) == 0)
+      {
+         if (opng_info.in_idat_size == 0)  /* first IDAT */
+         {
+            /* Allocate the rows here, bypassing libpng.
+             * This allows to initialize the contents and perform recovery
+             * in case of a premature EOF.
+             */
+            OPNG_ENSURE(png_ptr == read_ptr, "Incorrect I/O handler setup");
+            if (png_get_image_height(read_ptr, read_info_ptr) == 0)
+               return;  /* premature IDAT; an error will be triggered later */
+            OPNG_ENSURE(png_get_rows(read_ptr, read_info_ptr) == NULL,
+               "Image rows have been allocated too early");
+            OPNG_ENSURE(pngx_malloc_rows(read_ptr, read_info_ptr, 0) != NULL,
+               "Failed allocation of image rows; check the safe allocator");
+            png_data_freer(read_ptr, read_info_ptr,
+               PNG_USER_WILL_FREE_DATA, PNG_FREE_ROWS);
+         }
+         else
+            opng_info.status |= INPUT_HAS_JUNK;  /* collapse multiple IDAT's */
+         opng_info.in_idat_size += png_get_uint_32(data);
+      }
+      else  /* not IDAT */
+         opng_handle_chunk(png_ptr, chunk_sig);
+   }
+}
+
+
+/** Output handler **/
+static void
+opng_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
+{
+   static int allow_crt_chunk;
+   static int crt_chunk_is_idat;
+   static long crt_idat_offset;
+   static png_uint_32 crt_idat_size, crt_idat_crc;
+   FILE *stream = (FILE *)png_get_io_ptr(png_ptr);
+   int io_state = pngx_get_io_state(png_ptr);
+   int io_state_loc = io_state & PNGX_IO_MASK_LOC;
+   png_bytep chunk_sig;
+   png_byte buf[4];
+
+   OPNG_ENSURE((io_state & PNGX_IO_WRITING) && (io_state_loc != 0),
+      "Incorrect info in png_ptr->io_state");
+
+   /* Handle the OptiPNG-specific events. */
+   if (io_state_loc == PNGX_IO_CHUNK_HDR)
+   {
+      OPNG_ENSURE(length == 8, "Writing chunk header, expecting 8 bytes");
+      chunk_sig = data + 4;
+      allow_crt_chunk = opng_allow_chunk(chunk_sig);
+      if (memcmp(chunk_sig, sig_IDAT, 4) == 0)
+      {
+         crt_chunk_is_idat = 1;
+         opng_info.out_idat_size += png_get_uint_32(data);
+         /* Abandon the trial if IDAT is bigger than the maximum allowed. */
+         if (stream == NULL)
+         {
+            if (opng_info.out_idat_size > opng_info.max_idat_size)
+               Throw NULL;  /* early interruption, not an error */
+         }
+      }
+      else  /* not IDAT */
+         crt_chunk_is_idat = 0;
+   }
+
+   /* Exit early if this is only a trial. */
+   if (stream == NULL)
+      return;
+
+   /* Continue only if the current chunk type is allowed. */
+   if (io_state_loc != PNGX_IO_SIGNATURE && !allow_crt_chunk)
+      return;
+
+   /* Here comes an elaborate way of writing the data, in which
+    * multiple IDATs are collapsed in a single chunk.
+    * Normally, the user-supplied I/O routines are not so complicated.
+    */
+   switch (io_state_loc)
+   {
+      case PNGX_IO_CHUNK_HDR:
+      {
+         if (crt_chunk_is_idat)
+         {
+            if (crt_idat_offset == 0)  /* this is the first IDAT */
+            {
+               crt_idat_offset = ftell(stream);
+               /* Try guessing the concatenated IDAT's length. */
+               if (opng_info.best_idat_size > 0)
+                  crt_idat_size = opng_info.best_idat_size;
+               else
+                  crt_idat_size = length;
+               png_save_uint_32(data, crt_idat_size);
+               /* Start computing the concatenated IDAT's CRC. */
+               crt_idat_crc = crc32(0, sig_IDAT, 4);
+            }
+            else  /* this is not the first IDAT, so do not write its header */
+               return;
+         }
+         else
+         {
+            if (crt_idat_offset != 0)
+            {
+               /* This is the header of the first chunk after IDAT. */
+               /* IDAT must be finalized. */
+               png_save_uint_32(buf, crt_idat_crc);
+               if (fwrite(buf, 1, 4, stream) != 4)
+                  io_state = 0;  /* error */
+               opng_info.out_file_size += 4;
+               if (opng_info.out_idat_size != crt_idat_size)
+               {
+                  /* The IDAT chunk size has not been correctly anticipated.
+                   * It must be corrected in a non-streamable way.
+                   */
+                  OPNG_ENSURE(opng_info.best_idat_size == 0,
+                     "Incorrect calculation of IDAT size");
+                  OPNG_ENSURE(opng_info.out_idat_size <= PNG_UINT_31_MAX,
+                     "Exceedingly large IDAT in output");
+                  png_save_uint_32(buf, opng_info.out_idat_size);
+                  if (osys_fwrite_at(stream, crt_idat_offset, SEEK_SET,
+                      buf, 4) != 4)
+                     io_state = 0;  /* error */
+               }
+               if (io_state == 0)
+                  png_error(png_ptr, "Can't finalize IDAT");
+               crt_idat_offset = 0;
+            }
+         }
+         break;
+      }
+      case PNGX_IO_CHUNK_DATA:
+      {
+         if (crt_chunk_is_idat)
+            crt_idat_crc = crc32(crt_idat_crc, data, length);
+         break;
+      }
+      case PNGX_IO_CHUNK_CRC:
+      {
+         if (crt_chunk_is_idat)
+            return;  /* defer writing until the first non-IDAT occurs */
+         break;
+      }
+   }
+
+   /* Write the data. */
+   if (fwrite(data, 1, length, stream) != length)
+      png_error(png_ptr, "Can't write the output file");
+   opng_info.out_file_size += length;
 }
 
 
@@ -526,168 +898,23 @@ opng_read_write_status(png_structp png_ptr, png_uint_32 row_num, int pass)
 }
 
 
-/** I/O handler **/
+/** Image info initialization **/
 static void
-opng_read_write_data(png_structp png_ptr, png_bytep data, png_size_t length)
+opng_clear_image_info(void)
 {
-   static int crt_chunk_is_idat;
-   static long idat_offset;
-   static png_uint_32 crt_idat_crc;
-   FILE *fp = (FILE *)png_get_io_ptr(png_ptr);
-   int io_state = opng_get_io_state(png_ptr);
-   int io_state_loc = io_state & OPNG_IO_MASK_LOC;
-   png_bytep chunk_sig;
-
-   if ((io_state & OPNG_IO_MASK_OP) == 0 || (io_state & OPNG_IO_MASK_LOC) == 0)
-      png_error(png_ptr, "[libpng error] No info in png_ptr->io_state");
-
-   if (length == 0)
-      return;
-   assert(data != NULL);
-
-   if (io_state & OPNG_IO_READING)
-   {
-      assert(fp != NULL);
-      if (fread(data, length, 1, fp) != 1)
-         png_error(png_ptr,
-            "Can't read the input file or unexpected end of file");
-   }
-
-   /* Update file_size, idat_size, etc. */
-   opng_info.file_size += length;
-   if (io_state_loc == OPNG_IO_CHUNK_HDR)
-   {
-      if (length != 8)
-         png_error(png_ptr, "[libpng error] Incorrect amount of data for I/O");
-      chunk_sig = data + 4;
-      if (memcmp(chunk_sig, sig_IDAT, 4) == 0)
-      {
-         crt_chunk_is_idat = 1;
-         ++opng_info.num_idat_chunks;
-         opng_info.idat_size += png_get_uint_32(data);
-         /* Abandon trial if IDAT is already bigger than the smallest IDAT
-          * previously found, or if it can't fit into a single chunk.
-          */
-         if (fp == NULL)
-         {
-            if ((opng_info.idat_size > opng_info.best_idat_size
-                 && !cmdline.full)
-                || opng_info.idat_size > PNG_UINT_31_MAX)
-               Throw NULL;
-         }
-      }
-      else  /* not IDAT */
-      {
-         crt_chunk_is_idat = 0;
-         if (opng_handle_as_unknown(chunk_sig))
-            opng_set_keep_unknown_chunk(png_ptr, chunk_sig);
-      }
-   }
-
-   /* Don't write anything during trials. */
-   if (fp == NULL || !(io_state & OPNG_IO_WRITING))
-      return;
-
-   /* Here comes an elaborate way of writing the data, in which
-    * multiple IDATs are collapsed in a single chunk.
-    * Normally, the user-supplied I/O routines are not so complicated.
-    */
-   switch (io_state_loc)
-   {
-      case OPNG_IO_SIGNATURE:
-      {
-         /* Initialize the static local variables here. */
-         idat_offset = 0;
-         break;
-      }
-      case OPNG_IO_CHUNK_HDR:
-      {
-         if (crt_chunk_is_idat)
-         {
-            OPNG_ENSURE(opng_info.total_idat_size <= PNG_UINT_31_MAX,
-               "Exceedingly large IDAT size - not handled");
-            if (opng_info.num_idat_chunks == 1)  /* the first */
-            {
-               /* Save the current file position. */
-               idat_offset = ftell(fp);
-               /* Write the concatenated IDAT's length. */
-               png_save_uint_32(data, opng_info.total_idat_size);
-               /* Start computing the concatenated IDAT's CRC. */
-               crt_idat_crc = crc32(0, sig_IDAT, 4);
-            }
-            else
-            {
-               /* No IDAT header unless it's the first IDAT. */
-               opng_info.file_size -= 8;
-               return;
-            }
-         }
-         else
-         {
-            /* Sanity check: */
-            /* Make sure IDAT is written completely, or not at all. */
-            OPNG_ENSURE(opng_info.num_idat_chunks == 0
-               || opng_info.idat_size == opng_info.total_idat_size
-               || opng_info.total_idat_size == 0,
-               "Inconsistent IDAT");
-            if (idat_offset != 0)
-            {
-               /* In some instances, it is necessary to write
-                * the IDAT chunk size in a non-streamable way.
-                */
-               png_byte buf[4];
-               size_t num;
-               /* Write the IDAT CRC. */
-               png_save_uint_32(buf, crt_idat_crc);
-               num = fwrite(buf, 1, 4, fp);
-               opng_info.file_size += 4;
-               /* Seek to the IDAT header and update the length. */
-               OPNG_ENSURE(opng_info.total_idat_size == 0, "Got lost...");
-               opng_info.total_idat_size = opng_info.idat_size;
-               png_save_uint_32(buf, opng_info.idat_size);
-               num += osys_fwrite_at(fp, idat_offset, SEEK_SET, buf, 4);
-               if (num != 8)
-                  png_error(png_ptr, "Can't finalize IDAT");
-               idat_offset = 0;  /* not needed anymore */
-            }
-         }
-         break;
-      }
-      case OPNG_IO_CHUNK_DATA:
-      {
-         if (crt_chunk_is_idat)
-            crt_idat_crc = crc32(crt_idat_crc, data, length);
-         break;
-      }
-      case OPNG_IO_CHUNK_CRC:
-      {
-         if (crt_chunk_is_idat)
-         {
-            if (opng_info.idat_size < opng_info.total_idat_size ||
-                opng_info.total_idat_size == 0)
-            {
-               /* No IDAT CRC unless it's the last IDAT. */
-               opng_info.file_size -= 4;
-               return;
-            }
-            png_save_uint_32(data, crt_idat_crc);
-            idat_offset = 0;  /* not needed anymore */
-         }
-      }
-   }
-   if (fwrite(data, length, 1, fp) != 1)
-      png_error(png_ptr, "Can't write the output file");
+   png_debug(0, "Clearing opng_image");
+   memset(&opng_image, 0, sizeof(opng_image));
 }
 
 
 /** Image info transfer **/
 static void
-opng_get_image_info(png_structp png_ptr, png_infop info_ptr,
-   png_infop end_info_ptr, int get_ancillary)
+opng_load_image_info(png_structp png_ptr, png_infop info_ptr,
+   png_infop end_info_ptr, int load_metadata)
 {
+   png_debug(0, "Loading opng_image from info struct\n");
    memset(&opng_image, 0, sizeof(opng_image));
 
-   png_debug(0, "Loading info struct\n");
    png_get_IHDR(png_ptr, info_ptr,
       &opng_image.width, &opng_image.height, &opng_image.bit_depth,
       &opng_image.color_type, &opng_image.interlace_type,
@@ -695,35 +922,36 @@ opng_get_image_info(png_structp png_ptr, png_infop info_ptr,
    opng_image.row_pointers = png_get_rows(png_ptr, info_ptr);
    png_get_PLTE(png_ptr, info_ptr,
       &opng_image.palette, &opng_image.num_palette);
-
-   if (!get_ancillary)
-      return;
-
-   if (png_get_bKGD(png_ptr, info_ptr, &opng_image.background_ptr))
+   /* Transparency is not considered metadata, although tRNS is ancillary. */
+   if (png_get_tRNS(png_ptr, info_ptr,
+      &opng_image.trans, &opng_image.num_trans,
+      &opng_image.trans_values_ptr))
    {
       /* Double copying (pointer + value) is necessary here
        * due to an inconsistency in the libpng design.
        */
+      if (opng_image.trans_values_ptr != NULL)
+      {
+         opng_image.trans_values = *opng_image.trans_values_ptr;
+         opng_image.trans_values_ptr = &opng_image.trans_values;
+      }
+   }
+
+   if (!load_metadata)
+      return;
+
+   if (png_get_bKGD(png_ptr, info_ptr, &opng_image.background_ptr))
+   {
+      /* Same problem as in tRNS. */
       opng_image.background = *opng_image.background_ptr;
       opng_image.background_ptr = &opng_image.background;
    }
    png_get_hIST(png_ptr, info_ptr, &opng_image.hist);
    if (png_get_sBIT(png_ptr, info_ptr, &opng_image.sig_bit_ptr))
    {
-      /* Same problem... */
+      /* Same problem as in tRNS. */
       opng_image.sig_bit = *opng_image.sig_bit_ptr;
       opng_image.sig_bit_ptr = &opng_image.sig_bit;
-   }
-   if (png_get_tRNS(png_ptr, info_ptr,
-      &opng_image.trans, &opng_image.num_trans,
-      &opng_image.trans_values_ptr))
-   {
-      /* Same problem... */
-      if (opng_image.trans_values_ptr != NULL)
-      {
-         opng_image.trans_values = *opng_image.trans_values_ptr;
-         opng_image.trans_values_ptr = &opng_image.trans_values;
-      }
    }
    opng_image.num_unknowns =
       png_get_unknown_chunks(png_ptr, info_ptr, &opng_image.unknowns);
@@ -735,10 +963,12 @@ opng_get_image_info(png_structp png_ptr, png_infop info_ptr,
 
 /** Image info transfer **/
 static void
-opng_set_image_info(png_structp png_ptr, png_infop info_ptr,
-   png_infop end_info_ptr, int set_ancillary)
+opng_store_image_info(png_structp png_ptr, png_infop info_ptr,
+   png_infop end_info_ptr, int store_metadata)
 {
-   png_debug(0, "Storing info struct\n");
+   png_debug(0, "Storing opng_image to info struct\n");
+   OPNG_ENSURE(opng_image.row_pointers != NULL, "No info in opng_image");
+
    png_set_IHDR(png_ptr, info_ptr,
       opng_image.width, opng_image.height, opng_image.bit_depth,
       opng_image.color_type, opng_image.interlace_type,
@@ -747,8 +977,13 @@ opng_set_image_info(png_structp png_ptr, png_infop info_ptr,
    if (opng_image.palette != NULL)
       png_set_PLTE(png_ptr, info_ptr,
          opng_image.palette, opng_image.num_palette);
+   /* Transparency is not considered metadata, although tRNS is ancillary. */
+   if (opng_image.trans != NULL || opng_image.trans_values_ptr != NULL)
+      png_set_tRNS(png_ptr, info_ptr,
+         opng_image.trans, opng_image.num_trans,
+         opng_image.trans_values_ptr);
 
-   if (!set_ancillary)
+   if (!store_metadata)
       return;
 
    if (opng_image.background_ptr != NULL)
@@ -757,16 +992,12 @@ opng_set_image_info(png_structp png_ptr, png_infop info_ptr,
       png_set_hIST(png_ptr, info_ptr, opng_image.hist);
    if (opng_image.sig_bit_ptr != NULL)
       png_set_sBIT(png_ptr, info_ptr, opng_image.sig_bit_ptr);
-   if (opng_image.trans != NULL || opng_image.trans_values_ptr != NULL)
-      png_set_tRNS(png_ptr, info_ptr,
-         opng_image.trans, opng_image.num_trans,
-         opng_image.trans_values_ptr);
    if (opng_image.num_unknowns != 0)
    {
       int i;
       png_set_unknown_chunks(png_ptr, info_ptr,
          opng_image.unknowns, opng_image.num_unknowns);
-      /* Is this really necessary? Shouldn't it be implemented in libpng? */
+      /* Is this really necessary? Should it not be implemented in libpng? */
       for (i = 0; i < opng_image.num_unknowns; ++i)
          png_set_unknown_chunk_location(png_ptr, info_ptr,
             i, opng_image.unknowns[i].location);
@@ -777,13 +1008,14 @@ opng_set_image_info(png_structp png_ptr, png_infop info_ptr,
 }
 
 
-/** Image info cleanup **/
+/** Image info destruction **/
 static void
-opng_free_image_info(void)
+opng_destroy_image_info(void)
 {
    png_uint_32 i;
    int j;
 
+   png_debug(0, "Destroying opng_image\n");
    if (opng_image.row_pointers == NULL)
       return;  /* nothing to clean up */
 
@@ -791,29 +1023,32 @@ opng_free_image_info(void)
       osys_free(opng_image.row_pointers[i]);
    osys_free(opng_image.row_pointers);
    osys_free(opng_image.palette);
-   osys_free(opng_image.hist);
    osys_free(opng_image.trans);
+   osys_free(opng_image.hist);
    for (j = 0; j < opng_image.num_unknowns; ++j)
       osys_free(opng_image.unknowns[j].data);
    osys_free(opng_image.unknowns);
    /* DO NOT deallocate background_ptr, sig_bit_ptr, trans_values_ptr.
-    * See the above complaint about an inconsistency in libpng.
+    * See the comments regarding double copying inside opng_load_image_info().
+    */
+
+   /* Clear the space here and do not worry about double-deallocation issues
+    * that might arise later on.
     */
    memset(&opng_image, 0, sizeof(opng_image));
 }
 
 
-/** PNG file reading **/
+/** Image file reading **/
 static void
-opng_read_png(FILE *infile)
+opng_read_file(FILE *infile)
 {
+   char fmt_name[16];
+   int num_img;
    png_uint_32 reductions;
-   const char *extern_fmt, *err_msg;
+   const char * volatile err_msg;  /* volatile is required by cexcept */
 
-   opng_info.valid = 1;
-   opng_info.file_size = opng_info.idat_size = 0;
-   opng_info.num_idat_chunks = 0;
-
+   png_debug(0, "Reading image file\n");
    assert(infile != NULL);
 
    Try
@@ -831,72 +1066,130 @@ opng_read_png(FILE *infile)
          Throw "Out of memory";
 
       png_set_keep_unknown_chunks(read_ptr, PNG_HANDLE_CHUNK_ALWAYS, NULL, 0);
-      opng_set_read_fn(read_ptr, infile, opng_read_write_data);
 
       png_debug(0, "Reading input file\n");
-      extern_fmt = pngx_read_external(read_ptr, read_info_ptr, infile);
-      if (extern_fmt != NULL)
+      opng_init_read_data();
+      pngx_set_read_fn(read_ptr, infile, opng_read_data);
+      fmt_name[0] = '\0';
+      num_img = pngx_read_image(read_ptr, read_info_ptr,
+         fmt_name, sizeof(fmt_name), NULL, 0);
+      if (num_img > 1)
+         opng_info.status |= INPUT_HAS_MULTIPLE_IMAGES;
+      if ((opng_info.status & INPUT_IS_PNG_FILE)
+          && (opng_info.status & INPUT_HAS_MULTIPLE_IMAGES))
       {
-         opng_printf("%s format detected\n", extern_fmt);
-         opng_info.input_is_png = 0;
-         fseek(infile, 0, SEEK_END);
-         opng_info.file_size = ftell(infile);
-         opng_info.idat_size = 0;
+         /* pngxtern can't distinguish between APNG and proper PNG. */
+         strcpy(fmt_name, (opng_info.status & INPUT_HAS_PNG_SIGNATURE) ?
+                "APNG" : "APNG datastream");
       }
-      else
+      OPNG_ENSURE(num_img >= 0, "Format name buffer too small for pngxtern");
+      OPNG_ENSURE(fmt_name[0] != 0, "No format name from pngxtern");
+
+      if (opng_info.in_file_size == 0)
       {
-         /* The format is not recognized by pngxtern, so assume it's PNG. */
-         png_read_png(read_ptr, read_info_ptr, 0, NULL);
-         opng_info.input_is_png = 1;
+         if (fseek(infile, 0, SEEK_END) == 0)
+         {
+            opng_info.in_file_size = (unsigned long)ftell(infile);
+            if (opng_info.in_file_size > LONG_MAX)
+               opng_info.in_file_size = 0;
+         }
+         if (opng_info.in_file_size == 0)
+            opng_print_warning("Unable to get the correct file size");
       }
+
+      err_msg = NULL;  /* everything is ok */
    }
    Catch (err_msg)
    {
       /* If the critical info has been loaded, treat all errors as warnings.
-         This enables a more advanced data recovery. */
+       * This enables a more advanced data recovery.
+       */
       if (opng_validate_image(read_ptr, read_info_ptr))
-         opng_warning(read_ptr, err_msg);
-      else
       {
-         /* Do the cleanup, then rethrow the exception. */
-         png_data_freer(read_ptr, read_info_ptr,
-            PNG_DESTROY_WILL_FREE_DATA, PNG_FREE_ALL);
-         png_data_freer(read_ptr, read_end_info_ptr,
-            PNG_DESTROY_WILL_FREE_DATA, PNG_FREE_ALL);
-         png_destroy_read_struct(&read_ptr, &read_info_ptr,
-            &read_end_info_ptr);
-         Throw err_msg;
+         png_warning(read_ptr, err_msg);
+         err_msg = NULL;
       }
    }
 
-   opng_get_image_info(read_ptr, read_info_ptr, read_end_info_ptr, 0);
-   opng_print_image_info(1, 1, 1);
-   opng_printf("\n");
-
-   png_debug(0, "Attempting to reduce image\n");
-   reductions = OPNG_REDUCE_ALL;
-   if (cmdline.nb)
-      reductions &= ~OPNG_REDUCE_BIT_DEPTH;
-   if (cmdline.nc)
-      reductions &= ~OPNG_REDUCE_COLOR_TYPE;
-   if (cmdline.np)
-      reductions &= ~OPNG_REDUCE_PALETTE;
-   opng_info.reductions = reductions =
-      opng_reduce_image(read_ptr, read_info_ptr, reductions);
-
-   opng_get_image_info(read_ptr, read_info_ptr, read_end_info_ptr, 1);
-
-   if (reductions != OPNG_REDUCE_NONE)
+   Try
    {
-      if (reductions & (OPNG_REDUCE_BIT_DEPTH | OPNG_REDUCE_COLOR_TYPE))
+      if (err_msg != NULL)
+         Throw err_msg;
+
+      /* Display format and image information. */
+      if (strcmp(fmt_name, "PNG") != 0)
       {
-         opng_printf("The image is losslessly reduced to ");
-         opng_print_image_info(0, 1, 0);
+         opng_printf("Importing %s", fmt_name);
+         if (opng_info.status & INPUT_HAS_MULTIPLE_IMAGES)
+         {
+            if (!(opng_info.status & INPUT_IS_PNG_FILE))
+               opng_printf(" (multi-image or animation)");
+            if (cmdline.snip)
+               opng_printf("; snipping...");
+         }
          opng_printf("\n");
       }
-      if (reductions & OPNG_REDUCE_PALETTE)
+      opng_load_image_info(read_ptr, read_info_ptr, read_end_info_ptr, 1);
+      opng_print_image_info(1, 1, 1, 1);
+      opng_printf("\n");
+
+      /* Choose the applicable image reductions. */
+      reductions = OPNG_REDUCE_ALL;
+      if (cmdline.nb)
+         reductions &= ~OPNG_REDUCE_BIT_DEPTH;
+      if (cmdline.nc)
+         reductions &= ~OPNG_REDUCE_COLOR_TYPE;
+      if (cmdline.np)
+         reductions &= ~OPNG_REDUCE_PALETTE_ALL;
+      if (opng_info.status & INPUT_HAS_DIGITAL_SIGNATURE)
+      {
+         /* Do not reduce signed files. */
+         reductions = OPNG_REDUCE_NONE;
+      }
+      if ((opng_info.status & INPUT_IS_PNG_FILE) &&
+          (opng_info.status & INPUT_HAS_MULTIPLE_IMAGES) &&
+          (reductions != OPNG_REDUCE_NONE) && !cmdline.snip)
+      {
          opng_printf(
-            "The color palette or transparency is losslessly reduced.\n");
+            "Can't reliably reduce APNG file; disabling reductions.\n"
+            "(Rerun " PROGRAM_NAME " with the -snip option "
+            "to convert APNG to optimized PNG.)\n");
+         reductions = OPNG_REDUCE_NONE;
+      }
+
+      /* Try to reduce the image. */
+      opng_info.reductions =
+         opng_reduce_image(read_ptr, read_info_ptr, reductions);
+
+      /* If the image is reduced, enforce full compression. */
+      if (opng_info.reductions != OPNG_REDUCE_NONE)
+      {
+         opng_info.status |= OUTPUT_NEEDS_NEW_IDAT;
+         opng_load_image_info(read_ptr, read_info_ptr, read_end_info_ptr, 1);
+         opng_printf("Reducing image to ");
+         opng_print_image_info(0, 1, 1, 0);
+         opng_printf("\n");
+      }
+
+      /* Change the interlace type if required. */
+      if (cmdline.interlace >= 0
+          && opng_image.interlace_type != cmdline.interlace)
+      {
+         opng_image.interlace_type = cmdline.interlace;
+         /* A change in interlacing requires IDAT recompression. */
+         opng_info.status |= OUTPUT_NEEDS_NEW_IDAT;
+      }
+   }
+   Catch (err_msg)
+   {
+      /* Do the cleanup, then rethrow the exception. */
+      png_data_freer(read_ptr, read_info_ptr,
+         PNG_DESTROY_WILL_FREE_DATA, PNG_FREE_ALL);
+      png_data_freer(read_ptr, read_end_info_ptr,
+         PNG_DESTROY_WILL_FREE_DATA, PNG_FREE_ALL);
+      png_destroy_read_struct(&read_ptr, &read_info_ptr,
+         &read_end_info_ptr);
+      Throw err_msg;
    }
 
    png_debug(0, "Destroying data structs\n");
@@ -910,10 +1203,10 @@ opng_read_png(FILE *infile)
 
 
 /** PNG file writing **/
-/** If the file name is NULL, opng_read_write_file() is still called,
+/** If the output file is NULL, PNG encoding is still done,
     but no file is written. **/
 static void
-opng_write_png(FILE *outfile,
+opng_write_file(FILE *outfile,
    int compression_level, int memory_level,
    int compression_strategy, int filter)
 {
@@ -925,17 +1218,17 @@ opng_write_png(FILE *outfile,
       PNG_FILTER_AVG, PNG_FILTER_PAETH, PNG_ALL_FILTERS
    };
 
-   assert(compression_level >= COMPR_LEVEL_MIN &&
-          compression_level <= COMPR_LEVEL_MAX);
-   assert(memory_level >= MEM_LEVEL_MIN &&
-          memory_level <= MEM_LEVEL_MAX);
-   assert(compression_strategy >= STRATEGY_MIN &&
-          compression_strategy <= STRATEGY_MAX);
-   assert(filter >= FILTER_MIN &&
-          filter <= FILTER_MAX);
-
-   opng_info.file_size = opng_info.idat_size = 0;
-   opng_info.num_idat_chunks = 0;
+   /*png_debug(0, "Writing PNG file\n");*/
+   OPNG_ENSURE(
+      compression_level >= COMPR_LEVEL_MIN &&
+      compression_level <= COMPR_LEVEL_MAX &&
+      memory_level >= MEM_LEVEL_MIN &&
+      memory_level <= MEM_LEVEL_MAX &&
+      compression_strategy >= STRATEGY_MIN &&
+      compression_strategy <= STRATEGY_MAX &&
+      filter >= FILTER_MIN &&
+      filter <= FILTER_MAX,
+      "Invalid encoding parameters");
 
    Try
    {
@@ -969,13 +1262,9 @@ opng_write_png(FILE *outfile,
          png_set_compression_window_bits(write_ptr, 9);
 #endif
       }
-
       png_set_keep_unknown_chunks(write_ptr, PNG_HANDLE_CHUNK_ALWAYS, NULL, 0);
-
-      /* The ancillary data is necessary during the final writing,
-         and also whenever some reductions have been performed. */
-      opng_set_image_info(write_ptr, write_info_ptr, write_end_info_ptr,
-         outfile != NULL || opng_info.reductions != OPNG_REDUCE_NONE ? 1 : 0);
+      opng_store_image_info(write_ptr, write_info_ptr, write_end_info_ptr,
+         (outfile != NULL ? 1 : 0));
 
       /* Enable progress estimation during trials. */
       if (outfile == NULL)
@@ -1001,7 +1290,8 @@ opng_write_png(FILE *outfile,
       }
 
       png_debug(0, "Writing PNG file\n");
-      opng_set_write_fn(write_ptr, outfile, opng_read_write_data, NULL);
+      opng_init_write_data();
+      pngx_set_write_fn(write_ptr, outfile, opng_write_data, NULL);
       png_write_png(write_ptr, write_info_ptr, 0, NULL);
 
       err_msg = NULL;  /* everything is ok */
@@ -1009,7 +1299,7 @@ opng_write_png(FILE *outfile,
    Catch (err_msg)
    {
       /* Set IDAT size to invalid. */
-      opng_info.idat_size = PNG_UINT_31_MAX + 1;
+      opng_info.out_idat_size = PNG_UINT_31_MAX + 1;
    }
 
    png_debug(0, "Destroying data structs\n");
@@ -1023,69 +1313,57 @@ opng_write_png(FILE *outfile,
 
 /** PNG file copying **/
 static void
-opng_copy_png(FILE *infile, FILE *outfile)
+opng_copy_file(FILE *infile, FILE *outfile)
 {
    volatile png_bytep buf;  /* volatile is required by cexcept */
+   const png_uint_32 buf_size_incr = 0x1000;
    png_uint_32 buf_size, length;
-   png_byte chunk_name[4];
+   png_byte chunk_hdr[8];
    const char * volatile err_msg;
 
+   png_debug(0, "Copying PNG stream\n");
    assert(infile != NULL && outfile != NULL);
-
-   opng_info.file_size = opng_info.idat_size = 0;
-   opng_info.num_idat_chunks = 0;
 
    write_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
       NULL, opng_error, opng_warning);
    if (write_ptr == NULL)
       Throw "Out of memory";
-   opng_set_write_fn(write_ptr, outfile, opng_read_write_data, NULL);
+   opng_init_write_data();
+   pngx_set_write_fn(write_ptr, outfile, opng_write_data, NULL);
 
    Try
    {
-      buf_size = 4096;
-      buf = (png_bytep)png_malloc(write_ptr, buf_size);
+      buf = NULL;
+      buf_size = 0;
 
-      /* Copy the signature. */
-      if (fread(buf, 8, 1, infile) != 1 || png_sig_cmp(buf, 0, 8) != 0)
-         Throw "Not a PNG file";
-#if (PNG_LIBPNG_VER >= 10400) || \
-    (PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
-      png_write_sig(write_ptr);
-#else
-      /* Some systems that do not allow PNG_INTERNAL
-       * require a replacement for png_write_sig().
-       */
-      {
-         static png_byte png_signature[8] =
-            {137, 80, 78, 71, 13, 10, 26, 10};
-         extern void /* PRIVATE */
-         opng_priv_read_write(png_structp png_ptr,
-            png_bytep data, png_size_t length);
-         opng_priv_read_write(write_ptr, png_signature, 8);
-      }
-#endif
+      /* Write the signature in the output file. */
+      pngx_write_sig(write_ptr);
 
+      /* Copy all chunks until IEND. */
+      /* Error checking is done only at a very basic level. */
       do
       {
-         /* Copy each chunk. */
-         if (fread(buf, 8, 1, infile) != 1)  /* length + header */
+         if (fread(chunk_hdr, 8, 1, infile) != 1)  /* length + name */
             Throw "Read error";
-         length = png_get_uint_32(buf);
-         memcpy(chunk_name, buf + 4, 4);
-         if (length > buf_size)
+         length = png_get_uint_32(chunk_hdr);
+         if (length > PNG_UINT_31_MAX)
          {
-            /* Don't use realloc() because it is slower. */
-            osys_free(buf);
-            buf_size = length;
-            buf = (png_bytep)png_malloc(write_ptr, buf_size);
+            if (buf == NULL && length == 0x89504e47)  /* "\x89PNG" */
+               continue;  /* skip the signature */
+            Throw "Data error";
          }
-         if (fread(buf, 1, length, infile) != length)  /* data */
+         if (length + 4 > buf_size)
+         {
+            png_free(write_ptr, buf);
+            buf_size = (((length + 4) + (buf_size_incr - 1))
+                        / buf_size_incr) * buf_size_incr;
+            buf = (png_bytep)png_malloc(write_ptr, buf_size);
+            /* Do not use realloc() here, it's slower. */
+         }
+         if (fread(buf, length + 4, 1, infile) != 1)  /* data + crc */
             Throw "Read error";
-         png_write_chunk(write_ptr, chunk_name, buf, length);
-         if (fread(buf, 4, 1, infile) != 1)  /* crc */
-            Throw "Read error";
-      } while (memcmp(chunk_name, sig_IEND, 4) != 0);
+         png_write_chunk(write_ptr, chunk_hdr + 4, buf, length);
+      } while (memcmp(chunk_hdr + 4, sig_IEND, 4) != 0);
 
       err_msg = NULL;  /* everything is ok */
    }
@@ -1093,7 +1371,7 @@ opng_copy_png(FILE *infile, FILE *outfile)
    {
    }
 
-   osys_free(buf);
+   png_free(write_ptr, buf);
    png_destroy_write_struct(&write_ptr, NULL);
 
    if (err_msg != NULL)
@@ -1126,6 +1404,12 @@ opng_init_iterations(void)
    bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
    int preset_index;
    int t1, t2;
+
+   /* If the input IDAT exists and is in good condition,
+    * the output IDAT should be no larger than the input IDAT.
+    */
+   if (!(opng_info.status & OUTPUT_NEEDS_NEW_IDAT))
+       opng_info.max_idat_size = opng_info.in_idat_size;
 
    /* Calculate preset_index here, but leave cmdline.optim_level intact,
     * because the effect of "optipng -o2 -z... -f..." is slightly different
@@ -1193,12 +1477,13 @@ opng_iterate(void)
    int compr_level, mem_level, strategy, filter;
    int counter;
 
-   OPNG_ENSURE(opng_info.num_iterations > 0, "Iteration not initialized");
-   if (opng_info.num_iterations == 1 && !cmdline.simulate
-       && (cmdline.force || !opng_info.input_is_png))
+   OPNG_ENSURE(opng_info.num_iterations > 0, "Iterations not initialized");
+   if (opng_info.num_iterations == 1
+       && (opng_info.status & OUTPUT_NEEDS_NEW_FILE)
+       && (opng_info.status & OUTPUT_NEEDS_NEW_IDAT))
    {
       /* If there is one single trial, it is unnecessary to run it. */
-      opng_info.best_file_size   = opng_info.best_idat_size = 0;
+      opng_info.best_idat_size   = 0;
       opng_info.best_compr_level = opng_bitset_min(opng_info.compr_level_set);
       opng_info.best_mem_level   = opng_bitset_min(opng_info.mem_level_set);
       opng_info.best_strategy    = opng_bitset_min(opng_info.strategy_set);
@@ -1211,9 +1496,11 @@ opng_iterate(void)
    mem_level_set   = opng_info.mem_level_set;
    strategy_set    = opng_info.strategy_set;
    filter_set      = opng_info.filter_set;
-   opng_info.best_file_size   = opng_info.best_idat_size = PNG_UINT_31_MAX + 1;
-   opng_info.best_compr_level = opng_info.best_mem_level =
-      opng_info.best_strategy = opng_info.best_filter = -1;
+   opng_info.best_idat_size   = PNG_UINT_31_MAX + 1;
+   opng_info.best_compr_level = -1;
+   opng_info.best_mem_level   = -1;
+   opng_info.best_strategy    = -1;
+   opng_info.best_filter      = -1;
 
    /* Iterate through the "hyper-rectangle" (zc, zm, zs, f). */
    opng_printf("Trying...\n");
@@ -1248,32 +1535,32 @@ opng_iterate(void)
                            opng_printf(
                               "  zc = %d  zm = %d  zs = %d  f = %d\t\t",
                               compr_level, mem_level, strategy, filter);
-                           opng_write_png(NULL,
+                           opng_write_file(NULL,
                               compr_level, mem_level, strategy, filter);
-                           if (opng_info.idat_size > PNG_UINT_31_MAX)
+                           if (opng_info.out_idat_size > PNG_UINT_31_MAX)
                            {
                               opng_printf("IDAT too big");
                               if (cmdline.ver)  /* verbose */
                               {
                                  opng_printf(" ... abandoned at ");
-                                 opng_progress();
+                                 opng_print_progress();
                               }
                               opng_printf("\n");
                               continue;
                            }
                            opng_printf("IDAT size = %lu\n",
-                              (unsigned long)opng_info.idat_size);
-                           if (opng_info.best_idat_size < opng_info.idat_size)
+                              (unsigned long)opng_info.out_idat_size);
+                           if (opng_info.best_idat_size < opng_info.out_idat_size)
                               continue;
-                           if (opng_info.best_idat_size == opng_info.idat_size
+                           if (opng_info.best_idat_size == opng_info.out_idat_size
                                && opng_info.best_strategy >= Z_HUFFMAN_ONLY)
-                              continue;  /* it's not a better combination */
-                           opng_info.best_file_size   = opng_info.file_size;
-                           opng_info.best_idat_size   = opng_info.idat_size;
+                              continue;  /* it's neither smaller nor faster */
                            opng_info.best_compr_level = compr_level;
                            opng_info.best_mem_level   = mem_level;
                            opng_info.best_strategy    = strategy;
                            opng_info.best_filter      = filter;
+                           opng_info.best_idat_size   = opng_info.out_idat_size;
+                           opng_info.max_idat_size    = opng_info.out_idat_size;
                         }
                   }
                compr_level_set = saved_level_set;
@@ -1281,30 +1568,43 @@ opng_iterate(void)
 
    OPNG_ENSURE(counter == opng_info.num_iterations,
       "Inconsistent iteration counter");
-
-   if (opng_info.best_idat_size > PNG_UINT_31_MAX)
-      Throw "No satisfactory IDAT was found";
 }
 
 
-/** PNG file optimization **/
+/** Iteration finalization **/
 static void
-opng_optimize_png(const char *infile_name)
+opng_finish_iterations(void)
 {
-   static FILE *infile, *outfile;        /* static or volatile is required */
-   volatile enum {none, join, recompress, create} action;    /* by cexcept */
-   png_uint_32 init_file_size, init_idat_size;
-   char bakfile_name[FILENAME_MAX], outfile_name[FILENAME_MAX];
-   long outfile_size;
+   if (opng_info.best_idat_size < opng_info.in_idat_size)
+      opng_info.status |= OUTPUT_NEEDS_NEW_IDAT;
+   if (opng_info.status & OUTPUT_NEEDS_NEW_IDAT)
+   {
+      opng_printf("\nSelecting parameters:\n"
+                  "  zc = %d  zm = %d  zs = %d  f = %d",
+                  opng_info.best_compr_level, opng_info.best_mem_level,
+                  opng_info.best_strategy, opng_info.best_filter);
+      if (opng_info.best_idat_size != 0)  /* trials have been run */
+         opng_printf("\t\tIDAT size = %lu",
+                     (unsigned long)opng_info.best_idat_size);
+      opng_printf("\n");
+   }
+}
+
+
+/** Image file optimization **/
+static void
+opng_optimize(const char *infile_name)
+{
+   static FILE *infile, *outfile;         /* static or volatile is required */
+   static const char *outfile_name, *bakfile_name;            /* by cexcept */
+   static int new_outfile;
+   char name_buf[FILENAME_MAX], tmp_buf[FILENAME_MAX];
    const char * volatile err_msg;
 
-   opng_printf("** Processing: %s\n", infile_name);
-
+   png_debug1(0, "Optimizing file: %s\n", infile_name);
    memset(&opng_info, 0, sizeof(opng_info));
-   outfile_name[0] = '\0';
-   action = none;
    if (cmdline.force)
-      action = recompress;
+      opng_info.status |= OUTPUT_NEEDS_NEW_IDAT;
 
    err_msg = NULL;  /* prepare for error handling */
 
@@ -1312,7 +1612,7 @@ opng_optimize_png(const char *infile_name)
       Throw "Can't open the input file";
    Try
    {
-      opng_read_png(infile);
+      opng_read_file(infile);
    }
    Catch (err_msg)
    {
@@ -1322,286 +1622,247 @@ opng_optimize_png(const char *infile_name)
    if (err_msg != NULL)
       Throw err_msg;  /* rethrow */
 
-   /* If there's more than one IDAT in input, join all into a single one. */
-   if (opng_info.num_idat_chunks > 1)
-      action = join;
-
-   /* If the input is not PNG, enforce full compression. */
-   if (!opng_info.input_is_png)
+   /* Check the digital signature flag. */
+   if (opng_info.status & INPUT_HAS_DIGITAL_SIGNATURE)
    {
-      if (string_suffix_case_cmp(infile_name, ".png") != 0)
+      opng_printf("Digital signature found in input.");
+      if (cmdline.force)
       {
-         action = create;
-         /* Also make sure it's possible to write the output. */
-         if (osys_fname_chext(outfile_name, sizeof(outfile_name), infile_name,
-             ".png") == NULL)
-            Throw "Can't create the output file (name too long)";
-      }
-      else  /* special case: non-PNG file with ".png" extension */
-         action = recompress;
-   }
-
-   /* Handle user-defined output file or directory name (if any). */
-   if (cmdline.out_name != NULL)
-   {
-      if (sizeof(outfile_name) <= strlen(cmdline.out_name))
-         Throw "Output file name too long... can't process";
-      if (osys_fname_cmp(outfile_name, cmdline.out_name) != 0)
-         action = create;
-      strcpy(outfile_name, cmdline.out_name);
-   }
-   if (cmdline.dir_name != NULL)
-   {
-      const char *tmp_name;
-      if (outfile_name[0] != 0)
-      {
-         /* Use bakfile_name as a temporary buffer. */
-         strcpy(bakfile_name, outfile_name);
-         tmp_name = bakfile_name;
+         opng_printf(" Erasing...\n");
+         opng_info.status |= OUTPUT_NEEDS_NEW_FILE;
       }
       else
-         tmp_name = infile_name;
-      if (osys_fname_chdir(outfile_name, sizeof(outfile_name), tmp_name,
-          cmdline.dir_name) == NULL)
-         Throw "Can't create the output file (name too long)";
-      if (osys_fname_cmp(tmp_name, outfile_name) != 0)
-         action = create;
-   }
-
-   /* Initialize the backup file name. */
-   if (action == create)
-   {
-      if (!cmdline.simulate && (outfile = fopen(outfile_name, "rb")) != NULL)
       {
-         fclose(outfile);
-         if (!cmdline.keep)
-            Throw "The output file exists, try backing it up (use -keep)";
+         opng_printf(" Rerun " PROGRAM_NAME " with the -force option.\n");
+         Throw "Can't optimize digitally-signed files";
       }
-      if (osys_fname_mkbak(bakfile_name, sizeof(bakfile_name),
-                           outfile_name) == NULL)
-         bakfile_name[0] = '\0';
-   }
-   else
-   {
-      if (osys_fname_mkbak(bakfile_name, sizeof(bakfile_name),
-                           infile_name) == NULL)
-         bakfile_name[0] = '\0';
-   }
-   /* Check the name even in simulation mode, to ensure a uniform behavior. */
-   if (bakfile_name[0] == '\0')
-      Throw "Can't create backup file (name too long)";
-   /* Check the backup file before engaging into lengthy trials. */
-   if (!cmdline.simulate && (outfile = fopen(bakfile_name, "rb")) != NULL)
-   {
-      fclose(outfile);
-      Throw "The backup file name exists, can't prepare the output file";
    }
 
-   /* If the input is invalid but recoverable, enforce full compression. */
-   if (!opng_info.valid)
+   /* Check the multi-image flag. */
+   if (opng_info.status & INPUT_HAS_MULTIPLE_IMAGES)
    {
-      opng_printf("!Recoverable errors encountered. ");
+      if (cmdline.snip)
+         ++global.snip_count;
+      else if (!(opng_info.status & INPUT_IS_PNG_FILE))
+      {
+         opng_printf("Conversion to PNG requires snipping. "
+                     "Rerun " PROGRAM_NAME " with the -snip option.\n");
+         Throw "Incompatible input format";
+      }
+   }
+   if ((opng_info.status & INPUT_HAS_NONCONFORMING_PNG) && cmdline.snip)
+      opng_info.status |= OUTPUT_NEEDS_NEW_FILE;
+
+   /* Check the junk flag. */
+   if (opng_info.status & INPUT_HAS_JUNK)
+      opng_info.status |= OUTPUT_NEEDS_NEW_FILE;
+
+   /* Check the error flag. */
+   if (opng_info.status & INPUT_HAS_ERRORS)
+   {
+      opng_printf("Recoverable errors found in input.");
       if (cmdline.fix)
       {
-         opng_info.valid = 1;
-         opng_printf("!Fixing...\n");
-         if (action != create)
-            action = recompress;
+         opng_printf(" Fixing...\n");
+         opng_info.status |= OUTPUT_NEEDS_NEW_FILE;
+         ++global.err_count;
          ++global.fix_count;
       }
       else
       {
-         opng_printf("!Rerun the program with the -fix option.\n");
+         opng_printf(" Rerun " PROGRAM_NAME " with the -fix option.\n");
          Throw "Previous error(s) not fixed";
       }
    }
 
-   /* If the interlace type is changed, enforce full compression. */
-   if (cmdline.interlace >= 0 &&
-       opng_image.interlace_type != cmdline.interlace)
+   /* Initialize the output file name. */
+   outfile_name = NULL;
+   if (!(opng_info.status & INPUT_IS_PNG_FILE))
    {
-      opng_image.interlace_type = cmdline.interlace;
-      if (action != create)
-         action = recompress;
+      if (osys_fname_chext(name_buf, sizeof(name_buf), infile_name,
+                           ".png") == NULL)
+         Throw "Can't create the output file (name too long)";
+      outfile_name = name_buf;
    }
-
-   init_file_size = opng_info.file_size;
-   init_idat_size = opng_info.total_idat_size = opng_info.idat_size;
-   if (opng_info.input_is_png)
-      opng_printf("Input IDAT size = %lu bytes\n",
-         (unsigned long)init_idat_size);
-   opng_printf("Input file size = %lu bytes\n",
-      (unsigned long)init_file_size);
-
-   if (opng_info.input_is_png && cmdline.nz && action == recompress)
-      opng_printf("!Warning: IDAT recompression is enforced.\n");
-
-   /* Find the best parameters and see if it's worth recompressing. */
-   if (action == create || action == recompress || !cmdline.nz)
+   if (cmdline.out_name != NULL)
+      outfile_name = cmdline.out_name;  /* override the old name */
+   if (cmdline.dir_name != NULL)
    {
-      opng_init_iterations();
-      opng_iterate();
-      OPNG_ENSURE(opng_info.best_compr_level >= 0 &&
-                  opng_info.best_mem_level >= 0   &&
-                  opng_info.best_strategy >= 0    &&
-                  opng_info.best_filter >= 0,
-                  "Incorrect iteration results");
-      opng_printf("\nSelecting parameters:\n"
-         "  zc = %d  zm = %d  zs = %d  f = %d",
-         opng_info.best_compr_level, opng_info.best_mem_level,
-         opng_info.best_strategy, opng_info.best_filter);
-      if (opng_info.best_idat_size != 0)  /* trials have been run */
-         opng_printf("\t\tIDAT size = %lu",
-            (unsigned long)opng_info.best_idat_size);
-      opng_printf("\n");
-      if (action != create)
+      const char *tmp_name;
+      if (outfile_name != NULL)
       {
-         if (opng_info.reductions != OPNG_REDUCE_NONE)
-         {
-            if (opng_info.best_file_size < init_file_size)
-               action = recompress;
-         }
-         else
-         {
-            if (opng_info.best_idat_size < init_idat_size)
-               action = recompress;
-         }
-         if (action == recompress)
-             opng_info.total_idat_size = opng_info.best_idat_size;
+         strcpy(tmp_buf, outfile_name);
+         tmp_name = tmp_buf;
       }
-      /* If action == create then opng_info.total_idat_size is set below. */
+      else
+         tmp_name = infile_name;
+      if (osys_fname_chdir(name_buf, sizeof(name_buf), tmp_name,
+                           cmdline.dir_name) == NULL)
+         Throw "Can't create the output file (name too long)";
+      outfile_name = name_buf;
    }
-
-   if (action == none)
+   if (outfile_name == NULL)
    {
-      opng_printf("\n%s is already optimized.\n\n", infile_name);
-      return;
+      outfile_name = infile_name;
+      new_outfile = 0;
    }
+   else
+      new_outfile = (osys_fname_cmp(infile_name, outfile_name) != 0) ? 1 : 0;
 
-   outfile_size = 0;
-   if (action == join || action == recompress)
+   /* Initialize the backup file name. */
+   bakfile_name = tmp_buf;
+   if (new_outfile)
    {
-      if (cmdline.simulate)
-      {
-         opng_printf("\nSimulation mode: %s not changed.\n\n", infile_name);
-         return;
-      }
-
-      /* Rename the input to a backup name and write the output. */
-      if (rename(infile_name, bakfile_name) != 0)
-         Throw "Can't back up the input file";
-      Try
-      {
-         if ((outfile = fopen(infile_name, "wb")) == NULL)
-            Throw "Can't open the output file";
-
-         if (action == join)  /* copy input to output, collapsing IDAT */
-         {
-            if ((infile = fopen(bakfile_name, "rb")) == NULL)
-               Throw "Can't reopen the input file";
-            Try
-            {
-               opng_copy_png(infile, outfile);
-            }
-            Catch (err_msg)
-            {
-               /* assert(err_msg != NULL); */
-            }
-            fclose(infile);  /* finally */
-            if (err_msg != NULL)
-               Throw err_msg;  /* rethrow */
-         }
-         else  /* action == recompress: full rewrite */
-         {
-            opng_write_png(outfile,
-               opng_info.best_compr_level, opng_info.best_mem_level,
-               opng_info.best_strategy, opng_info.best_filter);
-         }
-         outfile_size = ftell(outfile);
-      }
-      Catch (err_msg)
-      {
-         if (outfile != NULL)
-            fclose(outfile);
-         /* Restore the original input file and rethrow the exception. */
-         if (remove(infile_name) != 0 ||
-             rename(bakfile_name, infile_name) != 0)
-            opng_printf("!Warning: "
-               "The original file was not recovered from the backup.\n");
-         Throw err_msg;  /* rethrow */
-      }
-      fclose(outfile);
-
-      if (cmdline.preserve)
-      {
-         /* Preserve the file attributes, if possible. */
-         osys_fattr_copy(infile_name, bakfile_name);
-      }
-      if (!cmdline.keep)
-      {
-         /* Remove the old file. */
-         if (remove(bakfile_name) != 0)
-            Throw "Can't remove the backup file";
-      }
+      if (osys_fname_mkbak(tmp_buf, sizeof(tmp_buf), outfile_name) == NULL)
+         bakfile_name = NULL;
    }
    else
    {
-      assert(action == create);
+      if (osys_fname_mkbak(tmp_buf, sizeof(tmp_buf), infile_name) == NULL)
+         bakfile_name = NULL;
+   }
+   /* Check the name even in simulation mode, to ensure a uniform behavior. */
+   if (bakfile_name == NULL)
+      Throw "Can't create backup file (name too long)";
+   /* Check the backup file before engaging into lengthy trials. */
+   if (!cmdline.simulate && osys_ftest(outfile_name, "e") == 0)
+   {
+      if (new_outfile && !cmdline.keep)
+         Throw "The output file exists, try backing it up (use -keep)";
+      if (osys_ftest(outfile_name, "fw") != 0 ||
+          osys_ftest(bakfile_name, "e") == 0)
+         Throw "Can't back up the existing output file";
+   }
 
-      if (cmdline.simulate)
-      {
-         opng_printf("\nSimulation mode: %s not created.\n\n", outfile_name);
+   /* Display the input IDAT/file sizes. */
+   if (opng_info.status & INPUT_HAS_PNG_DATASTREAM)
+      opng_printf("Input IDAT size = %lu bytes\n",
+                  (unsigned long)opng_info.in_idat_size);
+   else
+      opng_info.status |= OUTPUT_NEEDS_NEW_IDAT;
+   opng_printf("Input file size = %lu bytes\n", opng_info.in_file_size);
+
+   if (cmdline.nz
+       && (opng_info.status & INPUT_HAS_PNG_DATASTREAM)
+       && (opng_info.status & OUTPUT_NEEDS_NEW_IDAT))
+      opng_print_warning(
+         "IDAT recompression is necessary; ignoring the -nz option");
+
+   /* Find the best parameters and see if it's worth recompressing. */
+   if (!cmdline.nz || (opng_info.status & OUTPUT_NEEDS_NEW_IDAT))
+   {
+      opng_init_iterations();
+      opng_iterate();
+      opng_finish_iterations();
+   }
+   if (opng_info.status & OUTPUT_NEEDS_NEW_IDAT)
+      opng_info.status |= OUTPUT_NEEDS_NEW_FILE;
+   if (!(opng_info.status & OUTPUT_NEEDS_NEW_FILE))
+   {
+      opng_printf("\n%s is already optimized.\n", infile_name);
+      if (!new_outfile)
          return;
-      }
+   }
 
-      /* Create a new output file whose name is in outfile_name. */
+   if (cmdline.simulate)
+   {
+      if (new_outfile)
+         opng_printf("\nSimulation mode: %s not created.\n", outfile_name);
+      else
+         opng_printf("\nSimulation mode: %s not changed.\n", infile_name);
+      return;
+   }
+
+   /* Make room for the output file. */
+   if (new_outfile)
+   {
       opng_printf("\nOutput file: %s\n", outfile_name);
-      opng_info.total_idat_size = opng_info.best_idat_size;
-      if ((outfile = fopen(outfile_name, "rb")) != NULL)
-      {
-         fclose(outfile);
-         assert(cmdline.keep);
-         /* Rename the input to a backup name and write the output. */
-         if (rename(outfile_name, bakfile_name) != 0)
-            Throw "Can't back up the output file";
-      }
       if (cmdline.dir_name != NULL)
          osys_dir_make(cmdline.dir_name);
-      if ((outfile = fopen(outfile_name, "wb")) == NULL)
+      if (osys_ftest(outfile_name, "e") == 0)
+         if (rename(outfile_name, bakfile_name) != 0)
+            Throw "Can't back up the output file";
+   }
+   else
+   {
+      if (rename(infile_name, bakfile_name) != 0)
+         Throw "Can't back up the input file";
+   }
+
+   outfile = fopen(outfile_name, "wb");
+   Try
+   {
+      if (outfile == NULL)
          Throw "Can't open the output file";
-      Try
+      if (opng_info.status & OUTPUT_NEEDS_NEW_IDAT)
       {
-         opng_write_png(outfile,
+         /* Write a brand new PNG datastream to the output. */
+         opng_write_file(outfile,
             opng_info.best_compr_level, opng_info.best_mem_level,
             opng_info.best_strategy, opng_info.best_filter);
-         outfile_size = ftell(outfile);
       }
-      Catch (err_msg)
+      else
       {
-         /* assert(err_msg != NULL); */
+         /* Copy the input PNG datastream to the output. */
+         infile = osys_fopen_at((new_outfile ? infile_name : bakfile_name),
+            "rb", opng_info.in_datastream_offset, SEEK_SET);
+         if (infile == NULL)
+            Throw "Can't reopen the input file";
+         Try
+         {
+            opng_info.best_idat_size = opng_info.in_idat_size;
+            opng_copy_file(infile, outfile);
+         }
+         Catch (err_msg)
+         {
+            /* assert(err_msg != NULL); */
+         }
+         fclose(infile);  /* finally */
+         if (err_msg != NULL)
+            Throw err_msg;  /* rethrow */
       }
-      fclose(outfile);  /* finally */
-      if (err_msg != NULL)
-         Throw err_msg;  /* rethrow */
+   }
+   Catch (err_msg)
+   {
+      if (outfile != NULL)
+         fclose(outfile);
+      /* Restore the original input file and rethrow the exception. */
+      if (remove(outfile_name) != 0 ||
+          rename(bakfile_name, (new_outfile ? outfile_name : infile_name)) != 0)
+         opng_print_warning(
+            "The original file could not be recovered from the backup");
+      Throw err_msg;  /* rethrow */
+   }
+   /* assert(err_msg == NULL); */
+   fclose(outfile);
 
-      if (cmdline.preserve)
-         osys_fattr_copy(outfile_name, infile_name);
+   /* Preserve file attributes (e.g. ownership, access rights, time stamps)
+    * on request, if possible.
+    */
+   if (cmdline.preserve)
+      osys_fattr_copy(outfile_name, infile_name);
+
+   /* Remove the backup file if it is not needed. */
+   if (!new_outfile && !cmdline.keep)
+   {
+      if (remove(bakfile_name) != 0)
+         Throw "Can't remove the backup file";
    }
 
+   /* Display the output IDAT/file sizes. */
    opng_printf("\nOutput IDAT size = %lu bytes",
-      (unsigned long)opng_info.idat_size);
-   if (opng_info.input_is_png)
+               (unsigned long)opng_info.out_idat_size);
+   if (opng_info.status & INPUT_HAS_PNG_DATASTREAM)
    {
       opng_printf(" (");
-      opng_print_size_difference(init_idat_size, opng_info.idat_size, 0);
+      opng_print_size_difference(opng_info.in_idat_size,
+                                 opng_info.out_idat_size, 0);
       opng_printf(")");
    }
-   opng_printf("\nOutput file size = %lu bytes (",
-      (unsigned long)opng_info.file_size);
-   opng_print_size_difference(init_file_size, opng_info.file_size, 1);
-   opng_printf(")\n\n");
-   OPNG_ENSURE(outfile_size == (long)opng_info.file_size,
-      "Inconsistent file size");
+   opng_printf("\nOutput file size = %lu bytes (", opng_info.out_file_size);
+   opng_print_size_difference(opng_info.in_file_size,
+                              opng_info.out_file_size, 1);
+   opng_printf(")\n");
 }
 
 
@@ -1678,6 +1939,10 @@ parse_args(int argc, char *argv[])
       else if (string_prefix_min_cmp("simulate", arg, 2) == 0)
       {
          cmdline.simulate = 1;
+      }
+      else if (string_prefix_min_cmp("snip", arg, 2) == 0)
+      {
+         cmdline.snip = 1;
       }
       else if (string_prefix_min_cmp("out", arg, 2) == 0)
       {
@@ -1875,16 +2140,38 @@ process_args(int argc, char *argv[])
    {
       if (argv[i] == NULL || argv[i][0] == 0)
          continue;
+      opng_clear_image_info();
       Try
       {
-         opng_optimize_png(argv[i]);
+         opng_printf("** Processing: %s\n", argv[i]);
+         opng_optimize(argv[i]);
+         opng_printf("\n");
       }
       Catch (err_msg)
       {
-         opng_printf("!\nError: %s\n\n", err_msg);
+         opng_printf("\nError: %s\n\n", err_msg);
          ++global.err_count;
       }
-      opng_free_image_info();
+      opng_destroy_image_info();
+   }
+
+   if (cmdline.ver || global.snip_count > 0 || global.err_count > 0)
+   {
+      opng_printf("** Status report\n");
+      opng_printf("%u file(s) have been processed.\n", cmdline.file_count);
+      if (global.snip_count > 0)
+      {
+         opng_printf("%u multi-image file(s) have been snipped.\n",
+                     global.snip_count);
+      }
+      if (global.err_count > 0)
+      {
+         opng_printf("%u error(s) have been encountered.\n",
+                     global.err_count);
+         if (global.fix_count > 0)
+            opng_printf("%u erroneous file(s) have been fixed.\n",
+                        global.fix_count);
+      }
    }
 }
 
@@ -1914,7 +2201,6 @@ main(int argc, char *argv[])
       {
          fprintf(stderr, "To prevent accidental data corruption,"
                          " the log file name must end with \".log\"\n");
-         /* ... but ".LOG", ".Log", etc. are allowed. */
          return EXIT_FAILURE;
       }
       if ((global.logfile = fopen(cmdline.log_name, "a")) == NULL)
@@ -1939,7 +2225,7 @@ main(int argc, char *argv[])
       opng_printf(msg_help);
       if (cmdline.file_count > 0)
       {
-         opng_printf("!Warning: No files processed.\n");
+         opng_print_warning("No files processed");
          cmdline.file_count = 0;
          result = EXIT_FAILURE;
       }
@@ -1950,13 +2236,8 @@ main(int argc, char *argv[])
    if (cmdline.file_count > 0)
    {
       process_args(argc, argv);
-      if (global.err_count > 0)
-      {
-         opng_printf("!%u error(s) encountered.\n", global.err_count);
-         if (global.fix_count > 0)
-            opng_printf("!%u error(s) have been fixed.\n", global.fix_count);
+      if (global.err_count != global.fix_count)
          result = EXIT_FAILURE;
-      }
    }
 
    if (global.logfile != NULL)

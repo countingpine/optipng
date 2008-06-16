@@ -37,33 +37,41 @@ LIBNAME = pngxtern.lib
 
 ## Variables
 OBJS = \
-	pngxread.obj \
-	pngxrbmp.obj \
-	pngxrgif.obj \
-	pngxrjpg.obj \
-	pngxrpnm.obj \
-	pngxrtif.obj \
-	gifread.obj  \
-	pnmerror.obj \
-	pnmread.obj  \
-	pnmwrite.obj \
-	minitiff.obj \
-	tiffread.obj \
+	pngxio.obj    \
+	pngxmem.obj   \
+	pngxset.obj   \
+	pngxread.obj  \
+	pngxwrite.obj \
+	pngxrbmp.obj  \
+	pngxrgif.obj  \
+	pngxrjpg.obj  \
+	pngxrpnm.obj  \
+	pngxrtif.obj  \
+	gifread.obj   \
+	pnmin.obj     \
+	pnmout.obj    \
+	pnmutil.obj   \
+	minitiff.obj  \
+	tiffread.obj  \
 	tiffwrite.obj
 
 LIBOBJS = \
-	+pngxread.obj \
-	+pngxrbmp.obj \
-	+pngxrgif.obj \
-	+pngxrjpg.obj \
-	+pngxrpnm.obj \
-	+pngxrtif.obj \
-	+gifread.obj  \
-	+pnmerror.obj \
-	+pnmread.obj  \
-	+pnmwrite.obj \
-	+minitiff.obj \
-	+tiffread.obj \
+	+pngxio.obj    \
+	+pngxmem.obj   \
+	+pngxset.obj   \
+	+pngxread.obj  \
+	+pngxwrite.obj \
+	+pngxrbmp.obj  \
+	+pngxrgif.obj  \
+	+pngxrjpg.obj  \
+	+pngxrpnm.obj  \
+	+pngxrtif.obj  \
+	+gifread.obj   \
+	+pnmin.obj     \
+	+pnmout.obj    \
+	+pnmutil.obj   \
+	+minitiff.obj  \
+	+tiffread.obj  \
 	+tiffwrite.obj
 
 
@@ -73,17 +81,20 @@ all: $(LIBNAME)
 .c.obj:
 	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $<
 
-pngxread.obj:  pngxread.c pngxtern.h
-pngxwrite.obj: pngxwrite.c pngxtern.h
-pngxrbmp.obj:  pngxrbmp.c pngxtern.h
-pngxrgif.obj:  pngxrgif.c pngxtern.h gif\gifread.h
-pngxrjpg.obj:  pngxrjpg.c pngxtern.h
-pngxrpnm.obj:  pngxrpnm.c pngxtern.h pnm\pnmio.h
-pngxrtif.obj:  pngxrtif.c pngxtern.h
+pngxio.obj:    pngxio.c pngx.h
+pngxmem.obj:   pngxmem.c pngx.h
+pngxset.obj:   pngxset.c pngx.h
+pngxread.obj:  pngxread.c pngx.h pngxtern.h
+pngxwrite.obj: pngxwrite.c pngx.h pngxtern.h
+pngxrbmp.obj:  pngxrbmp.c pngx.h pngxtern.h
+pngxrgif.obj:  pngxrgif.c pngx.h pngxtern.h gif\gifread.h
+pngxrjpg.obj:  pngxrjpg.c pngx.h pngxtern.h
+pngxrpnm.obj:  pngxrpnm.c pngx.h pngxtern.h pnm\pnmio.h
+pngxrtif.obj:  pngxrtif.c pngx.h pngxtern.h
 gifread.obj:   gif\gifread.c gif\gifread.h
-pnmerror.obj:  pnm\pnmerror.c pnm\pnmio.h
-pnmread.obj:   pnm\pnmread.c pnm\pnmio.h
-pnmwrite.obj:  pnm\pnmwrite.c pnm\pnmio.h
+pnmin.obj:     pnm\pnmin.c pnm\pnmio.h
+pnmout.obj:    pnm\pnmout.c pnm\pnmio.h
+pnmutil.obj:   pnm\pnmutil.c pnm\pnmio.h
 minitiff.obj:  minitiff\minitiff.c minitiff\minitiff.h
 tiffread.obj:  minitiff\tiffread.c minitiff\minitiff.h minitiff\tiffdef.h
 tiffwrite.obj: minitiff\tiffwrite.c minitiff\minitiff.h minitiff\tiffdef.h
@@ -98,9 +109,9 @@ $(LIBOBJS)
 
 ## Cleanup
 clean:
-	-del *.obj
 	-del $(LIBNAME)
+	-del *.obj
 	-del *.tds
 
 
-# End of makefile
+# End of makefile for pngxtern

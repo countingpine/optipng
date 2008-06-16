@@ -1,4 +1,4 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 TRANSITIONAL//EN"
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
   "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <head>
@@ -6,7 +6,7 @@
   <meta name="Author" content="Cosmin Truţa">
   <title>A guide to PNG optimization</title>
 </head>
-<body bgcolor="white" text="black">
+<body>
 
 <h2>A guide to PNG optimization</h2>
 
@@ -45,10 +45,10 @@ GIF).
 <p>
 Unlike other lossless compression schemes, PNG compression does not depend
 solely on the statistics of the input, but it may vary within wide limits,
-depending on the compressor's implementation. A good PNG compressor must be
+depending on the compressor's implementation. A good PNG encoder must be
 able to take informed decisions about the factors that affect the size of the
-output. The purpose of this article is to inform about these factors, and to
-provide a series of advices on implementing efficient PNG compressors.
+output. The purpose of this article is to provide information about these
+factors, and to give advice on implementing efficient PNG encoders.
 </p>
 
 
@@ -448,13 +448,6 @@ compressed output.
   trial configurations are offered rather as a curiosity (but they were used in
   the experimentation from which we concluded they are indeed useless!)
   </p>
-<!--
-  <p>
-  Another advantage of <b>OptiPNG</b> over <b>pngcrush</b> is the ability to
-  select the appropriate image reductions automatically, even though the user
-  also has control over this selection.
-  </p>
--->
 </li>
 <li>
   <p>
@@ -467,8 +460,8 @@ compressed output.
   <b>AdvanceCOMP</b> is a powerful contender.
   </p>
   <p>
-  The <b>AdvanceCOMP</b> tool set is a part of the <b>AdvanceMAME</b>
-  open-source project, available at
+  The <b>AdvanceCOMP</b> tool set is a part of the <b>AdvanceMAME</b> project,
+  available at
   <a href="http://advancemame.sourceforge.net/">http://advancemame.sourceforge.net</a>.
   </p>
 </li>
@@ -506,16 +499,17 @@ there is an inverse transformation which recovers it completely, bit by bit.
 </p>
 
 <p>
-In the case of PNG images, this condition of strict losslessness is too strong.
-No PNG optimization program can comply to it, and it has little significance to
-the graphics user. Although there are instances where strict losslessness is
-necessary (e.g. "certified" PNG files whose integrity is guaranteed by a
-checksum like <b>MD5</b> or <b>SHA-1</b>), it is desirable to relax the notion
-of PNG losslessness, to the extent of not losing any information that pertains
-to <i>rendering the image</i>, or to the <i>semantic value of the metadata</i>
-that accompanies the image. This relaxation allows the user to concentrate on
-what is really important when it comes to preserving the contents of a PNG
-image, and enables the concept of PNG optimization tools.
+In the case of PNG images, this condition of strict losslessness has little
+relevance to the casual graphics user, and is, therefore, too strong.
+There are instances where strict losslessness is required; for example, when
+handling certified PNG files whose integrity is guaranteed by an external
+checksum like <b>MD5</b> or <b>SHA</b>, or by a digital signature such as
+<b><code>dSIG</code></b>. Most of the time, however, it is desirable to relax
+the notion of PNG losslessness, to the extent of not losing any information
+that pertains to the <i>rendered image</i> and to the
+<i>semantic value of the metadata</i> that accompanies the image. This allows
+the user to concentrate on what is really important when it comes to preserving
+the contents of a PNG image, and enables the concept of PNG optimization tools.
 </p>
 
 <blockquote>
@@ -594,6 +588,11 @@ information necessary to comprehend the contents of this article.
 
 <ul>
 <li>
+  Thomas Boutell, Glenn Randers-Pehrson et al.
+  <i>Portable Network Graphics (PNG) Specification, Second Edition</i>.
+  ISO/IEC 15948:2003(E); W3C Recommendation 10 November 2003.
+</li>
+<li>
   David A. Huffman.
   A method for the construction of minimum redundancy codes.
   In <i>Proceedings of the Institute of Radio Engineers</i>,
@@ -623,11 +622,11 @@ information necessary to comprehend the contents of this article.
 
 <address>
 <font size="-1">
-Copyright &copy; 2003-2006 Cosmin Truţa. Permission to distribute freely.
+Copyright &copy; 2003-2008 Cosmin Truţa. Permission to distribute freely.
 <br>
 Appeared: 7&nbsp;Apr&nbsp;2003.
 <br>
-Last updated: 12&nbsp;Apr&nbsp;2006.
+Last updated: 10&nbsp;May&nbsp;2008.
 </font>
 </address>
 

@@ -2,7 +2,7 @@
  ** osys.h
  ** System extensions.
  **
- ** Copyright (C) 2003-2007 Cosmin Truta.
+ ** Copyright (C) 2003-2008 Cosmin Truta.
  **
  ** This software is distributed under the same licensing and warranty
  ** terms as OptiPNG.  Please see the attached LICENSE for more info.
@@ -47,8 +47,8 @@ void osys_terminate(void);
 
 /**
  * Creates a backup file name.
- * On success, returns buffer.
- * On error, returns NULL.
+ * On success, the function returns buffer.
+ * On error, it returns NULL.
  **/
 char *osys_fname_mkbak(char *buffer, size_t bufsize, const char *fname);
 
@@ -59,11 +59,11 @@ char *osys_fname_mkbak(char *buffer, size_t bufsize, const char *fname);
  * the new file name has no directory (or is in the default directory).
  * The directory name may or may not contain the trailing directory
  * separator (usually '/').
- * On success, returns buffer.
- * On error, returns NULL.
+ * On success, the function returns buffer.
+ * On error, it returns NULL.
  **/
 char *osys_fname_chdir(char *buffer, size_t bufsize,
-    const char *oldname, const char *newdir);
+    const char *old_fname, const char *new_dirname);
 
 
 /**
@@ -71,21 +71,30 @@ char *osys_fname_chdir(char *buffer, size_t bufsize,
  * The new extension can be the empty string, indicating that the new
  * file name has no extension.  Otherwise, it must begin with the
  * extension separator (usually '.').
- * On success, returns buffer.
- * On error, returns NULL.
+ * On success, the function returns buffer.
+ * On error, it returns NULL.
  **/
 char *osys_fname_chext(char *buffer, size_t bufsize,
-    const char *oldname, const char *newext);
+    const char *old_fname, const char *new_extname);
 
 
 /**
  * Compares one file name to another.
  * It returns a value (less than, equal to, or greater than 0)
- * based on the result of comparing name1 to name2.
+ * based on the result of comparing fname1 to fname2.
  * The comparison may or may not be case sensitive, depending on
  * the operating system.
  **/
-int osys_fname_cmp(const char *name1, const char *name2);
+int osys_fname_cmp(const char *fname1, const char *fname2);
+
+
+/**
+ * Opens a file and positions it at the specified file offset.
+ * On success, the function returns the pointer to the file stream.
+ * On error, it returns NULL.
+ **/
+FILE *osys_fopen_at(const char *fname, const char *mode,
+    long offset, int whence);
 
 
 /**
@@ -111,19 +120,36 @@ size_t osys_fwrite_at(FILE *stream, long offset, int whence,
 
 
 /**
- * Copies the file mode and the time stamp of the file
- * named by destname into the file named by srcname.
- * On success, returns 0.
- * On error, sets the global variable errno and returns -1.
+ * Determines if the accessibility of the specified file satisfies
+ * the specified access mode.  The access mode consists of one or more
+ * characters that indicate the checks to be performed, as follows:
+ *  'e': the file exists; it needs not be a regular file.
+ *  'f': the file exists and is a regular file.
+ *  'r': the file exists and read permission is granted.
+ *  'w': the file exists and write permission is granted.
+ *  'x': the file exists and execute permission is granted.
+ * For example, to determine if a file can be opened for reading using
+ * fopen(), use "fr" in the access mode.
+ * If all checks succeed, the function returns 0.
+ * Otherwise, it returns -1.
  **/
-int osys_fattr_copy(const char *destname, const char *srcname);
+int osys_ftest(const char *fname, const char *mode);
+
+
+/**
+ * Copies the access mode and the time stamp of the file or directory
+ * named by dest_name into the file or directory named by src_name.
+ * On success, the function returns 0.
+ * On error, it returns -1.
+ **/
+int osys_fattr_copy(const char *dest_name, const char *src_name);
 
 
 /**
  * Creates a new directory with the given name.
  * If the directory is successfully created, or if it already exists,
  * the function returns 0.
- * Otherwise, it sets the global variable errno and returns -1.
+ * Otherwise, it returns -1.
  **/
 int osys_dir_make(const char *dirname);
 

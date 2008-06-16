@@ -7,7 +7,7 @@
 CC = cl
 LD = link
 AR = lib
-CFLAGS  = -nologo -MD -O2 -W3
+CFLAGS  = -nologo -MD -O2 -W3 -D_CRT_SECURE_NO_WARNINGS
 LDFLAGS = -nologo
 ARFLAGS = -nologo
 RM = del
@@ -15,58 +15,62 @@ RM = del
 ZDIR   = ..\zlib
 PNGDIR = ..\libpng
 
-#uncomment next to put error messages in a file
-#ERRFILE= >> pngerrs.log
-
 # Variables
-OBJS = pngxread.obj pngxwrite.obj \
-       pngxrbmp.obj pngxrgif.obj pngxrjpg.obj pngxrpnm.obj pngxrtif.obj \
-       gifread.obj \
-       pnmerror.obj pnmread.obj pnmwrite.obj \
-       minitiff.obj tiffread.obj tiffwrite.obj
+PNGX_OBJS = \
+        pngxio.obj pngxmem.obj pngxset.obj
+PNGXTERN_OBJS = \
+        pngxread.obj pngxwrite.obj \
+        pngxrbmp.obj pngxrgif.obj pngxrjpg.obj pngxrpnm.obj pngxrtif.obj
+PNGXTERN_XOBJS = \
+        gifread.obj \
+        pnmin.obj pnmout.obj pnmutil.obj \
+        minitiff.obj tiffread.obj tiffwrite.obj
+OBJS = $(PNGX_OBJS) $(PNGXTERN_OBJS) $(PNGXTERN_XOBJS)
 
 # Targets
 all: pngxtern.lib
 
 pngxtern.lib: $(OBJS)
 	-$(RM) $@
-	$(AR) $(ARFLAGS) -out:$@ $(OBJS) $(ERRFILE)
+	$(AR) $(ARFLAGS) -out:$@ $(OBJS)
 
 .c.obj:
-	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $< $(ERRFILE)
+	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $<
 
-pngxread.obj:  pngxread.c pngxtern.h
-pngxwrite.obj: pngxwrite.c pngxtern.h
-pngxrbmp.obj:  pngxrbmp.c pngxtern.h
-pngxrgif.obj:  pngxrgif.c pngxtern.h gif\gifread.h
-pngxrjpg.obj:  pngxrjpg.c pngxtern.h
-pngxrpnm.obj:  pngxrpnm.c pngxtern.h pnm\pnmio.h
-pngxrtif.obj:  pngxrtif.c pngxtern.h minitiff\minitiff.h
+pngxio.obj:    pngxio.c pngx.h
+pngxmem.obj:   pngxmem.c pngx.h
+pngxset.obj:   pngxset.c pngx.h
+pngxread.obj:  pngxread.c pngx.h pngxtern.h
+pngxwrite.obj: pngxwrite.c pngx.h pngxtern.h
+pngxrbmp.obj:  pngxrbmp.c pngx.h pngxtern.h
+pngxrgif.obj:  pngxrgif.c pngx.h pngxtern.h gif\gifread.h
+pngxrjpg.obj:  pngxrjpg.c pngx.h pngxtern.h
+pngxrpnm.obj:  pngxrpnm.c pngx.h pngxtern.h pnm\pnmio.h
+pngxrtif.obj:  pngxrtif.c pngx.h pngxtern.h minitiff\minitiff.h
 
-gifread.obj:   gif\gifread.c  gif\gifread.h
-	$(CC) -c $(CFLAGS) gif\gifread.c  $(ERRFILE)
+gifread.obj:   gif\gifread.c gif\gifread.h
+	$(CC) -c $(CFLAGS) gif\gifread.c
 
-pnmerror.obj:  pnm\pnmerror.c pnm\pnmio.h
-	$(CC) -c $(CFLAGS) pnm\pnmerror.c $(ERRFILE)
+pnmin.obj:     pnm\pnmin.c pnm\pnmio.h
+	$(CC) -c $(CFLAGS) pnm\pnmin.c
 
-pnmread.obj:   pnm\pnmread.c  pnm\pnmio.h
-	$(CC) -c $(CFLAGS) pnm\pnmread.c  $(ERRFILE)
+pnmout.obj:    pnm\pnmout.c pnm\pnmio.h
+	$(CC) -c $(CFLAGS) pnm\pnmout.c
 
-pnmwrite.obj:  pnm\pnmwrite.c pnm\pnmio.h
-	$(CC) -c $(CFLAGS) pnm\pnmwrite.c $(ERRFILE)
+pnmutil.obj:   pnm\pnmutil.c pnm\pnmio.h
+	$(CC) -c $(CFLAGS) pnm\pnmutil.c
 
 minitiff.obj:  minitiff\minitiff.c minitiff\minitiff.h
-	$(CC) -c $(CFLAGS) minitiff\minitiff.c  $(ERRFILE)
+	$(CC) -c $(CFLAGS) minitiff\minitiff.c
 
 tiffread.obj:  minitiff\tiffread.c minitiff\minitiff.h minitiff\tiffdef.h
-	$(CC) -c $(CFLAGS) minitiff\tiffread.c  $(ERRFILE)
+	$(CC) -c $(CFLAGS) minitiff\tiffread.c
 
 tiffwrite.obj: minitiff\tiffwrite.c minitiff\minitiff.h minitiff\tiffdef.h
-	$(CC) -c $(CFLAGS) minitiff\tiffwrite.c $(ERRFILE)
+	$(CC) -c $(CFLAGS) minitiff\tiffwrite.c
 
 clean:
-	-$(RM) *.obj
 	-$(RM) pngxtern.lib
+	-$(RM) *.obj
 
 # End of makefile for pngxtern
-

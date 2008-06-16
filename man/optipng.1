@@ -1,4 +1,4 @@
-.TH OPTIPNG 1 "28 January 2007" "OptiPNG Version 0.5.5"
+.TH OPTIPNG 1 "15 June 2008" "OptiPNG Version 0.6"
 .SH NAME
 .B OptiPNG
 \- Advanced optimization program for
@@ -141,7 +141,10 @@ Do not perform IDAT recompression (also disable reductions).
 Enable error recovery.
 .TP
 \fB\-force\fP
-Write a new output file, even if it is larger than the input file.
+Enforce writing of a new output file.
+Use this option to override the program's decision not to write such file,
+e.g. when the PNG input is digitally signed (using dSIG), or when the PNG
+output becomes larger than the PNG input.
 .TP
 \fB\-full\fP
 Produce a full report on IDAT.
@@ -153,6 +156,11 @@ applicable.
 .TP
 \fB\-simulate\fP
 Run in simulation mode: perform the trials, but do not create output files.
+.TP
+\fB\-snip\fP
+Cut one image out of multi-image, animation or video file(s).
+Depending on the input format, this may be either the first or the most
+relevant (e.g. the largest) image.
 .TP
 \fB\-out\fP \fIfile\fP
 Write output file to \fIfile\fP.
@@ -178,13 +186,15 @@ example, \fB\-quiet\fP can be abbreviated as \fB\-q\fP or \fB\-qu\fP (because
 Some options may have arguments that follow the option name, with or without
 a whitespace used as a separator; e.g.
 .IP
-\fCoptipng \-i1 \-o3 file.png  <=>  optipng \-i 1 \-o 3 file.png\fP
+\fB\-i1\fP  <=>  \fB\-i 1\fP
+.br
+\fB\-o3\fP  <=>  \fB\-o 3\fP
 .P
 Range arguments are cumulative; e.g.
 .IP
-\fC\-f0 \-f3\-5  <=>  \-f0,3\-5\fP
+\fB\-f0 \-f3\-5\fP  <=>  \fB\-f0,3\-5\fP
 .br
-\fC\-zs0 \-zs1 \-zs2\-3  <=>  \-zs0,1,2,3  <=>  \-zs0\-3\fP
+\fB\-zs0 \-zs1 \-zs2\-3\fP  <=>  \fB\-zs0,1,2,3\fP  <=>  \fB\-zs0\-3\fP
 .P
 The zlib window size is automatically set to a minimum that does not affect the
 compression ratio.
@@ -199,8 +209,6 @@ Extremely exhaustive searches are not generally recommended.
 .TP
 \fCoptipng \-o5 file.png\fP
 .TP
-\fCoptipng \-o7 file.png\fP
-.TP
 \fCoptipng \-i1 \-o7 \-v \-full \-sim experiment.png \-log experiment.log\fP
 .SH BUGS
 Lossless image reductions are not completely implemented.
@@ -211,10 +219,6 @@ Here are the missing pieces:
 .br
 \- The bit depth reductions below 8, for grayscale images, are not implemented
 yet.
-.br
-\- The gray(alpha)-to-palette reductions are not implemented yet.
-.P
-BMP support is limited to uncompressed images.
 .P
 TIFF support is limited to uncompressed, PNG-compatible (grayscale, RGB and
 RGBA) images.

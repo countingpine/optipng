@@ -18,15 +18,15 @@ AC_PREREQ(2.59)
 
 dnl Version number stuff here:
 
-AC_INIT([libpng], [1.2.15], [png-mng-implement@lists.sourceforge.net])
+AC_INIT([libpng], [1.2.29], [png-mng-implement@lists.sourceforge.net])
 AM_INIT_AUTOMAKE
 dnl stop configure from automagically running automake
 AM_MAINTAINER_MODE
 
-PNGLIB_VERSION=1.2.15
+PNGLIB_VERSION=1.2.29
 PNGLIB_MAJOR=1
 PNGLIB_MINOR=2
-PNGLIB_RELEASE=15
+PNGLIB_RELEASE=29
 
 dnl End of version number stuff
 
@@ -38,6 +38,7 @@ AC_PROG_CC
 AC_PROG_LD
 AC_PROG_CPP
 AC_CHECK_TOOL(SED, sed, :)
+AC_LIBTOOL_WIN32_DLL
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -62,7 +63,7 @@ LIBPNG_DEFINES=-DPNG_CONFIGURE_LIBPNG
 AC_MSG_CHECKING(
   [if assembler code in pnggccrd.c can be compiled without PNG_NO_MMX_CODE])
 AC_TRY_COMPILE(
-  [#include "pnggccrd.c"],
+  [#include "$srcdir/pnggccrd.c"],
   [return 0;],
   AC_MSG_RESULT(yes)
   LIBPNG_NO_MMX="",
@@ -83,6 +84,16 @@ else
     AC_MSG_WARN(*** You have not enabled versioned symbols.)
 fi
 AM_CONDITIONAL(HAVE_LD_VERSION_SCRIPT, test "$have_ld_version_script" = "yes")
+
+if test "$have_ld_version_script" = "yes"; then
+    AC_MSG_CHECKING([for symbol prefix])
+    SYMBOL_PREFIX=`echo "PREFIX=__USER_LABEL_PREFIX__" \
+                   | ${CPP-${CC-gcc} -E} - 2>&1 \
+                   | ${EGREP-grep} "^PREFIX=" \
+                   | ${SED-sed} "s:^PREFIX=::"`
+    AC_SUBST(SYMBOL_PREFIX)
+    AC_MSG_RESULT($SYMBOL_PREFIX)
+fi
 
 # Substitutions for .in files
 AC_SUBST(PNGLIB_VERSION)

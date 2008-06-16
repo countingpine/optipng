@@ -19,7 +19,7 @@ FILES
 
        - Native format: PNG.
 
-       -  External  pixmap  formats  (currently  supported:  GIF, BMP, PNM and
+       - External  pixmap  formats  (currently  supported:  GIF,  BMP, PNM and
        TIFF).
 
        OptiPNG processes each input file as follows:
@@ -119,8 +119,10 @@ OPTIONS
 
        -fix   Enable error recovery.
 
-       -force Write  a  new  output  file, even if it is larger than the input
-              file.
+       -force Enforce  writing of a new output file.  Use this option to over-
+              ride the program's decision not to write such  file,  e.g.  when
+              the  PNG input is digitally signed (using dSIG), or when the PNG
+              output becomes larger than the PNG input.
 
        -full  Produce a full report on IDAT.  This option might slow down  the
               trials.
@@ -132,6 +134,10 @@ OPTIONS
        -simulate
               Run in simulation mode: perform the trials, but  do  not  create
               output files.
+
+       -snip  Cut  one  image  out of multi-image, animation or video file(s).
+              Depending on the input format, this may be either the  first  or
+              the most relevant (e.g. the largest) image.
 
        -out file
               Write  output  file  to file.  The command line must not contain
@@ -157,7 +163,8 @@ OPTIONS
        Some options may have arguments that follow the option  name,  with  or
        without a whitespace used as a separator; e.g.
 
-              optipng -i1 -o3 file.png  <=>  optipng -i 1 -o 3 file.png
+              -i1  <=>  -i 1
+              -o3  <=>  -o 3
 
        Range arguments are cumulative; e.g.
 
@@ -177,8 +184,6 @@ EXAMPLES
 
        optipng -o5 file.png
 
-       optipng -o7 file.png
-
        optipng -i1 -o7 -v -full -sim experiment.png -log experiment.log
 
 BUGS
@@ -187,11 +192,8 @@ BUGS
        pieces:
 
               - The color palette reductions are implemented only partially.
-              -  The  bit  depth reductions below 8, for grayscale images, are
+              - The  bit  depth  reductions below 8, for grayscale images, are
               not implemented yet.
-              - The gray(alpha)-to-palette reductions are not implemented yet.
-
-       BMP support is limited to uncompressed images.
 
        TIFF support is limited to uncompressed, PNG-compatible (grayscale, RGB
        and RGBA) images.
@@ -201,8 +203,8 @@ BUGS
 AUTHOR
        OptiPNG is written and maintained by Cosmin Truta.
 
-       This manual page was originally written by Nelson A.  de  Oliveira  for
-       the  Debian  Project.  It was later updated by Cosmin Truta, and is now
+       This  manual  page  was originally written by Nelson A. de Oliveira for
+       the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG Version 0.5.5           28 January 2007                     OPTIPNG(1)
+OptiPNG Version 0.6              15 June 2008                       OPTIPNG(1)

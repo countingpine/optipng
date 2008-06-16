@@ -14,22 +14,50 @@ Legend
  * Other modification (e.g. architectural improvement).
 
 
+Version 0.6     15-jun-2008
+-----------
+ + Upgraded libpng to version 1.2.29-optipng [private]
+++ Implemented grayscale(alpha)-to-palette reductions.
+++ Improved conversion of bKGD info during RGB-to-palette reductions.
+   (Thanks to Matthew Fearnley for the contribution.)
+!! Fixed conversion of bKGD and tRNS during 16-to-8-bit reductions.
+   (Thanks to Matthew Fearnley for the report.)
+ + Added support for compressed BMP (incl. PNG-compressed BMP, you bet!)
+ + Improved the speed of reading raw PNM files.
+ + Recognized PNG digital signatures (dSIG) and disabled optimization
+   in their presence, to preserve their integrity.
+ + Allowed the user to enforce the optimization of dSIG'ed files.
+ + Recognized APNG animation files and disabled reductions to preserve
+   their integrity.
+ + Added the -snip option, to allow the user to "snip" one image out of
+   a multi-image file, such as animated GIF, multi-page TIFF, or APNG.
+   (Thanks to [LaughingMan] for the suggestion.)
+ + Improved recovery of PNG files with incomplete IDAT.
+!! Fixed a crash triggered by the use of -log on some platforms.
+   (Thanks to Stefan Bruns for the fix.)
+ ! Fixed behavior of -out and -dir when the input is already optimized.
+   (Thanks to Christian Davideck for the report.)
+ * Provided more detailed image information at the start of processing.
+ * Provided a more detailed summary at the end of processing, under the
+   presence of the -v option and/or the occurence of exceptional events.
+
+
 Version 0.5.5   28-jan-2007
 -------------
  + Upgraded libpng to version 1.2.15-optipng [private]
 ++ Used a previously-missed RGB-to-palette reduction opportunity
    for images containing 256 distinct colors.
    (Thanks to Joachim Kluge for the report.)
-!! Fixed conversion of bKGD info during rgb-to-palette reductions.
+!! Fixed conversion of bKGD info during RGB-to-palette reductions.
    (Thanks to Matthew Fearnley for the report.)
  ! Fixed pre-computation of iterations.
    (Thanks to Matthew Fearnley for the report.)
  ! Eliminated a false alarm when processing RGB images with tRNS
-   in Unix-secure mode.  (Thanks to Till Mass for the report, and
+   in Unix-secure mode.  (Thanks to Till Maas for the report, and
    thanks to Nelson A. de Oliveira for the fix.)
  ! Fixed behavior of -out and -dir when changing interlacing.
    (Thanks to Martin Packman for the report.)
- ! Fixed behavior of "-dir [DRIVE]:" on Windows.
+ ! Fixed the behavior of "-dir [DRIVE]:" on Windows.
 
 
 Version 0.5.4   11-aug-2006
@@ -73,8 +101,6 @@ Version 0.5.1   30-apr-2006
    (Thanks to Adam Szojda and Nelson A. de Oliveira for the report.)
  ! Fixed a small typo in the help screen.
    (Thanks to A. Costa and Nelson A. de Oliveira for the report.)
- + Added the GUIDE and THANKS documents.
- * Converted some text document files to HTML.
 
 
 Version 0.5     14-jan-2006

@@ -33,7 +33,7 @@ lib_LTLIBRARIES=libpng12.la @compatlib@
 EXTRA_LTLIBRARIES= libpng.la
 libpng12_la_SOURCES = png.c pngset.c pngget.c pngrutil.c pngtrans.c pngwutil.c \
 	pngread.c pngrio.c pngwio.c pngwrite.c pngrtran.c \
-	pngwtran.c pngmem.c pngerror.c pngpread.c pnggccrd.c \
+	pngwtran.c pngmem.c pngerror.c pngpread.c \
 	png.h pngconf.h
 libpng_la_SOURCES = $(libpng12_la_SOURCES)
 
@@ -57,6 +57,9 @@ else
   libpng12_la_DEPENDENCIES = libpng.sym
 endif
 libpng_la_DEPENDENCIES = $(libpng12_la_DEPENDENCIES)
+
+# Avoid depending upon Character Ranges.
+AN = '_abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
 
 #distribute headers in /usr/include/libpng/*
 pkgincludedir= $(includedir)/$(PNGLIB_BASENAME)
@@ -83,10 +86,13 @@ EXTRA_DIST= \
 	${srcdir}/contrib/pngsuite/* \
 	${srcdir}/contrib/visupng/* \
 	$(TESTS) \
-	example.c libpng.txt pngvcrd.c 
+	example.c libpng-1.2.29.txt pngvcrd.c 
 
 CLEANFILES= pngout.png libpng12.pc libpng12-config libpng.vers \
 libpng.sym
+
+MAINTAINERCLEANFILES = Makefile.in aclocal.m4 config.guess config.h.in \
+config.sub configure depcomp install-sh ltmain.sh missing
 
 $(PNGLIB_BASENAME).pc: libpng.pc
 	cp libpng.pc $@
@@ -97,17 +103,20 @@ $(PNGLIB_BASENAME)-config: libpng-config
 libpng.sym: png.h pngconf.h
 	rm -f $@ $@.new
 	$(CPP) @LIBPNG_DEFINES@ $(CPPFLAGS) -DPNG_BUILDSYMS $(srcdir)/png.h | \
-		$(SED) -n -e 's|^.*PNG_FUNCTION_EXPORT[ 	]*\([a-zA-Z0-9_]*\).*$$|\1|p' \
-			-e 's|^.*PNG_DATA_EXPORT[ 	]*\([a-zA-Z0-9_]*\).*$$|\1|p' \
+		$(SED) -n -e \
+		's|^.*PNG_FUNCTION_EXPORT[ 	]*\([$(AN)]*\).*$$|$(SYMBOL_PREFIX)\1|p' \
+		-e 's|^.*PNG_DATA_EXPORT[ 	]*\([$(AN)]*\).*$$|$(SYMBOL_PREFIX)\1|p' \
 			>$@.new
 	mv $@.new $@
 
 libpng.vers: libpng.sym
 	rm -f $@ $@.new
-	$(ECHO) PNG@PNGLIB_MAJOR@@PNGLIB_MINOR@_0 '{global:' > $@.new
+	echo PNG@PNGLIB_MAJOR@@PNGLIB_MINOR@_0 '{global:' > $@.new
 	$(SED) s/$$/\;/ libpng.sym >> $@.new
-	$(ECHO) 'local: *; };' >> $@.new
+	echo 'local: *; };' >> $@.new
 	mv $@.new $@
+
+test: check
 
 # install the .../include headers as links to the new ones
 install-data-hook:
@@ -123,7 +132,7 @@ install-exec-hook:
 	cd $(DESTDIR)$(bindir); $(LN_S) $(PNGLIB_BASENAME)-config libpng-config
 	@set -x;\
 	cd $(DESTDIR)$(libdir);\
-	for ext in a la so; do\
+	for ext in a la so sl dylib; do\
 		rm -f libpng.$$ext;\
                 if test -f $(PNGLIB_BASENAME).$$ext; then\
                        $(LN_S) $(PNGLIB_BASENAME).$$ext libpng.$$ext;\
@@ -137,7 +146,7 @@ uninstall-hook:
 	@if test -n "@compatlib@"; then\
 		set -x;\
 		cd $(DESTDIR)$(libdir);\
-		for ext in a la so; do\
+		for ext in a la so sl dylib; do\
 			rm -f libpng.$$ext;\
 		done;\
 	fi

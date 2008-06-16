@@ -21,8 +21,7 @@ PNGDIR   = ..\lib\libpng
 PNGXDIR  = ..\lib\pngxtern
 BACKHERE = ..\..\src
 
-OBJS = optipng.obj opngio.obj opngreduc.obj cbitset.obj osys.obj strutil.obj \
-       wildargs.obj
+OBJS = optipng.obj opngreduc.obj cbitset.obj osys.obj strutil.obj wildargs.obj
 LIBS = $(PNGXDIR)\$(PNGXLIB) $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
 
 
@@ -33,9 +32,9 @@ $(OPTIPNG): $(OBJS) $(LIBS)
 .c.obj:
 	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR) $*.c
 
-optipng.obj  : optipng.c proginfo.h opng.h cexcept.h cbitset.h osys.h strutil.h
-opngio.obj   : opngio.c opng.h
-opngreduc.obj: opngreduc.c opng.h
+optipng.obj  : optipng.c proginfo.h opngreduc.h \
+               cexcept.h cbitset.h osys.h strutil.h
+opngreduc.obj: opngreduc.c opngreduc.h
 cbitset.obj  : cbitset.c cbitset.h
 osys.obj     : osys.c osys.h
 strutil.obj  : strutil.c strutil.h
@@ -61,10 +60,10 @@ $(ZDIR)\$(ZLIB):
 
 
 clean:
-	-del *.obj
-	-del *.lib
 	-del $(OPTIPNG)
 	-del *.tds
+	-del *.lib
+	-del *.obj
 	cd $(PNGXDIR)
 	$(MAKE) -f $(PNGXMAK) clean
 	cd $(BACKHERE)
