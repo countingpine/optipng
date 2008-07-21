@@ -14,6 +14,20 @@ Legend
  * Other modification (e.g. architectural improvement).
 
 
+Version 0.6.1   20-jul-2008
+-------------
+ * Upgraded cexcept to version 2.0.1.
+ + Added a configure script, to be used instead of unix-secure.mak.
+ ! Fixed a build issue that occured when using libpng from the system.
+   (Thanks to Nelson A. de Oliveira for the report.)
+ ! Fixed processing when image reduction yields an output larger than
+   the original.  (Thanks to Michael Krishtopa for the report.)
+ ! Fixed behavior of -preserve.
+   (Thanks to Bill Koch for the report.)
+ - Removed displaying of partial progress when abandoning IDATs under
+   the -v option.  The percentages displayed were not very accurate.
+
+
 Version 0.6     15-jun-2008
 -----------
  + Upgraded libpng to version 1.2.29-optipng [private]

@@ -1,4 +1,4 @@
-.TH OPTIPNG 1 "15 June 2008" "OptiPNG Version 0.6"
+.TH OPTIPNG 1 "20 July 2008" "OptiPNG version 0.6.1"
 .SH NAME
 .B OptiPNG
 \- Advanced optimization program for
@@ -16,35 +16,24 @@ losing any information.
 In addition, this program performs a suite of useful functions like integrity
 checks, meta-data recovery and pixmap-to-PNG conversion.
 .SH FILES
-The input files are image files of following types:
-.P
-\- Native format: PNG.
-.P
-\- External pixmap formats
-(currently supported: GIF, BMP, PNM and TIFF).
+The input files are raster image files encoded either in PNG format (the native
+format), or in an external format. The currently supported external formats are
+GIF, BMP, PNM and TIFF.
 .P
 .B OptiPNG
-processes each input file as follows:
+processes each image file given in the command line as follows:
 .P
-\- If it is a PNG file:
+\- If it is in PNG format:
 .IP
-If it is possible to create an optimized version of the given PNG file,
-the optimized file replaces the original one. The original file can be
-backed up, at the user's option.
+Attempt to optimize the given file in-place. If optimization is successful, or
+if the option \fB\-force\fP is in effect, replace the original file with its
+optimized version. The original file is backed up if the option \fB\-keep\fP
+is in effect.
 .P
-\- Otherwise (i.e. if it is an external pixmap format):
+\- If it is an external format:
 .IP
-An optimized PNG version of the given image file is created.
-The output file name is created from the original file name and the
-\fC.png\fP extension.
-.P
-For example:
-.IP
-\fCoptipng file1.png file2.gif\fP
-.P
-will create an optimized \fCfile1.png\fP and an optimized \fCfile2.png\fP.
-(The original \fCfile1.png\fP is replaced by the optimized one;
-the original \fCfile2.gif\fP is left intact.)
+Create an optimized PNG version of the given file. The output file name is
+composed from the original file name and the \fC.png\fP extension.
 .SH OPTIONS
 .SS "Basic options"
 .TP
@@ -85,7 +74,7 @@ The files that use the backup names prior to the program execution are
 Run in quiet mode.
 .TP
 \fB\-v\fP
-Run in verbose mode / Show copyright, version and build info.
+Show copyright, version and build info; run in verbose mode.
 .SS "Advanced options"
 .TP
 \fB\-zc\fP \fIlevels\fP
@@ -205,9 +194,9 @@ is performed.
 Extremely exhaustive searches are not generally recommended.
 .SH EXAMPLES
 .TP
-\fCoptipng file.png\fP
+\fCoptipng file1.png file2.gif file3.tif\fP
 .TP
-\fCoptipng \-o5 file.png\fP
+\fCoptipng \-o5 file1.png file2.gif file3.tif\fP
 .TP
 \fCoptipng \-i1 \-o7 \-v \-full \-sim experiment.png \-log experiment.log\fP
 .SH BUGS
@@ -224,9 +213,22 @@ TIFF support is limited to uncompressed, PNG-compatible (grayscale, RGB and
 RGBA) images.
 .P
 Metadata is not imported from the external image formats.
+.SH SEE ALSO
+\fBpng\fP(5),
+\fBlibpng\fP(3),
+\fBzlib\fP(3),
+\fBpngcrush\fP(1),
+\fBpngrewrite\fP(1).
+.PP
+Glenn Randers-Pehrson et al.
+\fIPortable Network Graphics (PNG) Specification, Second Edition\fP.
+.br
+W3C Recommendation 10 November 2003; ISO/IEC IS 15948:2003 (E).
+.br
+\fChttp://www.w3.org/TR/PNG/\fP
 .SH AUTHOR
 \fBOptiPNG\fP is written and maintained by Cosmin Truta.
 .PP
-This manual page was originally written by Nelson A. de Oliveira for
-the Debian Project. It was later updated by Cosmin Truta, and is now part of
-the \fBOptiPNG\fP distribution.
+This manual page was originally written by Nelson A. de Oliveira
+for the Debian Project. It was later updated by Cosmin Truta,
+and is now part of the \fBOptiPNG\fP distribution.

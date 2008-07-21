@@ -222,8 +222,8 @@ pngx_write_sig(png_structp png_ptr)
    png_write_sig(png_ptr);
 #else
    static png_byte png_signature[8] = {137, 80, 78, 71, 13, 10, 26, 10};
-   pngx_priv_read_write(write_ptr, png_signature, 8);
-   /* png_ptr->sig_bytes and png_ptr->mode are safely ignored here. */
+   pngx_priv_read_write(png_ptr, png_signature, 8);
+   /* TODO: Take png_ptr->sig_bytes into account. */
 #endif
 }
 

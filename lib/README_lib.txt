@@ -38,7 +38,7 @@ libpng
 
 pngxtern
   * author:   Cosmin Truta
-  * version:  0.6
+  * version:  0.6.1
   * location: lib/pngxtern/
   * supported formats: BMP, GIF, PNM (PBM, PGM, PPM), and TIFF (uncompressed)
     - BMP read support derived from bmp2png by MIYASAKA Masaru

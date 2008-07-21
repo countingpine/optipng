@@ -1,0 +1,13 @@
+CC = @CC@
+
+all:
+	${MAKE} -f @MAKEFILE@ CC="${CC}"
+
+install:
+	${MAKE} -f @MAKEFILE@ install CC="${CC}"
+
+uninstall:
+	${MAKE} -f @MAKEFILE@ uninstall CC="${CC}"
+
+clean:
+	${MAKE} -f @MAKEFILE@ clean CC="${CC}"

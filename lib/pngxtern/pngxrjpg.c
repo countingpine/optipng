@@ -96,8 +96,7 @@ pngx_read_jpeg(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    int sig_code;
 
    if (fread(buf, JPEG_SIG_SIZE_MAX, 1, stream) != 1)
-      if (&info_ptr)  /* avoid "unused info_ptr" warning */
-         return 0;  /* not a JPEG file */
+      return 0;  /* not a JPEG file */
    sig_code = pngx_sig_is_jpeg(buf, JPEG_SIG_SIZE_MAX, NULL, 0, NULL, 0);
    /* TODO: use the format names passed by pngx_sig_is_jpeg. */
    switch (sig_code)
@@ -112,5 +111,7 @@ pngx_read_jpeg(png_structp png_ptr, png_infop info_ptr, FILE *stream)
       png_error(png_ptr, "JNG (JPEG) decoding is not supported");
       break;
    }
+   if (info_ptr == NULL)  /* dummy, keep compilers happy */
+      return 0;
    return 0;  /* always fail */
 }

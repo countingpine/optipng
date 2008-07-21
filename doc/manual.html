@@ -1,5 +1,5 @@
 <!-- Creator     : groff version 1.18.1 -->
-<!-- CreationDate: Sun Jun 15 22:55:00 2008 -->
+<!-- CreationDate: Sun Jul 20 12:46:05 2008 -->
 <html>
 <head>
 <meta name="generator" content="groff -Thtml, see www.gnu.org">
@@ -9,22 +9,13 @@
 <body>
 
 <h1 align=center>OPTIPNG</h1>
-<a href="#NAME">NAME</a><br>
-<a href="#SYNOPSIS">SYNOPSIS</a><br>
-<a href="#DESCRIPTION">DESCRIPTION</a><br>
-<a href="#FILES">FILES</a><br>
-<a href="#OPTIONS">OPTIONS</a><br>
-<a href="#EXAMPLES">EXAMPLES</a><br>
-<a href="#BUGS">BUGS</a><br>
-<a href="#AUTHOR">AUTHOR</a><br>
-
 <hr>
 <a name="NAME"></a>
 <h2>NAME</h2>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>OptiPNG</b> &minus; Advanced optimization program for
@@ -36,7 +27,7 @@
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>optipng</b> [<b>&minus;?</b> | <b>&minus;h</b> |
@@ -49,7 +40,7 @@ optipng</b> [<i>options...</i>] <i>files...</i></p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>OptiPNG</b> is a PNG optimizer that recompresses image
@@ -64,82 +55,51 @@ conversion.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
-<p>The input files are image files of following types:</p>
+<p>The input files are raster image files encoded either in
+PNG format (the native format), or in an external format.
+The currently supported external formats are GIF, BMP, PNM
+and TIFF.</p>
 <!-- INDENTATION -->
-<p>&minus; Native format: PNG.</p>
+<p><b>OptiPNG</b> processes each image file given in the
+command line as follows:</p>
 <!-- INDENTATION -->
-<p>&minus; External pixmap formats (currently supported:
-GIF, BMP, PNM and TIFF).</p>
-<!-- INDENTATION -->
-<p><b>OptiPNG</b> processes each input file as follows:</p>
-<!-- INDENTATION -->
-<p>&minus; If it is a PNG file:</p>
+<p>&minus; If it is in PNG format:</p>
 </td>
 </table>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="20%"></td>
 <td width="79%">
-<p>If it is possible to create an optimized version of the
-given PNG file, the optimized file replaces the original
-one. The original file can be backed up, at the user&rsquo;s
-option.</p>
+<p>Attempt to optimize the given file in-place. If
+optimization is successful, or if the option
+<b>&minus;force</b> is in effect, replace the original file
+with its optimized version. The original file is backed up
+if the option <b>&minus;keep</b> is in effect.</p>
 </td>
 </table>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
-<p>&minus; Otherwise (i.e. if it is an external pixmap
-format):</p>
+<p>&minus; If it is an external format:</p>
 </td>
 </table>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="20%"></td>
 <td width="79%">
-<p>An optimized PNG version of the given image file is
-created. The output file name is created from the original
-file name and the <tt>.png</tt> extension.</p>
-</td>
-</table>
-<!-- INDENTATION -->
-<table width="100%" border=0 rules="none" frame="void"
-       cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
-<td width="10%"></td>
-<td width="89%">
-<p>For example:</p>
-</td>
-</table>
-<!-- INDENTATION -->
-<table width="100%" border=0 rules="none" frame="void"
-       cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
-<td width="20%"></td>
-<td width="79%">
-<p><tt>optipng file1.png file2.gif</tt></p>
-</td>
-</table>
-<!-- INDENTATION -->
-<table width="100%" border=0 rules="none" frame="void"
-       cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
-<td width="10%"></td>
-<td width="89%">
-<p>will create an optimized <tt>file1.png</tt> and an
-optimized <tt>file2.png</tt>. (The original
-<tt>file1.png</tt> is replaced by the optimized one; the
-original <tt>file2.gif</tt> is left intact.)</p>
+<p>Create an optimized PNG version of the given file. The
+output file name is composed from the original file name and
+the <tt>.png</tt> extension.</p>
 </td>
 </table>
 <a name="OPTIONS"></a>
@@ -147,7 +107,7 @@ original <tt>file2.gif</tt> is left intact.)</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="4%"></td>
 <td width="95%">
 <p><b>Basic options</b></p></td>
@@ -155,7 +115,7 @@ original <tt>file2.gif</tt> is left intact.)</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>-?</b>, <b>&minus;h</b>, <b>&minus;help</b></p></td>
@@ -163,7 +123,7 @@ original <tt>file2.gif</tt> is left intact.)</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Show a complete summary of options.</p>
@@ -172,7 +132,7 @@ original <tt>file2.gif</tt> is left intact.)</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;o</b> <i>level</i></p></td>
@@ -180,7 +140,7 @@ original <tt>file2.gif</tt> is left intact.)</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Select the optimization level.<br>
@@ -199,7 +159,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;i</b> <i>type</i></p></td>
@@ -207,7 +167,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Select the interlace type (0&minus;1).<br>
@@ -221,7 +181,7 @@ interlace type as the input.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;k</b>, <b>&minus;keep</b></p></td>
@@ -229,7 +189,7 @@ interlace type as the input.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Keep a backup of the modified file(s).<br>
@@ -240,7 +200,7 @@ execution are <i>not</i> overwritten.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;q</b>, <b>&minus;quiet</b></p></td>
@@ -248,7 +208,7 @@ execution are <i>not</i> overwritten.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Run in quiet mode.</p>
@@ -257,22 +217,23 @@ execution are <i>not</i> overwritten.</p>
 <!-- TABS -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="4" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="2%">
 
 <p><b>&minus;v</b></p>
 </td>
+<td width="7%"></td>
 <td width="77%">
 
-<p>Run in verbose mode / Show copyright, version and build
-info.</p>
+<p>Show copyright, version and build info; run in verbose
+mode.</p>
 </td>
 </table>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="4%"></td>
 <td width="95%">
 <p><b>Advanced options</b></p></td>
@@ -280,7 +241,7 @@ info.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;zc</b> <i>levels</i></p></td>
@@ -288,7 +249,7 @@ info.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Select the zlib compression levels.<br>
@@ -301,7 +262,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;zm</b> <i>levels</i></p></td>
@@ -309,7 +270,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Select the zlib memory levels.<br>
@@ -322,7 +283,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;zs</b> <i>strategies</i></p></td>
@@ -330,7 +291,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Select the zlib compression strategies.<br>
@@ -343,7 +304,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;zw</b> <i>window size</i></p></td>
@@ -351,7 +312,7 @@ specific version.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Select the zlib window size
@@ -363,7 +324,7 @@ The window size can be specified either in bytes (e.g.
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;f</b> <i>filters</i></p></td>
@@ -371,7 +332,7 @@ The window size can be specified either in bytes (e.g.
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Select the PNG delta filters.<br>
@@ -386,64 +347,70 @@ see the details pertaining to your specific version.</p>
 </table>
 <!-- TABS -->
 <table width="100%" border=0 rules="none" frame="void"
-       cols="3" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+       cols="4" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="8%">
 
 <p><b>&minus;nb</b></p>
 </td>
+<td width="1%"></td>
 <td width="77%">
 
 <p>Do not apply bit depth reduction.</p>
 </td>
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="8%">
 
 <p><b>&minus;nc</b></p>
 </td>
+<td width="1%"></td>
 <td width="77%">
 
 <p>Do not apply color type reduction.</p>
 </td>
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="8%">
 
 <p><b>&minus;np</b></p>
 </td>
+<td width="1%"></td>
 <td width="77%">
 
 <p>Do not apply palette reduction.</p>
 </td>
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="8%">
 
 <p><b>&minus;nz</b></p>
 </td>
+<td width="1%"></td>
 <td width="77%">
 
 <p>Do not perform IDAT recompression (also disable
 reductions).</p>
 </td>
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="8%">
 
 <p><b>&minus;fix</b></p>
 </td>
+<td width="1%"></td>
 <td width="77%">
 
 <p>Enable error recovery.</p>
 </td>
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="8%">
 
 <p><b>&minus;force</b></p>
 </td>
+<td width="1%"></td>
 <td width="77%">
 
 <p>Enforce writing of a new output file. Use this option to
@@ -452,12 +419,13 @@ file, e.g. when the PNG input is digitally signed (using
 dSIG), or when the PNG output becomes larger than the PNG
 input.</p>
 </td>
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="8%">
 
 <p><b>&minus;full</b></p>
 </td>
+<td width="1%"></td>
 <td width="77%">
 
 <p>Produce a full report on IDAT. This option might slow
@@ -467,7 +435,7 @@ down the trials.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;preserve</b></p></td>
@@ -475,7 +443,7 @@ down the trials.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Preserve file attributes (time stamps, file access
@@ -485,7 +453,7 @@ rights, etc.) where applicable.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;simulate</b></p></td>
@@ -493,7 +461,7 @@ rights, etc.) where applicable.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Run in simulation mode: perform the trials, but do not
@@ -503,12 +471,13 @@ create output files.</p>
 <!-- TABS -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="4" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="7%">
 
 <p><b>&minus;snip</b></p>
 </td>
+<td width="2%"></td>
 <td width="77%">
 
 <p>Cut one image out of multi-image, animation or video
@@ -519,7 +488,7 @@ the first or the most relevant (e.g. the largest) image.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;out</b> <i>file</i></p></td>
@@ -527,7 +496,7 @@ the first or the most relevant (e.g. the largest) image.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Write output file to <i>file</i>. The command line must
@@ -537,7 +506,7 @@ not contain more than one input file.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;dir</b> <i>directory</i></p></td>
@@ -545,7 +514,7 @@ not contain more than one input file.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Write output file(s) to <i>directory</i>.</p>
@@ -554,7 +523,7 @@ not contain more than one input file.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>&minus;log</b> <i>file</i></p></td>
@@ -562,7 +531,7 @@ not contain more than one input file.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="21%"></td>
 <td width="77%">
 <p>Log messages to <i>file</i>. For safety reasons,
@@ -572,21 +541,24 @@ not contain more than one input file.</p>
 <!-- TABS -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="5" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="11%"></td>
-<td width="10%">
+<td width="2%">
 
 <p><b>&minus;&minus;</b></p>
 </td>
-<td width="77%">
+<td width="13%"></td>
+<td width="39%">
 
 <p>Stop option switch parsing.</p>
+</td>
+<td width="32%">
 </td>
 </table>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="4%"></td>
 <td width="95%">
 <p><b>Notes</b></p></td>
@@ -594,7 +566,7 @@ not contain more than one input file.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p>The option names are case-insensitive and can be
@@ -615,7 +587,7 @@ e.g.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="20%"></td>
 <td width="79%">
 <p><b>&minus;i1</b> &lt;=&gt; <b>&minus;i 1<br>
@@ -625,7 +597,7 @@ e.g.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p>Range arguments are cumulative; e.g.</p>
@@ -634,7 +606,7 @@ e.g.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="20%"></td>
 <td width="79%">
 <p><b>&minus;f0 &minus;f3&minus;5</b> &lt;=&gt;
@@ -647,7 +619,7 @@ e.g.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p>The zlib window size is automatically set to a minimum
@@ -665,23 +637,24 @@ recommended.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
-<p><tt>optipng file.png</tt></p></td>
+<p><tt>optipng file1.png file2.gif file3.tif</tt></p></td>
 </table>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
-<p><tt>optipng &minus;o5 file.png</tt></p></td>
+<p><tt>optipng &minus;o5 file1.png file2.gif
+file3.tif</tt></p></td>
 </table>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><tt>optipng &minus;i1 &minus;o7 &minus;v &minus;full
@@ -693,7 +666,7 @@ experiment.log</tt></p></td>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p>Lossless image reductions are not completely implemented.
@@ -704,7 +677,7 @@ Here are the missing pieces:</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="20%"></td>
 <td width="79%">
 <p>&minus; The color palette reductions are implemented only
@@ -716,7 +689,7 @@ images, are not implemented yet.</p>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p>TIFF support is limited to uncompressed, PNG-compatible
@@ -726,12 +699,30 @@ images, are not implemented yet.</p>
 formats.</p>
 </td>
 </table>
+<a name="SEE ALSO"></a>
+<h2>SEE ALSO</h2>
+<!-- INDENTATION -->
+<table width="100%" border=0 rules="none" frame="void"
+       cols="2" cellspacing="0" cellpadding="0">
+<tr valign="top" align="left">
+<td width="10%"></td>
+<td width="89%">
+<p><b>png</b>(5), <b>libpng</b>(3), <b>zlib</b>(3),
+<b>pngcrush</b>(1), <b>pngrewrite</b>(1).</p>
+<!-- INDENTATION -->
+<p>Glenn Randers-Pehrson et al. <i>Portable Network Graphics
+(PNG) Specification, Second Edition</i>.<br>
+W3C Recommendation 10 November 2003; ISO/IEC IS 15948:2003
+(E).<tt><br>
+http://www.w3.org/TR/PNG/</tt></p>
+</td>
+</table>
 <a name="AUTHOR"></a>
 <h2>AUTHOR</h2>
 <!-- INDENTATION -->
 <table width="100%" border=0 rules="none" frame="void"
        cols="2" cellspacing="0" cellpadding="0">
-<tr valign="top" align="justify">
+<tr valign="top" align="left">
 <td width="10%"></td>
 <td width="89%">
 <p><b>OptiPNG</b> is written and maintained by Cosmin

@@ -20,6 +20,7 @@ CRELEASE = -O2
 LDRELEASE = -s
 CFLAGS = -W -Wall $(CRELEASE)
 LDFLAGS = $(LDRELEASE)
+INCS = -I$(ZDIR) -I$(PNGDIR)
 LIBS = -lpng -lz -lm
 
 # File extensions
@@ -42,7 +43,7 @@ OBJS = $(PNGX_OBJS) $(PNGXTERN_OBJS) $(PNGXTERN_XOBJS)
 all: pngxtern$(A)
 
 .c$(O):
-	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) $<
+	$(CC) -c $(CFLAGS) $(INCS) $<
 
 pngxtern$(A): $(OBJS)
 	$(AR_RC) $@ $(OBJS)

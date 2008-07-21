@@ -63,7 +63,6 @@ pngx_read_tiff(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    unsigned int width, height, pixel_size, sample_depth, sample_max;
    int color_type;
    int sample_overflow;
-   png_uint_32 rowbytes;
    png_bytepp row_pointers;
    png_bytep row;
    unsigned int i, j, k;
@@ -106,8 +105,6 @@ pngx_read_tiff(png_structp png_ptr, png_infop info_ptr, FILE *stream)
       (sample_depth <= 8) ? 8 : 16,
       color_type,
       PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
-
-   rowbytes = png_get_rowbytes(png_ptr, info_ptr);
    row_pointers = pngx_malloc_rows(png_ptr, info_ptr, 0);
 
    if (sample_depth <= 8)

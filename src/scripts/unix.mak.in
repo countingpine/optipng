@@ -1,10 +1,7 @@
 # Makefile for OptiPNG
 # Generic Unix, standards-compliant (POSIX, FHS, etc.)
 #
-# If you wish to use the system-supplied zlib and libpng libraries
-# (e.g. for security purposes), use unix-secure.mak
-#
-# Usage: make -f scripts/unix-std.mak
+# Usage: make -f scripts/unix.mak
 
 
 prefix=/usr/local
@@ -15,32 +12,33 @@ man1dir=$(mandir)/man1
 
 CC = cc
 LD = $(CC)
-MAKE = make
 CFLAGS  = -O
 LDFLAGS = -s
 
-OPTIPNG  = optipng
-ZLIB     = libz.a
-PNGLIB   = libpng.a
-PNGXLIB  = pngxtern.a
-ZMAK     = Makefile
-PNGMAK   = scripts/makefile.std
-PNGXMAK  = scripts/unix.mak
-ZDIR     = ../lib/zlib
-PNGDIR   = ../lib/libpng
-PNGXDIR  = ../lib/pngxtern
-BACKHERE = ../../src
+OPTIPNG = optipng
+ZLIB    = libz.a
+PNGLIB  = libpng.a
+PNGXLIB = pngxtern.a
+ZMAK    = Makefile
+PNGMAK  = scripts/makefile.std
+PNGXMAK = scripts/unix.mak
+ZDIR    = ../lib/zlib
+PNGDIR  = ../lib/libpng
+PNGXDIR = ../lib/pngxtern
+BACKDIR = ../../src
 
 OBJS = optipng.o opngreduc.o cbitset.o osys.o strutil.o
+INCS = -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR)
 LIBS = $(PNGXDIR)/$(PNGXLIB) $(PNGDIR)/$(PNGLIB) $(ZDIR)/$(ZLIB)
+SYSLIBS =
 
 
 $(OPTIPNG): $(OBJS) $(LIBS)
-	$(LD) -o $(OPTIPNG) $(LDFLAGS) $(OBJS) $(LIBS)
+	$(LD) -o $(OPTIPNG) $(LDFLAGS) $(OBJS) $(LIBS) $(SYSLIBS)
 
 
 .c.o:
-	$(CC) -c $(CFLAGS) -DUNIX -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR) $*.c
+	$(CC) -c $(CFLAGS) $(INCS) -DUNIX=1 $*.c
 
 optipng.o  : optipng.c proginfo.h opngreduc.h \
              cexcept.h cbitset.h osys.h strutil.h
@@ -53,18 +51,19 @@ strutil.o  : strutil.c strutil.h
 $(PNGXDIR)/$(PNGXLIB): $(ZDIR)/$(ZLIB) $(PNGDIR)/$(PNGLIB)
 	cd $(PNGXDIR); \
 	$(MAKE) -f $(PNGXMAK) $(PNGXLIB); \
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 
 $(PNGDIR)/$(PNGLIB): $(ZDIR)/$(ZLIB)
 	cd $(PNGDIR); \
+	#./configure; \
 	$(MAKE) -f $(PNGMAK) $(PNGLIB); \
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 
 $(ZDIR)/$(ZLIB):
 	cd $(ZDIR); \
 	./configure; \
 	$(MAKE) -f $(ZMAK) $(ZLIB); \
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 
 
 install: $(OPTIPNG)
@@ -85,10 +84,10 @@ clean:
 	rm -f $(OPTIPNG) $(OBJS)
 	cd $(PNGXDIR); \
 	$(MAKE) -f $(PNGXMAK) clean; \
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 	cd $(PNGDIR); \
 	$(MAKE) -f $(PNGMAK) clean; \
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 	cd $(ZDIR); \
 	$(MAKE) -f $(ZMAK) clean; \
-	cd $(BACKHERE)
+	cd $(BACKDIR)

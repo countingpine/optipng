@@ -9,28 +9,30 @@ LD = $(CC)
 CFLAGS  = -O2 -v -w
 LDFLAGS = -v
 
-OPTIPNG  = optipng.exe
-ZLIB     = zlib.lib
-PNGLIB   = libpng.lib
-PNGXLIB  = pngxtern.lib
-ZMAK     = win32\Makefile.bor
-PNGMAK   = scripts\makefile.bc32
-PNGXMAK  = scripts\bcc32.mak
-ZDIR     = ..\lib\zlib
-PNGDIR   = ..\lib\libpng
-PNGXDIR  = ..\lib\pngxtern
-BACKHERE = ..\..\src
+OPTIPNG = optipng.exe
+ZLIB    = zlib.lib
+PNGLIB  = libpng.lib
+PNGXLIB = pngxtern.lib
+ZMAK    = win32\Makefile.bor
+PNGMAK  = scripts\makefile.bc32
+PNGXMAK = scripts\bcc32.mak
+ZDIR    = ..\lib\zlib
+PNGDIR  = ..\lib\libpng
+PNGXDIR = ..\lib\pngxtern
+BACKDIR = ..\..\src
 
 OBJS = optipng.obj opngreduc.obj cbitset.obj osys.obj strutil.obj wildargs.obj
+INCS = -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR)
 LIBS = $(PNGXDIR)\$(PNGXLIB) $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
+SYSLIBS = #noeh32.lib
 
 
 $(OPTIPNG): $(OBJS) $(LIBS)
-	$(LD) $(LDFLAGS) $(OBJS) $(LIBS)  # noeh32.lib
+	$(LD) $(LDFLAGS) $(OBJS) $(LIBS) $(SYSLIBS)
 
 
 .c.obj:
-	$(CC) -c $(CFLAGS) -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR) $*.c
+	$(CC) -c $(CFLAGS) $(INCS) $*.c
 
 optipng.obj  : optipng.c proginfo.h opngreduc.h \
                cexcept.h cbitset.h osys.h strutil.h
@@ -46,17 +48,17 @@ wildargs.obj : xtra\wildargs.c
 $(PNGXDIR)\$(PNGXLIB): $(ZDIR)\$(ZLIB) $(PNGDIR)\$(PNGLIB)
 	cd $(PNGXDIR)
 	$(MAKE) -f $(PNGXMAK) $(PNGXLIB)
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 
 $(PNGDIR)\$(PNGLIB): $(ZDIR)\$(ZLIB)
 	cd $(PNGDIR)
 	$(MAKE) -f $(PNGMAK) $(PNGLIB)
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 
 $(ZDIR)\$(ZLIB):
 	cd $(ZDIR)
 	$(MAKE) -f $(ZMAK) $(ZLIB)
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 
 
 clean:
@@ -66,10 +68,10 @@ clean:
 	-del *.obj
 	cd $(PNGXDIR)
 	$(MAKE) -f $(PNGXMAK) clean
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 	cd $(PNGDIR)
 	$(MAKE) -f $(PNGMAK) clean
-	cd $(BACKHERE)
+	cd $(BACKDIR)
 	cd $(ZDIR)
 	$(MAKE) -f $(ZMAK) clean
-	cd $(BACKHERE)
+	cd $(BACKDIR)

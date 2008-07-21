@@ -1,15 +1,7 @@
 # Makefile for OptiPNG
-# Secure Unix: the latest and greatest zlib and libpng versions and
-# security patches are installed in the system
+# Generic Unix, standards-compliant (POSIX, FHS, etc.)
 #
-# Be aware that compression might be weaker by a tiny fraction!
-# If you prefer the slightly better compression provided by a customized
-# zlib build, tailored for optimal PNG compression, use unix-std.mak
-# or gcc.mak.
-#
-# Type "optipng -v" to see what libraries are used by the program.
-#
-# Usage: make -f scripts/unix-secure.mak
+# Usage: make -f scripts/unix.mak
 
 
 prefix=/usr/local
@@ -20,26 +12,33 @@ man1dir=$(mandir)/man1
 
 CC = cc
 LD = $(CC)
-MAKE = make
 CFLAGS  = -O
 LDFLAGS = -s
 
-OPTIPNG  = optipng
-PNGXLIB  = pngxtern.a
-PNGXMAK  = scripts/unix.mak
-PNGXDIR  = ../lib/pngxtern
-BACKHERE = ../../src
+OPTIPNG = optipng
+ZLIB    = libz.a
+PNGLIB  = libpng.a
+PNGXLIB = pngxtern.a
+ZMAK    = Makefile
+PNGMAK  = scripts/makefile.std
+PNGXMAK = scripts/unix.mak
+ZDIR    = ../lib/zlib
+PNGDIR  = ../lib/libpng
+PNGXDIR = ../lib/pngxtern
+BACKDIR = ../../src
 
 OBJS = optipng.o opngreduc.o cbitset.o osys.o strutil.o
-LIBS = $(PNGXDIR)/$(PNGXLIB)
+INCS = -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR)
+LIBS = $(PNGXDIR)/$(PNGXLIB) $(PNGDIR)/$(PNGLIB) $(ZDIR)/$(ZLIB)
+SYSLIBS =
 
 
 $(OPTIPNG): $(OBJS) $(LIBS)
-	$(LD) -o $(OPTIPNG) $(LDFLAGS) $(OBJS) $(LIBS) -lpng -lz
+	$(LD) -o $(OPTIPNG) $(LDFLAGS) $(OBJS) $(LIBS) $(SYSLIBS)
 
 
 .c.o:
-	$(CC) -c $(CFLAGS) -DUNIX -I$(PNGXDIR) $*.c
+	$(CC) -c $(CFLAGS) $(INCS) -DUNIX=1 $*.c
 
 optipng.o  : optipng.c proginfo.h opngreduc.h \
              cexcept.h cbitset.h osys.h strutil.h
@@ -49,10 +48,22 @@ osys.o     : osys.c osys.h
 strutil.o  : strutil.c strutil.h
 
 
-$(PNGXDIR)/$(PNGXLIB):
+$(PNGXDIR)/$(PNGXLIB): $(ZDIR)/$(ZLIB) $(PNGDIR)/$(PNGLIB)
 	cd $(PNGXDIR); \
 	$(MAKE) -f $(PNGXMAK) $(PNGXLIB); \
-	cd $(BACKHERE)
+	cd $(BACKDIR)
+
+$(PNGDIR)/$(PNGLIB): $(ZDIR)/$(ZLIB)
+	cd $(PNGDIR); \
+	#./configure; \
+	$(MAKE) -f $(PNGMAK) $(PNGLIB); \
+	cd $(BACKDIR)
+
+$(ZDIR)/$(ZLIB):
+	cd $(ZDIR); \
+	./configure; \
+	$(MAKE) -f $(ZMAK) $(ZLIB); \
+	cd $(BACKDIR)
 
 
 install: $(OPTIPNG)
@@ -73,4 +84,10 @@ clean:
 	rm -f $(OPTIPNG) $(OBJS)
 	cd $(PNGXDIR); \
 	$(MAKE) -f $(PNGXMAK) clean; \
-	cd $(BACKHERE)
+	cd $(BACKDIR)
+	cd $(PNGDIR); \
+	$(MAKE) -f $(PNGMAK) clean; \
+	cd $(BACKDIR)
+	cd $(ZDIR); \
+	$(MAKE) -f $(ZMAK) clean; \
+	cd $(BACKDIR)

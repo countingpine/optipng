@@ -1,0 +1,21 @@
+CC = @CC@
+
+all:
+	cd src; \
+	${MAKE} -f @MAKEFILE@ CC="${CC}"; \
+	cd ..
+
+install:
+	cd src; \
+	${MAKE} -f @MAKEFILE@ install CC="${CC}"; \
+	cd ..
+
+uninstall:
+	cd src; \
+	${MAKE} -f @MAKEFILE@ uninstall CC="${CC}"; \
+	cd ..
+
+clean:
+	cd src; \
+	${MAKE} -f @MAKEFILE@ clean CC="${CC}"; \
+	cd ..

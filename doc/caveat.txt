@@ -14,8 +14,8 @@ Legend
  * Another problematic issue, that is not necessarily a bug.
 
 
-Version 0.6     15-jun-2008
------------
+Version 0.6.1   15-jun-2008
+-------------
  - Lossless image reductions are not completely implemented.
    (This does NOT affect the integrity of PNG files.)
    Here are the missing pieces:
