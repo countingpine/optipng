@@ -28,17 +28,17 @@ zlib
 
 libpng
   * authors:  Glenn Randers-Pehrson and the PNG Development Group
-  * version:  1.2.29-optipng
+  * version:  1.2.33-optipng
   * location: lib/libpng/
   * derived from original
-    - version:  1.2.29
+    - version:  1.2.33
     - location: http://www.libpng.org/pub/png/libpng.html
-    - changes:  lib/libpng/CHANGES (see the "1.2.29-optipng" section)
+    - changes:  lib/libpng/CHANGES (see the "1.2.33-optipng" section)
     - details:  lib/lib_diff/libpng.diff
 
 pngxtern
   * author:   Cosmin Truta
-  * version:  0.6.1
+  * version:  0.6.2
   * location: lib/pngxtern/
   * supported formats: BMP, GIF, PNM (PBM, PGM, PPM), and TIFF (uncompressed)
     - BMP read support derived from bmp2png by MIYASAKA Masaru

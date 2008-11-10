@@ -6,7 +6,7 @@
 
 CC = cl
 LD = $(CC)
-CFLAGS  = -MD -O2
+CFLAGS  = -D_CRT_SECURE_NO_WARNINGS -MD -O2 -W4
 LDFLAGS = -MD
 
 OPTIPNG = optipng.exe
@@ -21,7 +21,8 @@ PNGDIR  = ..\lib\libpng
 PNGXDIR = ..\lib\pngxtern
 BACKDIR = ..\..\src
 
-OBJS = optipng.obj opngreduc.obj cbitset.obj osys.obj strutil.obj wildargs.obj
+OBJS = optipng.obj opngoptim.obj opngreduc.obj \
+       cbitset.obj osys.obj strutil.obj wildargs.obj
 INCS = -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR)
 LIBS = $(PNGXDIR)\$(PNGXLIB) $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
 SYSLIBS =
@@ -34,8 +35,8 @@ $(OPTIPNG): $(OBJS) $(LIBS)
 .c.obj:
 	$(CC) -c $(CFLAGS) $(INCS) $*.c
 
-optipng.obj  : optipng.c proginfo.h opngreduc.h \
-               cexcept.h cbitset.h osys.h strutil.h
+optipng.obj  : optipng.c proginfo.h optipng.h cbitset.h osys.h strutil.h
+opngoptim.obj: opngoptim.c optipng.h opngreduc.h cexcept.h cbitset.h osys.h
 opngreduc.obj: opngreduc.c opngreduc.h
 cbitset.obj  : cbitset.c cbitset.h
 osys.obj     : osys.c osys.h

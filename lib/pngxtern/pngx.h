@@ -41,6 +41,14 @@ extern PNG_EXPORT(void, pngx_set_interlace_method)
    PNGARG((png_structp png_ptr, png_infop info_ptr, int interlace_method));
 
 
+#if PNG_LIBPNG_VER >= 10400
+typedef png_alloc_size_t pngx_alloc_size_t;
+#else
+/* Compatibility backport of png_alloc_size_t */
+typedef png_uint_32 pngx_alloc_size_t;
+#endif
+
+#ifdef PNG_INFO_IMAGE_SUPPORTED
 /* Allocate memory for the row pointers.
  * Use filler to initialize the rows if it is non-negative.
  * On success return the newly-allocated row pointers.
@@ -49,6 +57,10 @@ extern PNG_EXPORT(void, pngx_set_interlace_method)
  */
 extern PNG_EXPORT(png_bytepp, pngx_malloc_rows)
    PNGARG((png_structp png_ptr, png_infop info_ptr, int filler));
+extern PNG_EXPORT(png_bytepp, pngx_malloc_rows_extended)
+   PNGARG((png_structp png_ptr, png_infop info_ptr,
+           pngx_alloc_size_t min_row_size, int filler));
+#endif
 
 
 #if PNG_LIBPNG_VER >= 10400
@@ -77,9 +89,9 @@ extern PNG_EXPORT(png_bytepp, pngx_malloc_rows)
 #else /* PNG_LIBPNG_VER < 10400 */
 
 /* Compatibility backports of functions added to libpng 1.4 */
-extern PNG_EXPORT(png_uint_32,pngx_get_io_state)
+extern PNG_EXPORT(png_uint_32, pngx_get_io_state)
    PNGARG((png_structp png_ptr));
-extern PNG_EXPORT(png_bytep,pngx_get_io_chunk_name)
+extern PNG_EXPORT(png_bytep, pngx_get_io_chunk_name)
    PNGARG((png_structp png_ptr));
 /* Note: although these backports have several limitations in comparison
  * to the actual libpng 1.4 functions, they work properly in OptiPNG,
@@ -87,11 +99,11 @@ extern PNG_EXPORT(png_bytep,pngx_get_io_chunk_name)
  */
 
 /* Compatibility wrappers for old libpng functions */
-extern PNG_EXPORT(void,pngx_set_read_fn) PNGARG((png_structp png_ptr,
+extern PNG_EXPORT(void, pngx_set_read_fn) PNGARG((png_structp png_ptr,
    png_voidp io_ptr, png_rw_ptr read_data_fn));
-extern PNG_EXPORT(void,pngx_set_write_fn) PNGARG((png_structp png_ptr,
+extern PNG_EXPORT(void, pngx_set_write_fn) PNGARG((png_structp png_ptr,
    png_voidp io_ptr, png_rw_ptr write_data_fn, png_flush_ptr output_flush_fn));
-extern PNG_EXPORT(void,pngx_write_sig) PNGARG((png_structp png_ptr));
+extern PNG_EXPORT(void, pngx_write_sig) PNGARG((png_structp png_ptr));
 
 /* Flags returned by png_get_io_state() */
 #define PNGX_IO_NONE        0x0000  /* no I/O at this moment */

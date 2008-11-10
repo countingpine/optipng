@@ -21,7 +21,8 @@ PNGDIR  = ..\lib\libpng
 PNGXDIR = ..\lib\pngxtern
 BACKDIR = ..\..\src
 
-OBJS = optipng.obj opngreduc.obj cbitset.obj osys.obj strutil.obj wildargs.obj
+OBJS = optipng.obj opngoptim.obj opngreduc.obj \
+       cbitset.obj osys.obj strutil.obj wildargs.obj
 INCS = -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR)
 LIBS = $(PNGXDIR)\$(PNGXLIB) $(PNGDIR)\$(PNGLIB) $(ZDIR)\$(ZLIB)
 SYSLIBS = #noeh32.lib
@@ -34,8 +35,8 @@ $(OPTIPNG): $(OBJS) $(LIBS)
 .c.obj:
 	$(CC) -c $(CFLAGS) $(INCS) $*.c
 
-optipng.obj  : optipng.c proginfo.h opngreduc.h \
-               cexcept.h cbitset.h osys.h strutil.h
+optipng.obj  : optipng.c proginfo.h optipng.h cbitset.h osys.h strutil.h
+opngoptim.obj: opngoptim.c optipng.h opngreduc.h cexcept.h cbitset.h osys.h
 opngreduc.obj: opngreduc.c opngreduc.h
 cbitset.obj  : cbitset.c cbitset.h
 osys.obj     : osys.c osys.h

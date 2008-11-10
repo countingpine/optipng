@@ -97,6 +97,10 @@ SOURCE=..\..\src\xtra\memleaks.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\..\src\opngoptim.c
+# End Source File
+# Begin Source File
+
 SOURCE=..\..\src\opngreduc.c
 # End Source File
 # Begin Source File

@@ -5,12 +5,13 @@
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
  *
- * CAUTION:
- * Currently, these functions have a limited and thread-unsafe
- * implementation that allows only one reading and one writing png_ptr.
- * They are now part of libpng starting with libpng-1.4.0.
- * Their libpng counterparts are much simpler, as well as thread-safe,
- * due to the presence of io_state inside png_struct.
+ * NOTE:
+ * The functionality provided in this module has "graduated", and is now
+ * part of libpng-1.4.  The original code is used here as a back-port, for
+ * compatibility with libpng-1.2 and earlier.  However, it has limitations:
+ * is thread-unsafe and only supports one reading and one writing png_ptr.
+ * (The libpng-1.4 code is much simpler and does not have these limitations,
+ * due to the presence of io_state inside png_struct.)
  *
  * For more info, see pngx.h.
  */
@@ -156,8 +157,8 @@ pngx_priv_read_write(png_structp png_ptr, png_bytep data, png_size_t length)
 }
 
 
-/* In libpng-1.4, the proper implementation if this function
- * simply retrieves png_ptr->io_state.
+/* In libpng-1.4, the implementation of this function simply retrieves
+ * png_ptr->io_state.
  */
 png_uint_32 PNGAPI
 pngx_get_io_state(png_structp png_ptr)
@@ -173,8 +174,8 @@ pngx_get_io_state(png_structp png_ptr)
    return PNGX_IO_NONE;
 }
 
-/* In libpng-1.4, the proper implementation if this function
- * simply retrieves png_ptr->chunk_name.
+/* In libpng-1.4, the implementation of this function simply retrieves
+ * png_ptr->chunk_name.
  */
 png_bytep PNGAPI
 pngx_get_io_chunk_name(png_structp png_ptr)
@@ -218,8 +219,11 @@ pngx_set_write_fn(png_structp png_ptr, png_voidp io_ptr,
 void PNGAPI
 pngx_write_sig(png_structp png_ptr)
 {
-#if (PNG_LIBPNG_BUILD_TYPE & PNG_LIBPNG_BUILD_PRIVATE)
+#if 0  /* png_write_sig is not exported from libpng-1.2. */
    png_write_sig(png_ptr);
+   /* TODO: Add png_write_sig to the list of libpng-1.2 exports.
+    * This would complement well the group png_write_chunk{_start,_data,_end}.
+    */
 #else
    static png_byte png_signature[8] = {137, 80, 78, 71, 13, 10, 26, 10};
    pngx_priv_read_write(png_ptr, png_signature, 8);

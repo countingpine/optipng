@@ -13,11 +13,9 @@
 #include <string.h>
 
 
-/**
- * BMP file header macros
- * Public domain by MIYASAKA Masaru
- * Updated by Cosmin Truta
- **/
+/*****************************************************************************/
+/* BMP file header macros                                                    */
+/*****************************************************************************/
 
 /* BMP file signature */
 #define BMP_SIGNATURE       0x4d42  /* "BM" */
@@ -482,7 +480,7 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    png_bytep const bih = bfh + FILEHED_SIZE;
    png_byte rgbq[RGBQUAD_SIZE];
    png_uint_32 offbits, bihsize, skip;
-   png_uint_32 width, height;
+   png_uint_32 width, height, rowsize;
    int topdown;
    unsigned int pixdepth;
    png_uint_32 compression;
@@ -492,7 +490,6 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    int bit_depth, color_type;
    png_color palette[256];
    png_color_8 sig_bit;
-   png_size_t rowsize, rowbytes;
    png_bytepp row_pointers, begin_row, end_row;
    unsigned int i;
    png_size_t y;
@@ -531,7 +528,7 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
          return 0;
    skip = offbits - bihsize - FILEHED_SIZE;  /* new skip */
    topdown = 0;
-   if (bihsize == COREHED_SIZE)  /* OS/2 BMP */
+   if (bihsize < INFOHED_SIZE)  /* OS/2 BMP */
    {
       width       = bmp_get_word(bih + BCH_WWIDTH);
       height      = bmp_get_word(bih + BCH_WHEIGHT);
@@ -539,7 +536,7 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
       compression = BI_RGB;
       palsize     = RGBTRIPLE_SIZE;
    }
-   else  /* bihsize >= INFOHED_SIZE: Windows BMP */
+   else  /* Windows BMP */
    {
       width       = bmp_get_dword(bih + BIH_LWIDTH);
       height      = bmp_get_dword(bih + BIH_LHEIGHT);
@@ -551,19 +548,20 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
          height  = PNG_UINT_32_MAX - height + 1;
          topdown = 1;
       }
+      if (bihsize == INFOHED_SIZE && compression == BI_BITFIELDS)
+      {
+         /* Read the RGB[A] mask. */
+         i = (skip <= 16) ? (unsigned int)skip : 16;
+         if (fread(bih + B4H_DREDMASK, i, 1, stream) != 1)
+            return 0;
+         bihsize += i;
+         skip -= i;
+      }
    }
 
    png_memset(rgba_mask, 0, sizeof(rgba_mask));
    if (pixdepth > 8)
    {
-      if (bihsize <= INFOHED_SIZE)
-         png_memset(bih + B4H_DREDMASK, 0, 16);
-      if (bihsize == INFOHED_SIZE && skip >= 12)
-      {
-         if (fread(bih + B4H_DREDMASK, 12, 1, stream) != 1)
-            bihsize = 0;
-         skip -= 12;
-      }
       if (compression == BI_RGB)
       {
          if (pixdepth == 16)
@@ -582,11 +580,17 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
       }
       else if (compression == BI_BITFIELDS)
       {
-         rgba_mask[0] = bmp_get_dword(bih + B4H_DREDMASK);
-         rgba_mask[1] = bmp_get_dword(bih + B4H_DGREENMASK);
-         rgba_mask[2] = bmp_get_dword(bih + B4H_DBLUEMASK);
+         if (bihsize >= INFOHED_SIZE + 12)
+         {
+            rgba_mask[0] = bmp_get_dword(bih + B4H_DREDMASK);
+            rgba_mask[1] = bmp_get_dword(bih + B4H_DGREENMASK);
+            rgba_mask[2] = bmp_get_dword(bih + B4H_DBLUEMASK);
+         }
+         else
+            png_error(png_ptr, "Missing color mask in BMP file");
       }
-      rgba_mask[3] = bmp_get_dword(bih + B4H_DALPHAMASK);
+      if (bihsize >= INFOHED_SIZE + 16)
+         rgba_mask[3] = bmp_get_dword(bih + B4H_DALPHAMASK);
    }
 
    switch (compression)
@@ -637,7 +641,8 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
       if (palnum > 256)
          palnum = 256;
       skip -= palsize * palnum;
-      rowsize = rowbytes = (width + (32 / pixdepth) - 1) / (32 / pixdepth) * 4;
+      rowsize = (width + (32 / pixdepth) - 1) / (32 / pixdepth) * 4;
+      /* rowsize becomes 0 on overflow. */
       bit_depth = pixdepth;
       color_type = (palnum > 0) ? PNG_COLOR_TYPE_PALETTE : PNG_COLOR_TYPE_GRAY;
    }
@@ -645,28 +650,28 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    {
       palnum = 0;
       bit_depth = 8;
-      if (width > (png_size_t)(-4) / (pixdepth / 8))
-         png_error(png_ptr, "Can't handle exceedingly large BMP dimensions");
-      /* Overflow in rowbytes is checked inside png_set_IHDR(). */
       switch (pixdepth)
       {
       case 16:
-         rowsize  = (png_size_t)((width * 2 + 3) & (~3));
-         rowbytes = (width * 3 + 3) & (~3);
+         rowsize = (width * 2 + 3) & (~3);
          break;
       case 24:
-         rowbytes = rowsize = (png_size_t)((width * 3 + 3) & (~3));
+         rowsize = (width * 3 + 3) & (~3);
          break;
       case 32:
-         rowbytes = rowsize = (png_size_t)(width * 4);
+         rowsize = width * 4;
          break;
       default:  /* never get here */
          bit_depth = 0;
-         rowbytes = rowsize = 0;
+         rowsize = 0;
       }
+      if (rowsize / width < pixdepth / 8)
+         rowsize = 0;  /* overflow */
       color_type = (rgba_mask[3] != 0) ?
          PNG_COLOR_TYPE_RGBA : PNG_COLOR_TYPE_RGB;
    }
+   if (rowsize == 0)
+      png_error(png_ptr, "Exceedingly large image dimensions in BMP file");
 
    /* Set the PNG image type. */
    png_set_IHDR(png_ptr, info_ptr,
@@ -706,7 +711,7 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    }
 
    /* Allocate memory and read the image data. */
-   row_pointers = pngx_malloc_rows(png_ptr, info_ptr, -1);
+   row_pointers = pngx_malloc_rows_extended(png_ptr, info_ptr, rowsize, -1);
    if (topdown)
    {
       begin_row = row_pointers;

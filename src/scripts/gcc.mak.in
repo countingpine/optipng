@@ -27,7 +27,7 @@ PNGDIR  = ../lib/libpng
 PNGXDIR = ../lib/pngxtern
 BACKDIR = ../../src
 
-OBJS = optipng.o opngreduc.o cbitset.o osys.o strutil.o
+OBJS = optipng.o opngoptim.o opngreduc.o cbitset.o osys.o strutil.o
 INCS = -I$(ZDIR) -I$(PNGDIR) -I$(PNGXDIR)
 LIBS = $(PNGXDIR)/$(PNGXLIB) $(PNGDIR)/$(PNGLIB) $(ZDIR)/$(ZLIB)
 SYSLIBS =
@@ -40,8 +40,8 @@ $(OPTIPNG): $(OBJS) $(LIBS)
 .c.o:
 	$(CC) -c $(CFLAGS) $(INCS) $*.c
 
-optipng.o  : optipng.c proginfo.h opngreduc.h \
-             cexcept.h cbitset.h osys.h strutil.h
+optipng.o  : optipng.c proginfo.h optipng.h cbitset.h osys.h strutil.h
+opngoptim.o: opngoptim.c optipng.h opngreduc.h cexcept.h cbitset.h osys.h
 opngreduc.o: opngreduc.c opngreduc.h
 cbitset.o  : cbitset.c cbitset.h
 osys.o     : osys.c osys.h
@@ -55,7 +55,6 @@ $(PNGXDIR)/$(PNGXLIB): $(ZDIR)/$(ZLIB) $(PNGDIR)/$(PNGLIB)
 
 $(PNGDIR)/$(PNGLIB): $(ZDIR)/$(ZLIB)
 	cd $(PNGDIR); \
-	#./configure; \
 	$(MAKE) -f $(PNGMAK) $(PNGLIB); \
 	cd $(BACKDIR)
 

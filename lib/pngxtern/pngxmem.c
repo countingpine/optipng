@@ -11,36 +11,43 @@
 #include "pngx.h"
 
 
-#if PNG_LIBPNG_VER < 10400
-typedef png_uint_32 png_alloc_size_t;
-/* Since libpng-1.4.x, png_alloc_size_t is either png_size_t or png_uint_32,
- * whichever is larger.
- */
-#endif
+#ifdef PNG_INFO_IMAGE_SUPPORTED
 
 
 png_bytepp PNGAPI
 pngx_malloc_rows(png_structp png_ptr, png_infop info_ptr, int filler)
 {
+   return pngx_malloc_rows_extended(png_ptr, info_ptr, 0, filler);
+}
+
+
+png_bytepp PNGAPI
+pngx_malloc_rows_extended(png_structp png_ptr, png_infop info_ptr,
+   pngx_alloc_size_t min_row_size, int filler)
+{
+   pngx_alloc_size_t row_size;
    png_bytep row;
    png_bytepp rows;
-   png_alloc_size_t row_size;
    png_uint_32 height, i;
 
+   /* Calculate the row size. */
+   row_size = png_get_rowbytes(png_ptr, info_ptr);
+   if (row_size == 0)
+      return NULL;
+   if (row_size < min_row_size)
+      row_size = min_row_size;
+
    /* Deallocate the currently-existing rows. */
-#ifdef PNG_FREE_ME_SUPPORTED
    png_free_data(png_ptr, info_ptr, PNG_FREE_ROWS, 0);
-#endif
 
    /* Allocate memory for the row index. */
    height = png_get_image_height(png_ptr, info_ptr);
    rows = (png_bytepp)png_malloc(png_ptr,
-      (png_alloc_size_t)(height * sizeof(png_bytep)));
+      (pngx_alloc_size_t)(height * sizeof(png_bytep)));
    if (rows == NULL)
       return NULL;
 
    /* Allocate memory for each row. */
-   row_size = png_get_rowbytes(png_ptr, info_ptr);
    for (i = 0; i < height; ++i)
    {
       row = (png_bytep)png_malloc(png_ptr, row_size);
@@ -61,3 +68,15 @@ pngx_malloc_rows(png_structp png_ptr, png_infop info_ptr, int filler)
    png_set_rows(png_ptr, info_ptr, rows);
    return rows;
 }
+
+
+#if 0  /* not necessary */
+void PNGAPI
+pngx_free_rows(png_structp png_ptr, png_infop info_ptr)
+{
+   png_free_data(png_ptr, info_ptr, PNG_FREE_ROWS, 0);
+}
+#endif
+
+
+#endif /* PNG_INFO_IMAGE_SUPPORTED */

@@ -9,29 +9,34 @@ SYNOPSIS
        optipng [options...] files...
 
 DESCRIPTION
-       OptiPNG is a PNG optimizer that recompresses image files to  a  smaller
-       size  without  losing  any information.  In addition, this program per-
-       forms a suite of useful  functions  like  integrity  checks,  meta-data
-       recovery and pixmap-to-PNG conversion.
+       The OptiPNG program shall attempt to optimize PNG  files,  i.e.  reduce
+       their  size  to a minimum, without losing any information. In addition,
+       this  program  shall  perform  a  suite  of  auxiliary  functions  like
+       integrity checks, metadata recovery and pixmap-to-PNG conversion.
+
+       The  optimization  attempts  are  not  guaranteed to succeed. Valid PNG
+       files that cannot be  optimized  by  this  program  are  normally  left
+       intact; their size will not grow. The user may request to override this
+       default behavior.
 
 FILES
-       The  input  files  are  raster image files encoded either in PNG format
-       (the native format), or in an external format. The currently  supported
+       The input files are raster image files encoded  either  in  PNG  format
+       (the  native format), or in an external format. The currently supported
        external formats are GIF, BMP, PNM and TIFF.
 
        OptiPNG processes each image file given in the command line as follows:
 
        - If it is in PNG format:
 
-              Attempt to optimize the given file in-place. If optimization  is
-              successful,  or  if  the option -force is in effect, replace the
-              original file with its optimized version. The original  file  is
+              Attempt  to optimize the given file in-place. If optimization is
+              successful, or if the option -force is in  effect,  replace  the
+              original  file  with its optimized version. The original file is
               backed up if the option -keep is in effect.
 
        - If it is an external format:
 
-              Create  an  optimized  PNG version of the given file. The output
-              file name is composed from the original file name and  the  .png
+              Create an optimized PNG version of the given  file.  The  output
+              file  name  is composed from the original file name and the .png
               extension.
 
 OPTIONS
@@ -41,20 +46,21 @@ OPTIONS
 
        -o level
               Select the optimization level.
-              Use -o0 to disable IDAT recompression trials.
+              Use -o0 to disable IDAT recompression trials. This option has no
+              effect on non-PNG input files.
               Use -o1 to enable a single IDAT recompression trial.
               Use  a higher level to enable more trials (the higher the level,
               the more trials).
-              The behavior and the default  value  of  this  user  option  may
-              change  across  different program versions. Use option -h to see
-              the details pertaining to your specific version.
+              The behavior and the default value of  this  option  may  change
+              across  different  program  versions.  Use  option -h to see the
+              details pertaining to your specific version.
 
        -i type
               Select the interlace type (0-1).
               Use -i0 to produce a non-interlaced output.
               Use -i1 to produce an interlaced (Adam7) output.
-              If this option is not used, the output will have the same inter-
-              lace type as the input.
+              By default, the output will have the same interlace type as  the
+              input.
 
        -k, -keep
               Keep a backup of the modified file(s).
@@ -107,14 +113,23 @@ OPTIONS
 
        -nz    Do not perform IDAT recompression (also disable reductions).
 
-       -fix   Enable error recovery.
+       -fix   Enable error recovery. This option has no effect on valid  input
+              files.
+              The  program will spend a reasonable amount of effort to recover
+              as much data as possible, without  increasing  the  output  file
+              size,  but  the success cannot be generally guaranteed. The pro-
+              gram may even increase the file size,  e.g.,  by  reconstructing
+              missing  critical  data. Under this option, integrity shall take
+              precedence over file size.
+              When this option is not used, the invalid input files  are  left
+              unprocessed.
 
-       -force Enforce writing of a new output file.  Use this option to  over-
-              ride  the  program's  decision not to write such file, e.g. when
-              the PNG input is digitally signed (using dSIG), or when the  PNG
-              output becomes larger than the PNG input.
+       -force Enforce writing of a new output file.
+              Use  this option to override the program's decision not to write
+              such file, e.g. when the PNG input is  digitally  signed  (using
+              dSIG), or when the PNG output becomes larger than the PNG input.
 
-       -full  Produce  a full report on IDAT.  This option might slow down the
+       -full  Produce a full report on IDAT.  This option might slow down  the
               trials.
 
        -preserve
@@ -122,16 +137,16 @@ OPTIONS
               where applicable.
 
        -simulate
-              Run  in  simulation  mode: perform the trials, but do not create
+              Run in simulation mode: perform the trials, but  do  not  create
               output files.
 
-       -snip  Cut one image out of multi-image, animation  or  video  file(s).
+       -snip  Cut one image out of multi-image, animation or video file(s).
               Depending  on  the input format, this may be either the first or
               the most relevant (e.g. the largest) image.
 
        -out file
-              Write output file to file.  The command line  must  not  contain
-              more than one input file.
+              Write output file  to  file.   The  command  line  must  contain
+              exactly one input file.
 
        -dir directory
               Write output file(s) to directory.
@@ -143,8 +158,8 @@ OPTIONS
        --     Stop option switch parsing.
 
    Notes
-       The option names are case-insensitive  and  can  be  abbreviated.   Any
-       abbreviation must uniquely identify the full option name and must be no
+       Option names are case-insensitive and can be abbreviated.  Any abbrevi-
+       ation  must  uniquely  identify  the  full  option  name and must be no
        shorter than two letters, unless one letter  is  explicitly  permitted.
        For  example,  -quiet  can  be  abbreviated as -q or -qu (because -q is
        explicitly mentioned in the list of possible options), while  -preserve
@@ -168,6 +183,34 @@ OPTIONS
        recompression is performed.
 
        Extremely exhaustive searches are not generally recommended.
+
+EXTENDED DESCRIPTION
+       The PNG optimization algorithm consists of the following steps:
+
+              1. Reduce the bit depth, the color type and the color palette of
+              the  image.   This  step may reduce the size of the uncompressed
+              image, which, indirectly, may reduce the size of the  compressed
+              image (i.e. the size of the output PNG file).
+
+              2.  Run a suite of compression methods and strategies and select
+              the compression parameters that yield the smallest output  file.
+
+              3.  Store all IDAT contents into a single chunk, eliminating the
+              overhead incurred by repeated IDAT headers and CRCs.
+
+              4. Set the zlib window size inside IDAT to a mininum  that  does
+              not  affect  the compression ratio, reducing the memory require-
+              ments of PNG decoders.
+
+       Not all of the above steps need to be executed. The behavior depends on
+       the actual input files and user options.
+
+       Step  1  may  be customized via the no-reduce options -nb, -nc and -np.
+       Step 2 may be customized via the -o option, and may be  fine-tuned  via
+       the  options  -zc,  -zm,  -zs  and -zw.  Step 3 is always executed; for
+       example, even though IDAT recompression is disabled under -o0, all IDAT
+       chunks  from the input are concatenated into a single IDAT chunk in the
+       output. Step 4 is executed only if a new IDAT is being created.
 
 EXAMPLES
        optipng file1.png file2.gif file3.tif
@@ -205,4 +248,4 @@ AUTHOR
        the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.6.1            20 July 2008                       OPTIPNG(1)
+OptiPNG version 0.6.2           9 November 2008                     OPTIPNG(1)

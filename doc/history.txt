@@ -14,6 +14,19 @@ Legend
  * Other modification (e.g. architectural improvement).
 
 
+Version 0.6.2    9-nov-2008
+-------------
+ + Upgraded libpng to version 1.2.33-optipng [private]
+++ Put back a speed optimization, accidentally removed in version 0.6,
+   allowing singleton trials (-o1) to be bypassed in certain conditions.
+!! Fixed an array overflow in the BMP reader.
+!! Fixed the loss of private chunks under the -snip option.
+ + Produced a more concise on-screen output in the non-verbose mode.
+   (Thanks to Vincent Lefevre for the suggestion.)
+ * Added a programming interface to the optimization engine, in order
+   to facilitate the development of PNG-optimizing GUI apps and plugins.
+
+
 Version 0.6.1   20-jul-2008
 -------------
  * Upgraded cexcept to version 2.0.1.
