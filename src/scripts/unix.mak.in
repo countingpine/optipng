@@ -60,7 +60,6 @@ $(PNGDIR)/$(PNGLIB): $(ZDIR)/$(ZLIB)
 
 $(ZDIR)/$(ZLIB):
 	cd $(ZDIR); \
-	./configure; \
 	$(MAKE) -f $(ZMAK) $(ZLIB); \
 	cd $(BACKDIR)
 

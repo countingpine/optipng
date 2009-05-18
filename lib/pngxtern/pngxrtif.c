@@ -1,6 +1,6 @@
 /*
  * pngxrtif.c - libpng external I/O: TIFF reader.
- * Copyright (C) 2001-2008 Cosmin Truta.
+ * Copyright (C) 2001-2009 Cosmin Truta.
  */
 
 #define PNGX_INTERNAL
@@ -12,6 +12,7 @@
 
 
 static /* PRIVATE */ png_structp pngx_err_ptr = NULL;
+static /* PRIVATE */ unsigned int num_extra_images;
 
 
 static void pngx_tiff_error(const char *msg)
@@ -22,7 +23,17 @@ static void pngx_tiff_error(const char *msg)
 
 static void pngx_tiff_warning(const char *msg)
 {
+   /* FIXME:
+    * Inspection of warning messages is fragile, but is
+    * required by the limitations of minitiff version 0.1.
+    */
+   if (strstr(msg, "multi-image") != NULL)
+      ++num_extra_images;
+
+#if 0
+   /* Metadata is not imported, so warnings need not be shown. */
    png_warning(pngx_err_ptr, msg);
+#endif
 }
 
 
@@ -68,6 +79,7 @@ pngx_read_tiff(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    unsigned int i, j, k;
 
    pngx_err_ptr = png_ptr;
+   num_extra_images = 0;
    minitiff_init_info(&tiff_info);
    tiff_info.error_handler   = pngx_tiff_error;
    tiff_info.warning_handler = pngx_tiff_warning;
@@ -171,5 +183,5 @@ pngx_read_tiff(png_structp png_ptr, png_infop info_ptr, FILE *stream)
       png_warning(png_ptr, "Overflow in TIFF samples");
 
    minitiff_destroy_info(&tiff_info);
-   return 1;  /* one image has been successfully read */
+   return 1 + num_extra_images;
 }

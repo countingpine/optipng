@@ -16,6 +16,8 @@ OptiPNG - TO-DO list
 
 - More file recovery features.
 
+- Input from stdin; output to stdout.
+
 - Optimization of an entire directory, with and without subdirectory
   recursion:
     optipng dir/

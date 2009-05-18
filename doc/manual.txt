@@ -33,14 +33,14 @@ FILES
               original  file  with its optimized version. The original file is
               backed up if the option -keep is in effect.
 
-       - If it is an external format:
+       - If it is in an external format:
 
               Create an optimized PNG version of the given  file.  The  output
               file  name  is composed from the original file name and the .png
               extension.
 
 OPTIONS
-   Basic options
+   General options
        -?, -h, -help
               Show a complete summary of options.
 
@@ -55,63 +55,8 @@ OPTIONS
               across  different  program  versions.  Use  option -h to see the
               details pertaining to your specific version.
 
-       -i type
-              Select the interlace type (0-1).
-              Use -i0 to produce a non-interlaced output.
-              Use -i1 to produce an interlaced (Adam7) output.
-              By default, the output will have the same interlace type as  the
-              input.
-
-       -k, -keep
-              Keep a backup of the modified file(s).
-              The  files that use the backup names prior to the program execu-
-              tion are not overwritten.
-
-       -q, -quiet
-              Run in quiet mode.
-
-       -v     Show copyright, version and build info; run in verbose mode.
-
-   Advanced options
-       -zc levels
-              Select the zlib compression levels.
-              The behavior and the default  value  of  this  user  option  may
-              change  across  different program versions. Use option -h to see
-              the details pertaining to your specific version.
-
-       -zm levels
-              Select the zlib memory levels.
-              The behavior and the default  value  of  this  user  option  may
-              change  across  different program versions. Use option -h to see
-              the details pertaining to your specific version.
-
-       -zs strategies
-              Select the zlib compression strategies.
-              The behavior and the default  value  of  this  user  option  may
-              change  across  different program versions. Use option -h to see
-              the details pertaining to your specific version.
-
-       -zw window size
-              Select the zlib window size (32k,16k,8k,4k,2k,1k,512,256).
-              The window size can be specified either in bytes (e.g. 16384) or
-              kilobytes (e.g. 16k).
-
-       -f filters
-              Select the PNG delta filters.
-              The  behavior  and  the  default  value  of this user option may
-              change across different program versions. The filter  values  0,
-              1,  2,  3, 4 correspond to the PNG standard filters (None, Left,
-              Up, Average and Paeth, respectively). The other values are  used
-              to  specify adaptive filtering. Use option -h to see the details
-              pertaining to your specific version.
-
-       -nb    Do not apply bit depth reduction.
-
-       -nc    Do not apply color type reduction.
-
-       -np    Do not apply palette reduction.
-
-       -nz    Do not perform IDAT recompression (also disable reductions).
+       -dir directory
+              Write output file(s) to directory.
 
        -fix   Enable error recovery. This option has no effect on valid  input
               files.
@@ -129,88 +74,158 @@ OPTIONS
               such file, e.g. when the PNG input is  digitally  signed  (using
               dSIG), or when the PNG output becomes larger than the PNG input.
 
-       -full  Produce a full report on IDAT.  This option might slow down  the
-              trials.
-
-       -preserve
-              Preserve file attributes (time stamps, file access rights, etc.)
-              where applicable.
-
-       -simulate
-              Run in simulation mode: perform the trials, but  do  not  create
-              output files.
-
-       -snip  Cut one image out of multi-image, animation or video file(s).
-              Depending  on  the input format, this may be either the first or
-              the most relevant (e.g. the largest) image.
-
-       -out file
-              Write output file  to  file.   The  command  line  must  contain
-              exactly one input file.
-
-       -dir directory
-              Write output file(s) to directory.
+       -keep  Keep a backup of the modified file(s).
+              The files that use the backup names prior to the program  execu-
+              tion are not overwritten.
 
        -log file
               Log  messages  to  file.  For safety reasons, file must have the
               extension .log.
 
+       -out file
+              Write output file  to  file.   The  command  line  must  contain
+              exactly one input file.
+
+       -preserve
+              Preserve file attributes (time stamps, file access rights, etc.)
+              where applicable.
+
+       -quiet Run in quiet mode.
+              These messages are still written to the log file if  the  option
+              -log is in effect.
+
+       -simulate
+              Run  in  simulation  mode: perform the trials, but do not create
+              output files.
+
+       -snip  Cut one image out of multi-image, animation or video file(s).
+              Depending on the input format, this may be either the  first  or
+              the most relevant (e.g. the largest) image.
+
+       -v     Enable the options -verbose and -version.
+
+       -verbose
+              Run in verbose mode.
+
+       -version
+              Show copyright, version and build info.
+
        --     Stop option switch parsing.
 
+   PNG encoding and optimization options
+       -f filters
+              Select the PNG delta filters.
+              The  filters  argument  is specified as a rangeset (e.g. -f0-5),
+              and the default filters value depends on the optimization  level
+              set by the option -o.
+              The  filter  values  0, 1, 2, 3 and 4 indicate static filtering,
+              and correspond to the standard PNG filter codes (None, Left, Up,
+              Average  and  Paeth, respectively). The filter value 5 indicates
+              adaptive filtering, whose effect is  defined  by  the  libpng(3)
+              library used by OptiPNG.
+
+       -full  Produce  a full report on IDAT.  This option might slow down the
+              trials.
+
+       -i type
+              Select the interlace type (0-1).
+              Use -i0 to produce a non-interlaced output.
+              Use -i1 to produce an interlaced (Adam7) output.
+              By default, the output will have the same interlace type as  the
+              input.
+
+       -nb    Do not apply bit depth reduction.
+
+       -nc    Do not apply color type reduction.
+
+       -np    Do not apply palette reduction.
+
+       -nz    Do not perform IDAT recompression (also disable reductions).
+
+       -zc levels
+              Select the zlib compression levels used in IDAT compression.
+              The  levels  argument  is specified as a rangeset (e.g. -zc6-9),
+              and the default levels value depends on the  optimization  level
+              set by the option -o.
+              The effect of this option is defined by the zlib(3) library used
+              by OptiPNG.
+
+       -zm levels
+              Select the zlib memory levels used in IDAT compression.
+              The levels argument is specified as a  rangeset  (e.g.  -zm8-9),
+              and  the  default levels value depends on the optimization level
+              set by the option -o.
+              The effect of this option is defined by the zlib(3) library used
+              by OptiPNG.
+
+       -zs strategies
+              Select the zlib compression strategies used in IDAT compression.
+              The  strategies  argument  is  specified  as  a  rangeset  (e.g.
+              -zs0-3),  and  the default strategies value depends on the opti-
+              mization level set by the option -o.
+              The effect of this option is defined by the zlib(3) library used
+              by OptiPNG.
+
+       -zw size
+              Select  the  zlib window size (32k,16k,8k,4k,2k,1k,512,256) used
+              in IDAT compression.
+              The size argument can be specified either in bytes (e.g.  16384)
+              or  kilobytes  (e.g.  16k). The default size value is set to the
+              lowest window size that yields an  IDAT  output  as  big  as  if
+              yielded by the value 32768.
+              The effect of this option is defined by the zlib(3) library used
+              by OptiPNG.
+
    Notes
-       Option names are case-insensitive and can be abbreviated.  Any abbrevi-
-       ation  must  uniquely  identify  the  full  option  name and must be no
-       shorter than two letters, unless one letter  is  explicitly  permitted.
-       For  example,  -quiet  can  be  abbreviated as -q or -qu (because -q is
-       explicitly mentioned in the list of possible options), while  -preserve
-       can be abbreviated as -pr but not as -p.
+       Options may come in any order (except for --), before, after, or alter-
+       nating  with  file  names. Option names are case-insensitive and may be
+       abbreviated to their shortest unique prefix.
 
-       Some  options  may  have arguments that follow the option name, with or
-       without a whitespace used as a separator; e.g.
+       Some options may have arguments that follow the option name,  separated
+       by whitespace or the equal sign ('='). If the option argument is a num-
+       ber or a rangeset, the separator may be omitted. For example:
 
-              -i1  <=>  -i 1
-              -o3  <=>  -o 3
+              -out newfile.png  <=>  -out=newfile.png
+              -o3  <=>  -o 3  <=>  -o=3
+              -f0,3-5  <=>  -f 0,3-5  <=>  -f=0,3-5
 
-       Range arguments are cumulative; e.g.
+       Rangeset arguments are cumulative; e.g.
 
               -f0 -f3-5  <=>  -f0,3-5
               -zs0 -zs1 -zs2-3  <=>  -zs0,1,2,3  <=>  -zs0-3
 
-       The zlib window size is automatically set to a minimum  that  does  not
-       affect the compression ratio.
-
-       The  output  files  will  have  all  IDAT in a single chunk, even if no
-       recompression is performed.
-
-       Extremely exhaustive searches are not generally recommended.
-
 EXTENDED DESCRIPTION
        The PNG optimization algorithm consists of the following steps:
 
-              1. Reduce the bit depth, the color type and the color palette of
+       1.     Reduce the bit depth, the color type and the  color  palette  of
               the  image.   This  step may reduce the size of the uncompressed
               image, which, indirectly, may reduce the size of the  compressed
               image (i.e. the size of the output PNG file).
 
-              2.  Run a suite of compression methods and strategies and select
-              the compression parameters that yield the smallest output  file.
+       2.     Run a suite of compression methods and strategies and select the
+              compression parameters that yield the smallest output file.
 
-              3.  Store all IDAT contents into a single chunk, eliminating the
+       3.     Store all IDAT contents into a  single  chunk,  eliminating  the
               overhead incurred by repeated IDAT headers and CRCs.
 
-              4. Set the zlib window size inside IDAT to a mininum  that  does
-              not  affect  the compression ratio, reducing the memory require-
-              ments of PNG decoders.
+       4.     Set  the zlib window size inside IDAT to a mininum that does not
+              affect the compression ratio, reducing the  memory  requirements
+              of PNG decoders.
 
        Not all of the above steps need to be executed. The behavior depends on
        the actual input files and user options.
 
-       Step  1  may  be customized via the no-reduce options -nb, -nc and -np.
-       Step 2 may be customized via the -o option, and may be  fine-tuned  via
-       the  options  -zc,  -zm,  -zs  and -zw.  Step 3 is always executed; for
+       Step 1 may be customized via the no-reduce options -nb,  -nc  and  -np.
+       Step  2  may be customized via the -o option, and may be fine-tuned via
+       the options -zc, -zm, -zs and -zw.  Step  3  is  always  executed;  for
        example, even though IDAT recompression is disabled under -o0, all IDAT
-       chunks  from the input are concatenated into a single IDAT chunk in the
-       output. Step 4 is executed only if a new IDAT is being created.
+       chunks from the input are concatenated into a single IDAT chunk in  the
+       output. Step 4 is executed only if a new IDAT is being created, and may
+       be fine-tuned via the option -zw.
+
+       Extremely exhaustive searches are not generally expected to yield  sig-
+       nificant  improvements  in  compression  ratio,  and are recommended to
+       advanced users only.
 
 EXAMPLES
        optipng file1.png file2.gif file3.tif
@@ -233,6 +248,8 @@ BUGS
 
        Metadata is not imported from the external image formats.
 
+       There is no support for pipes or streams.
+
 SEE ALSO
        png(5), libpng(3), zlib(3), pngcrush(1), pngrewrite(1).
 
@@ -248,4 +265,4 @@ AUTHOR
        the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.6.2           9 November 2008                     OPTIPNG(1)
+OptiPNG version 0.6.3             2009-May-18                       OPTIPNG(1)

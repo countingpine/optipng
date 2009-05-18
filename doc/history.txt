@@ -14,6 +14,22 @@ Legend
  * Other modification (e.g. architectural improvement).
 
 
+Version 0.6.3   18-may-2009
+-------------
+ + Upgraded libpng to version 1.2.36-optipng [private]
+!! Fixed a use-after-free error in the GIF reader.
+   (Thanks to Roy Tam for the report, and to Bryan McQuade for the fix.)
+ ! Flushed the output log to display the current trial in real time.
+   This only worked on Windows in the previous version.
+   (Thanks to Vincent Lefevre for the fix.)
+ ! Fixed an error in reporting unrecognized file formats.
+   (Thanks to [LaughingMan] for the report.)
+ - Removed the requirement to "fix" TIFF files that contain unrecognized
+   metadata.  (Thanks to Piotr Bandurski for the suggestion.)
+ * Simplified the option abbreviation rules.  Option names can now be
+   abbreviated to their shortest unique prefix, as in X11 applications.
+
+
 Version 0.6.2    9-nov-2008
 -------------
  + Upgraded libpng to version 1.2.33-optipng [private]
@@ -22,7 +38,7 @@ Version 0.6.2    9-nov-2008
 !! Fixed an array overflow in the BMP reader.
 !! Fixed the loss of private chunks under the -snip option.
  + Produced a more concise on-screen output in the non-verbose mode.
-   (Thanks to Vincent Lefevre for the suggestion.)
+   (Thanks to Vincent Lefevre for the contribution.)
  * Added a programming interface to the optimization engine, in order
    to facilitate the development of PNG-optimizing GUI apps and plugins.
 

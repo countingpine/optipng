@@ -1,9 +1,9 @@
 /*
  * gifread.c
  *
- * Copyright (C) 2003, 2006 Cosmin Truta.
- * This code was derived from "giftopnm.c" by David Koblas, and
- * it is distributed under the same copyright and warranty terms.
+ * Copyright (C) 2003-2009 Cosmin Truta.
+ * This software was derived from "giftopnm.c" by David Koblas,
+ * and is distributed under the same copyright and warranty terms.
  *
  * The original copyright notice is provided below.
  */
@@ -20,7 +20,6 @@
 
 
 #include <limits.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,12 +43,10 @@
 #define GIF_GETW(buf) \
     ((buf)[0] + ((buf)[1] << 8))
 
-#ifndef GIF_TRACE
-#if 0
+#ifdef GIF_DEBUG
 #define GIF_TRACE(args) printf args
 #else
 #define GIF_TRACE(args) ((void)0)
-#endif
 #endif
 
 
@@ -60,9 +57,9 @@ static void GIFReadNextImage(struct GIFImage *image, FILE *stream);
 static void GIFReadNextExtension(struct GIFExtension *ext, FILE *stream);
 static void ReadImageData(struct GIFImage *image, FILE *stream);
 static void SkipDataBlocks(FILE *stream);
-static int ReadDataBlock(unsigned char *buf, FILE *stream);
-static int LZWGetCode(int code_size, int flag, FILE *stream);
-static int LZWReadByte(int flag, int input_code_size, FILE *stream);
+static int  ReadDataBlock(unsigned char *buf, FILE *stream);
+static int  LZWGetCode(int code_size, int flag, FILE *stream);
+static int  LZWReadByte(int flag, int input_code_size, FILE *stream);
 
 
 /**
@@ -77,7 +74,7 @@ void GIFReadScreen(struct GIFScreen *screen, FILE *stream)
     if (strncmp((char *)buf, "GIF", 3) != 0)
         GIFError("Not a GIF file");
     if ((strncmp((char *)buf + 3, "87a", 3) != 0) &&
-        (strncmp((char *)buf + 3, "89a", 3) != 0))
+            (strncmp((char *)buf + 3, "89a", 3) != 0))
         GIFWarning("Invalid GIF version number, not \"87a\" or \"89a\"");
 
     GIF_TRACE(("Reading Logical Screen Descriptor\n"));
@@ -119,8 +116,8 @@ void GIFReadScreen(struct GIFScreen *screen, FILE *stream)
 /**
  * Initializes the GIF image structure.
  **/
-void GIFInitImage(struct GIFImage *image,
-    struct GIFScreen *screen, unsigned char **rows)
+void GIFInitImage(struct GIFImage *image, struct GIFScreen *screen,
+                  unsigned char **rows)
 {
     image->Screen = screen;
     image->Rows   = rows;
@@ -130,8 +127,8 @@ void GIFInitImage(struct GIFImage *image,
 /**
  * Initializes the GIF extension structure.
  */
-void GIFInitExtension(struct GIFExtension *ext,
-    struct GIFScreen *screen, unsigned char *buf, unsigned int size)
+void GIFInitExtension(struct GIFExtension *ext, struct GIFScreen *screen,
+                      unsigned char *buf, unsigned int size)
 {
     ext->Screen     = screen;
     ext->BufferSize = size;
@@ -142,30 +139,30 @@ void GIFInitExtension(struct GIFExtension *ext,
 /**
  * Reads the next GIF block (image or extension) structure.
  **/
-int GIFReadNextBlock(struct GIFImage *image,
-    struct GIFExtension *ext, FILE *stream)
+int GIFReadNextBlock(struct GIFImage *image, struct GIFExtension *ext,
+                     FILE *stream)
 {
     int ch;
     int foundBogus;
 
     foundBogus = 0;
-    for ( ;; )
+    for ( ; ; )
     {
         GIF_FGETC(ch, stream);
         switch (ch)
         {
-            case GIF_IMAGE:       /* ',' */
-                GIFReadNextImage(image, stream);
-                return ch;
-            case GIF_EXTENSION:   /* '!' */
-                GIFReadNextExtension(ext, stream);
-                return ch;
-            case GIF_TERMINATOR:  /* ';' */
-                return ch;
-            default:
-                if (!foundBogus)
-                    GIFWarning("Bogus data in GIF");
-                foundBogus = 1;
+        case GIF_IMAGE:       /* ',' */
+            GIFReadNextImage(image, stream);
+            return ch;
+        case GIF_EXTENSION:   /* '!' */
+            GIFReadNextExtension(ext, stream);
+            return ch;
+        case GIF_TERMINATOR:  /* ';' */
+            return ch;
+        default:
+            if (!foundBogus)
+                GIFWarning("Bogus data in GIF");
+            foundBogus = 1;
         }
     }
 }
@@ -177,7 +174,7 @@ int GIFReadNextBlock(struct GIFImage *image,
 static void GIFReadNextImage(struct GIFImage *image, FILE *stream)
 {
     struct GIFScreen *screen;
-    unsigned char buf[9];
+    unsigned char    buf[9];
 
     GIF_TRACE(("Reading Local Image Descriptor\n"));
     GIF_FREAD(buf, 9, stream);
@@ -219,117 +216,37 @@ static void GIFReadNextImage(struct GIFImage *image, FILE *stream)
  **/
 static void GIFReadNextExtension(struct GIFExtension *ext, FILE *stream)
 {
-    unsigned char *ptr;
-    unsigned int len;
-    int count, label;
+    unsigned int offset, len;
+    int          count, label;
 
     GIF_FGETC(label, stream);
     GIF_TRACE(("Reading Extension (0x%X)\n", label));
-    if (ext != NULL)
-        ext->Label = (unsigned char)label;
-    if (ext == NULL || ext->Buffer == NULL)
+    if (ext == NULL)
     {
         SkipDataBlocks(stream);
         return;
     }
+    ext->Label = (unsigned char)label;
 
-    ptr = ext->Buffer;
+    offset = 0;
     len = ext->BufferSize;
-    for ( ;; )
+    for ( ; ; )
     {
         if (len < UCHAR_MAX)
         {
-            len += 1024;
             ext->BufferSize += 1024;
             ext->Buffer = realloc(ext->Buffer, ext->BufferSize);
+            if (ext->Buffer == NULL)
+                GIFError("Out of memory");
+            len += 1024;
         }
-        count = ReadDataBlock(ptr, stream);
+        count = ReadDataBlock(ext->Buffer + offset, stream);
         if (count == 0)
             break;
-        ptr += count;
+        offset += count;
         len -= count;
     }
 }
-
-#if 0
-    switch (label)
-    {
-        case GIF_PLAINTEXT:    /* 0x01 */
-        case GIF_GRAPHICCTL:   /* 0xF9 */
-        case GIF_COMMENT:      /* 0xFE */
-        case GIF_APPLICATION:  /* 0xFF */
-    }
-#endif
-
-#if 0
-static void
-DoExtension(fd, label)
-FILE   *fd;
-int    label;
-{
-       static char     buf[256];
-
-       switch (label) {
-       case 0x01:              /* Plain Text Extension */
-#ifdef GIF_PLAIN_TEXT_EXT_SUPPORTED
-               if (GetDataBlock(fd, (unsigned char*) buf) == 0)
-                       ;
-
-               lpos   = GIF_GETW(buf + 0);
-               tpos   = GIF_GETW(buf + 2);
-               width  = GIF_GETW(buf + 4);
-               height = GIF_GETW(buf + 6);
-               cellw  = buf[8];
-               cellh  = buf[9];
-               foreground = buf[10];
-               background = buf[11];
-
-               while (GetDataBlock(fd, (unsigned char*) buf) != 0) {
-                       PPM_ASSIGN(image[ypos][xpos],
-                                       cmap[CM_RED][v],
-                                       cmap[CM_GREEN][v],
-                                       cmap[CM_BLUE][v]);
-                       ++index;
-               }
-
-               return;
-#else
-               static int foundPlainTextExt = 0;
-
-               if (! foundPlainTextExt) {
-                       GIFWarning("Ignoring Plain Text Extension(s) in GIF");
-                       foundPlainTextExt = 1;
-               }
-               break;
-#endif
-       case 0xff:              /* Application Extension */
-               break;
-       case 0xfe:              /* Comment Extension */
-               while (GetDataBlock(fd, (unsigned char*) buf) != 0) {
-                       pm_message("GIF comment: %s", buf );
-               }
-               return;
-       case 0xf9:              /* Graphic Control Extension */
-               if (GetDataBlock(fd, (unsigned char*) buf) < 4) {
-                       GIFError("Invalid Graphic Control Extension in GIF");
-               }
-               GIF89.disposal    = (buf[0] >> 2) & 0x7;
-               GIF89.inputFlag   = (buf[0] >> 1) & 0x1;
-               GIF89.delayTime   = GIF_GETW(buf + 1);
-               if ((buf[0] & 0x1) != 0)
-                       GIF89.transparent = buf[3];
-
-               while (GetDataBlock(fd, (unsigned char*) buf) != 0)
-                       ;
-               return;
-       default:                /* Unknown Extension */
-               break;
-       }
-
-       while (GetDataBlock(fd, (unsigned char*) buf) != 0)
-               ;
-}
-#endif
 
 
 static int ZeroDataBlock = FALSE;
@@ -352,10 +269,10 @@ static int ReadDataBlock(unsigned char *buf, FILE *stream)
 
 static void SkipDataBlocks(FILE *stream)
 {
-    int count;
+    int           count;
     unsigned char buf[UCHAR_MAX];
 
-    for ( ;; )
+    for ( ; ; )
     {
         GIF_FGETC(count, stream)
         if (count > 0)
@@ -369,161 +286,181 @@ static void SkipDataBlocks(FILE *stream)
 
 static int LZWGetCode(int code_size, int flag, FILE *stream)
 {
-       static unsigned char    buf[280];
-       static int              curbit, lastbit, done, last_byte;
-       int                     count, i, j, ret;
+    static unsigned char buf[280];
+    static int           curbit, lastbit, done, last_byte;
+    int                  count, i, j, ret;
 
-       if (flag) {
-               curbit = 0;
-               lastbit = 0;
-               done = FALSE;
-               return 0;
-       }
+    if (flag)
+    {
+        curbit = 0;
+        lastbit = 0;
+        done = FALSE;
+        return 0;
+    }
 
-       if ( (curbit+code_size) >= lastbit) {
-               if (done) {
-                       if (curbit >= lastbit)
-                               GIFError("GIF/LZW error: ran off the end of my bits");
-                       return -1;
-               }
-               buf[0] = buf[last_byte-2];
-               buf[1] = buf[last_byte-1];
+    if ((curbit + code_size) >= lastbit)
+    {
+        if (done)
+        {
+            if (curbit >= lastbit)
+                GIFError("GIF/LZW error: ran off the end of my bits");
+            return -1;
+        }
+        buf[0] = buf[last_byte-2];
+        buf[1] = buf[last_byte-1];
 
-               if ((count = ReadDataBlock(&buf[2], stream)) == 0)
-                       done = TRUE;
+        if ((count = ReadDataBlock(&buf[2], stream)) == 0)
+            done = TRUE;
 
-               last_byte = 2 + count;
-               curbit = (curbit - lastbit) + 16;
-               lastbit = (2+count)*8 ;
-       }
+        last_byte = 2 + count;
+        curbit = (curbit - lastbit) + 16;
+        lastbit = (2 + count) * 8;
+    }
 
-       ret = 0;
-       for (i = curbit, j = 0; j < code_size; ++i, ++j)
-               ret |= ((buf[ i / 8 ] & (1 << (i % 8))) != 0) << j;
+    ret = 0;
+    for (i = curbit, j = 0; j < code_size; ++i, ++j)
+        ret |= ((buf[ i / 8 ] & (1 << (i % 8))) != 0) << j;
 
-       curbit += code_size;
-
-       return ret;
+    curbit += code_size;
+    return ret;
 }
 
 static int LZWReadByte(int flag, int input_code_size, FILE *stream)
 {
-       static int      fresh = FALSE;
-       int             code, incode;
-       static int      code_size, set_code_size;
-       static int      max_code, max_code_size;
-       static int      firstcode, oldcode;
-       static int      clear_code, end_code;
-       static int      table[2][(1<< MAX_LZW_BITS)];
-       static int      stack[(1<<(MAX_LZW_BITS))*2], *sp;
-       register int    i;
+    static int fresh = FALSE;
+    int        code, incode;
+    static int code_size, set_code_size;
+    static int max_code, max_code_size;
+    static int firstcode, oldcode;
+    static int clear_code, end_code;
+    static int table[2][(1 << MAX_LZW_BITS)];
+    static int stack[(1 << MAX_LZW_BITS) * 2], *sp;
+    int        i;
 
-       if (flag) {
-               set_code_size = input_code_size;
-               code_size = set_code_size+1;
-               clear_code = 1 << set_code_size ;
-               end_code = clear_code + 1;
-               max_code_size = 2*clear_code;
-               max_code = clear_code+2;
+    if (flag)
+    {
+        set_code_size = input_code_size;
+        code_size = set_code_size+1;
+        clear_code = 1 << set_code_size;
+        end_code = clear_code + 1;
+        max_code_size = 2 * clear_code;
+        max_code = clear_code + 2;
 
-               LZWGetCode(0, TRUE, stream);
+        LZWGetCode(0, TRUE, stream);
 
-               fresh = TRUE;
+        fresh = TRUE;
 
-               for (i = 0; i < clear_code; ++i) {
-                       table[0][i] = 0;
-                       table[1][i] = i;
-               }
-               for (; i < (1<<MAX_LZW_BITS); ++i)
-                       table[0][i] = table[1][0] = 0;
+        for (i = 0; i < clear_code; ++i)
+        {
+            table[0][i] = 0;
+            table[1][i] = i;
+        }
+        for ( ; i < (1 << MAX_LZW_BITS); ++i)
+        {
+            table[0][i] = table[1][0] = 0;
+        }
 
-               sp = stack;
+        sp = stack;
+        return 0;
+    }
+    else if (fresh)
+    {
+        fresh = FALSE;
+        do
+        {
+            firstcode = oldcode =
+                LZWGetCode(code_size, FALSE, stream);
+        } while (firstcode == clear_code);
+        return firstcode;
+    }
 
-               return 0;
-       } else if (fresh) {
-               fresh = FALSE;
-               do {
-                       firstcode = oldcode =
-                               LZWGetCode(code_size, FALSE, stream);
-               } while (firstcode == clear_code);
-               return firstcode;
-       }
+    if (sp > stack)
+        return *--sp;
 
-       if (sp > stack)
-               return *--sp;
+    while ((code = LZWGetCode(code_size, FALSE, stream)) >= 0)
+    {
+        if (code == clear_code)
+        {
+            for (i = 0; i < clear_code; ++i)
+            {
+                table[0][i] = 0;
+                table[1][i] = i;
+            }
+            for ( ; i < (1 << MAX_LZW_BITS); ++i)
+            {
+                table[0][i] = table[1][i] = 0;
+            }
 
-       while ((code = LZWGetCode(code_size, FALSE, stream)) >= 0) {
-               if (code == clear_code) {
-                       for (i = 0; i < clear_code; ++i) {
-                               table[0][i] = 0;
-                               table[1][i] = i;
-                       }
-                       for (; i < (1<<MAX_LZW_BITS); ++i)
-                               table[0][i] = table[1][i] = 0;
-                       code_size = set_code_size+1;
-                       max_code_size = 2*clear_code;
-                       max_code = clear_code+2;
-                       sp = stack;
-                       firstcode = oldcode =
-                                       LZWGetCode(code_size, FALSE, stream);
-                       return firstcode;
-               } else if (code == end_code) {
-                       int             count;
-                       unsigned char   buf[260];
+            code_size = set_code_size+1;
+            max_code_size = 2*clear_code;
+            max_code = clear_code+2;
+            sp = stack;
+            firstcode = oldcode =
+                LZWGetCode(code_size, FALSE, stream);
+            return firstcode;
+        }
+        else if (code == end_code)
+        {
+            int           count;
+            unsigned char buf[260];
 
-                       if (ZeroDataBlock)
-                               return -2;
+            if (ZeroDataBlock)
+                return -2;
 
-                       while ((count = ReadDataBlock(buf, stream)) > 0)
-                               ;
+            while ((count = ReadDataBlock(buf, stream)) > 0)
+                ;
 
 #if 0  /* too noisy */
-                       if (count != 0)
-                               GIFWarning("missing EOD in data stream (common occurence)");
+            if (count != 0)
+                GIFWarning("missing EOD in data stream (common occurence)");
 #endif
-                       return -2;
-               }
+            return -2;
+        }
 
-               incode = code;
+        incode = code;
 
-               if (code >= max_code) {
-                       *sp++ = firstcode;
-                       code = oldcode;
-               }
+        if (code >= max_code)
+        {
+            *sp++ = firstcode;
+            code = oldcode;
+        }
 
-               while (code >= clear_code) {
-                       *sp++ = table[1][code];
-                       if (code == table[0][code])
-                               GIFError("GIF/LZW error: circular table entry");
-                       code = table[0][code];
-               }
+        while (code >= clear_code)
+        {
+            *sp++ = table[1][code];
+            if (code == table[0][code])
+                GIFError("GIF/LZW error: circular table entry");
+            code = table[0][code];
+        }
 
-               *sp++ = firstcode = table[1][code];
+        *sp++ = firstcode = table[1][code];
 
-               if ((code = max_code) <(1<<MAX_LZW_BITS)) {
-                       table[0][code] = oldcode;
-                       table[1][code] = firstcode;
-                       ++max_code;
-                       if ((max_code >= max_code_size) &&
-                               (max_code_size < (1<<MAX_LZW_BITS))) {
-                               max_code_size *= 2;
-                               ++code_size;
-                       }
-               }
+        if ((code = max_code) < (1 << MAX_LZW_BITS))
+        {
+            table[0][code] = oldcode;
+            table[1][code] = firstcode;
+            ++max_code;
+            if ((max_code >= max_code_size) &&
+                (max_code_size < (1 << MAX_LZW_BITS)))
+            {
+                max_code_size *= 2;
+                ++code_size;
+            }
+        }
 
-               oldcode = incode;
+        oldcode = incode;
 
-               if (sp > stack)
-                       return *--sp;
-       }
-       return code;
+        if (sp > stack)
+            return *--sp;
+    }
+    return code;
 }
 
 
 static void ReadImageData(struct GIFImage *image, FILE *stream)
 {
-    int minCodeSize, interlaced, val, pass;
-    unsigned int width, height, numColors, xpos, ypos;
+    int           minCodeSize, interlaced, val, pass;
+    unsigned int  width, height, numColors, xpos, ypos;
     unsigned char **rows;
 
     GIF_TRACE(("Reading Image Data\n"));
@@ -561,8 +498,8 @@ static void ReadImageData(struct GIFImage *image, FILE *stream)
     {
         if ((unsigned int)val >= numColors)
         {
-           GIFWarning("Pixel value out of range");
-           val = numColors - 1;
+            GIFWarning("Pixel value out of range");
+            val = numColors - 1;
         }
         rows[ypos][xpos] = (unsigned char)val;
         if (++xpos == width)
@@ -572,32 +509,32 @@ static void ReadImageData(struct GIFImage *image, FILE *stream)
             {
                 switch (pass)
                 {
-                    case 0:
-                    case 1:
-                        ypos += 8;
-                        break;
-                    case 2:
-                        ypos += 4;
-                        break;
-                    case 3:
-                        ypos += 2;
-                        break;
+                case 0:
+                case 1:
+                    ypos += 8;
+                    break;
+                case 2:
+                    ypos += 4;
+                    break;
+                case 3:
+                    ypos += 2;
+                    break;
                 }
                 if (ypos >= height)
                 {
                     switch (++pass)
                     {
-                        case 1:
-                            ypos = 4;
-                            break;
-                        case 2:
-                            ypos = 2;
-                            break;
-                        case 3:
-                            ypos = 1;
-                            break;
-                        default:
-                            goto fini;
+                    case 1:
+                        ypos = 4;
+                        break;
+                    case 2:
+                        ypos = 2;
+                        break;
+                    case 3:
+                        ypos = 1;
+                        break;
+                    default:
+                        goto fini;
                     }
                 }
             }
@@ -619,12 +556,11 @@ fini:
  * from a raw extension structure.
  **/
 void GIFGetGraphicCtl(struct GIFExtension *ext,
-    struct GIFGraphicCtlExt *graphicExt)
+                      struct GIFGraphicCtlExt *graphicExt)
 {
-    unsigned char *buf = ext->Buffer;
+    unsigned char *buf;
 
-    if (buf == NULL)
-        return;
+    GIF_TRACE(("Loading Graphic Control Extension\n"));
     if (ext->Label != GIF_GRAPHICCTL)
     {
         GIFWarning("Not a graphic control extension");
@@ -636,6 +572,7 @@ void GIFGetGraphicCtl(struct GIFExtension *ext,
         return;
     }
 
+    buf = ext->Buffer;
     graphicExt->DisposalMethod  = (buf[0] >> 2) & 0x07;
     graphicExt->InputFlag       = (buf[0] >> 1) & 0x01;
     graphicExt->TransparentFlag = buf[0] & 0x01;
@@ -665,15 +602,17 @@ static /*const*/ unsigned char DefaultColorTable[] =
 };
 
 /**
- * Returns the (local or global) color table.
+ * Returns the local or the global color table (whichever is applicable),
+ * or a predefined color table if both of these tables are missing.
  **/
 unsigned char *GIFGetColorTable(struct GIFImage *image,
-    unsigned int *numColors)
+                                unsigned int *numColors)
 {
     struct GIFScreen *screen;
 
     if (image->LocalColorFlag)
     {
+        GIF_TRACE(("Loading Local Color Table\n"));
         *numColors = image->LocalNumColors;
         return image->LocalColorTable;
     }
@@ -681,10 +620,12 @@ unsigned char *GIFGetColorTable(struct GIFImage *image,
     screen = image->Screen;
     if (screen->GlobalColorFlag)
     {
+        GIF_TRACE(("Loading Global Color Table\n"));
         *numColors = screen->GlobalNumColors;
         return screen->GlobalColorTable;
     }
 
+    GIF_TRACE(("Loading Default Color Table\n"));
     *numColors = sizeof(DefaultColorTable) / 3;
     return DefaultColorTable;
 }
@@ -710,3 +651,4 @@ void (*GIFError)(const char *msg)
 
 void (*GIFWarning)(const char *msg)
     = GIFDefaultWarning;
+

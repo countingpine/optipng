@@ -2,9 +2,10 @@
  ** optipng.h
  ** OptiPNG programming interface.
  **
- ** Copyright (C) 2001-2008 Cosmin Truta.
- ** OptiPNG is open-source software, and is distributed under the same
- ** licensing and warranty terms as libpng.
+ ** Copyright (C) 2001-2009 Cosmin Truta.
+ **
+ ** This software is distributed under the zlib license.
+ ** Please see the attached LICENSE for more information.
  **/
 
 
@@ -25,17 +26,19 @@ extern "C" {
 struct opng_options
 {
     int help;
-    int ver;
-    int optim_level;
-    int interlace;
-    int keep, quiet;
-    int nb, nc, np, nz;
     int fix;
     int force;
     int full;
+    int interlace;
+    int keep;
+    int nb, nc, np, nz;
     int preserve;
+    int quiet;
     int simulate;
     int snip;
+    int verbose;
+    int version;
+    int optim_level;
     bitset_t compr_level_set;
     bitset_t mem_level_set;
     bitset_t strategy_set;
@@ -53,8 +56,8 @@ struct opng_options
 struct opng_ui
 {
     void (*printf_fn)(const char *fmt, ...);
-    void (*flush_fn)(void);
-    void (*progress_fn)(unsigned long num, unsigned long denom);
+    void (*print_cntrl_fn)(int cntrl_code);
+    void (*progress_fn)(unsigned long current_step, unsigned long total_steps);
     void (*panic_fn)(const char *msg);
 };
 

@@ -2,10 +2,10 @@
  ** osys.h
  ** System extensions.
  **
- ** Copyright (C) 2003-2008 Cosmin Truta.
+ ** Copyright (C) 2003-2009 Cosmin Truta.
  **
- ** This software is distributed under the same licensing and warranty
- ** terms as OptiPNG.  Please see the attached LICENSE for more info.
+ ** This software is distributed under the zlib license.
+ ** Please see the attached LICENSE for more information.
  **/
 
 
@@ -17,28 +17,12 @@ extern "C" {
 #endif
 
 
-#include <stddef.h>
-
-
-/**
- * Allocates memory safely.
- * On success, the function returns the address of the allocated block.
- * On error, it prints a message to stderr and aborts.
- * If the requested block size is 0, it does nothing and returns NULL.
- **/
-void *osys_malloc(size_t size);
-
-
-/**
- * Deallocates memory safely.
- * The function does nothing if the given pointer is NULL.
- **/
-void osys_free(void *ptr);
+#include <stdio.h>
 
 
 /**
  * Prints an error message to stderr and terminates the program
- * execution immediately, exiting with EXIT_FAILURE.
+ * execution immediately, exiting with code 70 (EX_SOFTWARE).
  * This function does not raise SIGABRT, and it does not generate
  * other files (like core dumps, where applicable).
  **/

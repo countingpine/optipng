@@ -15,7 +15,7 @@ do
             echo "    -with-system-libpng     Use the system-supplied libpng"
             echo "Environment variables:"
             echo "    CC                      C compiler command"
-            exit 1
+            exit 0
             ;;
         -with-system-zlib | --with-system-zlib )
             with_system_zlib=1
@@ -31,15 +31,13 @@ do
     esac
 done
 
-zlib_re=''
-if test "${with_system_zlib-}"
+if test "$with_system_zlib"
 then
     zlib_inc_del='s:\(.\)-I\$(ZDIR):\1:g'
     zlib_lib_del='s:\(.\)\$(ZDIR)/\$(ZLIB):\1:g'
     zlib_sys_ins='/^SYSLIBS *=/s:$: -lz:'
 fi
-libpng_re=''
-if test "${with_system_libpng-}"
+if test "$with_system_libpng"
 then
     libpng_inc_del='s:\(.\)-I$(PNGDIR):\1:g'
     libpng_lib_del='s:\(.\)$(PNGDIR)/$(PNGLIB):\1:g'
@@ -70,7 +68,7 @@ cc="${CC-gcc}"
 case "$cc" in
     *gcc* ) gcc=1;;
 esac
-if test "${gcc-}" && ($cc -c $cflags $test.c) 2>/dev/null
+if test "$gcc" && ($cc -c $cflags $test.c) 2>/dev/null
 then
     CC="${CC-gcc}"
     makefile=scripts/gcc.mak
@@ -84,3 +82,24 @@ sed -e "s:@MAKEFILE@:${makefile}:g" -e "s:@CC@:${CC}:g" \
     Makefile.in > Makefile
 sed -e "s:@MAKEFILE@:${makefile}:g" -e "s:@CC@:${CC}:g" \
     src/Makefile.in > src/Makefile
+
+if test -z "$with_system_zlib"
+then
+    echo "Configuring zlib..."
+    (cd lib/zlib && ./configure)
+    if test $? -ne 0
+    then
+        echo "Could not configure: zlib"
+        exit 1
+    fi
+fi
+#if test -z "$with_system_libpng"
+#then
+#    echo "Configuring libpng..."
+#    (cd lib/libpng && ./configure)
+#    if test $? -ne 0
+#    then
+#        echo "Could not configure: libpng"
+#        exit 1
+#    fi
+#fi

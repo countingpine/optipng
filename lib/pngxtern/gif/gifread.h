@@ -1,9 +1,9 @@
 /*
- * gifread.c
+ * gifread.h
  *
- * Copyright (C) 2003, 2006 Cosmin Truta.
- * This code was derived from "giftopnm.c" by David Koblas, and
- * it is distributed under the same copyright and warranty terms.
+ * Copyright (C) 2003-2009 Cosmin Truta.
+ * This software was derived from "giftopnm.c" by David Koblas,
+ * and is distributed under the same copyright and warranty terms.
  *
  * The original copyright notice is provided below.
  */
@@ -145,9 +145,8 @@ void GIFGetGraphicCtl(struct GIFExtension *ext,
                       struct GIFGraphicCtlExt *graphicExt);
 
 /**
- * Returns the (local or global) color table.
- * If none of the local or global color tables exist,
- * the function returns a predefined color table.
+ * Returns the local or the global color table (whichever is applicable),
+ * or a predefined color table if both of these tables are missing.
  * @param image      (in)   an image structure.
  * @param numColors  (out)  the size of the returned color table.
  * @return                  the color table.

@@ -2,10 +2,10 @@
  ** osys.c
  ** System extensions.
  **
- ** Copyright (C) 2003-2008 Cosmin Truta.
+ ** Copyright (C) 2003-2009 Cosmin Truta.
  **
- ** This software is distributed under the same licensing and warranty
- ** terms as OptiPNG.  Please see the attached LICENSE for more info.
+ ** This software is distributed under the zlib license.
+ ** Please see the attached LICENSE for more information.
  **/
 
 
@@ -46,7 +46,6 @@
 
 
 #include <ctype.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,9 +88,9 @@
 #if defined OSYS_DOS || defined OSYS_OS2 || \
     defined OSYS_WINDOWS || defined __CYGWIN__
 # define OSYS_FNAME_DOS
-# define OSYS_FNAME_IGN_CASE 1
+# define OSYS_FNAME_ICASE 1
 #else  /* OSYS_UNIX and others */
-# define OSYS_FNAME_IGN_CASE 0
+# define OSYS_FNAME_ICASE 0
 #endif
 
 
@@ -118,43 +117,8 @@
 
 
 /**
- * Allocates memory safely.
- * On success, the function returns the address of the allocated block.
- * On error, it prints a message to stderr and aborts.
- * If the requested block size is 0, it does nothing and returns NULL.
- **/
-void *osys_malloc(size_t size)
-{
-    void *result;
-
-    if (size == 0)
-        return NULL;
-    result = malloc(size);
-    if (result == 0)
-    {
-        fprintf(stderr, "Out of memory!\n");
-        fflush(stderr);
-        osys_terminate();
-    }
-    return result;
-}
-
-
-/**
- * Deallocates memory safely.
- * The function does nothing if the given pointer is NULL.
- **/
-void osys_free(void *ptr)
-{
-    /* NOT happy about the standard behavior of free()... */
-    if (ptr != NULL)
-        free(ptr);
-}
-
-
-/**
  * Prints an error message to stderr and terminates the program
- * execution immediately, exiting with EXIT_FAILURE.
+ * execution immediately, exiting with code 70 (EX_SOFTWARE).
  * This function does not raise SIGABRT, and it does not generate
  * other files (like core dumps, where applicable).
  **/
@@ -163,20 +127,7 @@ void osys_terminate(void)
     fprintf(stderr,
         "The execution of this program has been terminated abnormally.\n");
     fflush(stderr);
-
-#if defined OSYS_UNIX || defined OSYS_DOS || defined OSYS_OS2
-
-    _exit(EXIT_FAILURE);
-
-#elif defined OSYS_WINDOWS
-
-    ExitProcess(EXIT_FAILURE);
-
-#else  /* generic */
-
-    exit(EXIT_FAILURE);
-
-#endif
+    exit(70);  /* EX_SOFTWARE */
 }
 
 
@@ -300,7 +251,7 @@ char *osys_fname_chext(char *buffer, size_t bufsize,
  **/
 int osys_fname_cmp(const char *fname1, const char *fname2)
 {
-#if OSYS_FNAME_IGN_CASE
+#if OSYS_FNAME_ICASE
 # ifdef OSYS_WINDOWS
     return lstrcmpiA(fname1, fname2);
 # else

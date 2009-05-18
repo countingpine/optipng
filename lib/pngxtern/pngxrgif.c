@@ -1,6 +1,6 @@
 /*
  * pngxrgif.c - libpng external I/O: GIF reader.
- * Copyright (C) 2001-2008 Cosmin Truta.
+ * Copyright (C) 2001-2009 Cosmin Truta.
  */
 
 #define PNGX_INTERNAL
@@ -116,8 +116,6 @@ int /* PRIVATE */
 pngx_read_gif(png_structp png_ptr, png_infop info_ptr, FILE *stream)
 {
    /* GIF-specific data */
-   unsigned char *buf;
-   const unsigned int bufsize = 1024;
    struct GIFScreen screen;
    struct GIFImage image;
    struct GIFExtension ext;
@@ -148,16 +146,11 @@ pngx_read_gif(png_structp png_ptr, png_infop info_ptr, FILE *stream)
 
    /* Allocate memory. */
    row_pointers = pngx_malloc_rows(png_ptr, info_ptr, (int)screen.Background);
-   /* The GIF extension buffer must be allocated using malloc(),
-    * because the GIF routines might call realloc() later.
-    */
-   buf = (unsigned char *)malloc(bufsize);
-   if (buf == NULL)
-      png_error(png_ptr, "Out of memory");
 
+   /* Complete the initialization of the GIF reader. */
    GIFInitImage(&image, &screen, row_pointers);
-   GIFInitExtension(&ext, &screen, buf, bufsize);
-   transparent = (unsigned int)-1;
+   GIFInitExtension(&ext, &screen, NULL, 0);
+   transparent = (unsigned int)(-1);
    numImages = 0;
 
    /* Iterate over the GIF file. */
@@ -193,7 +186,11 @@ pngx_read_gif(png_structp png_ptr, png_infop info_ptr, FILE *stream)
          break;
    }
 
-   free(ext.Buffer);  /* use free() in conjunction with malloc() */
+   /* Deallocate the GIF reader's extension buffer.
+    * Use free() in conjunction with the reader's realloc().
+    */
+   if (ext.Buffer != NULL)
+      free(ext.Buffer);
    /* FIXME:
     * Deallocate ext.Buffer on error, to prevent memory leaks.
     */

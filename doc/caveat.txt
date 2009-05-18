@@ -14,7 +14,7 @@ Legend
  * Another problematic issue, that is not necessarily a bug.
 
 
-Version 0.6.2    9-nov-2008
+Version 0.6.3   18-may-2009
 -------------
  - Lossless image reductions are not completely implemented.
    (This does NOT affect the integrity of PNG files.)
@@ -27,4 +27,6 @@ Version 0.6.2    9-nov-2008
    color spaces (grayscale, RGB and RGBA).
 
  - Metadata is not imported from the external image formats.
+
+ - There is no support for pipes or streams.
 

@@ -1,6 +1,6 @@
 /*
  * pngxrjpg.c - libpng external I/O: JPEG reader stub.
- * Copyright (C) 2001-2008 Cosmin Truta.
+ * Copyright (C) 2001-2009 Cosmin Truta.
  *
  * From the compression point of view, JPEG-to-PNG conversion is not
  * a worthwhile task.  Moreover, the complexity of JPEG decoding
@@ -26,6 +26,7 @@
  * 00 00 00 0C 6A 50 20 20 0D 0A 87 0A ... JPEG-2000 .jp2
  * 8B 4A 4E 47 0D 0A 1A 0A ............... JNG
  * 00 00 00 10 4A 48 44 52 ............... JNG datastream
+ * etc.
  */
 
 #define JPEG_SIG_JP2_SIZE 12
@@ -48,15 +49,22 @@ pngx_sig_is_jpeg(const png_bytep sig, png_size_t sig_size,
                  png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size)
 {
    const char *fmt;
+   unsigned int marker;
    int result;
 
    if (sig_size < JPEG_SIG_SIZE_MAX)
       return -1;
-   if (sig[0] == 0xff && sig[1] == 0xd8 && sig[2] == 0xff &&
-       ((int)sig[3] >= 0xe0 && (int)sig[3] <= 0xfd))
+   if (sig[0] == 0xff && sig[1] == 0xd8 && sig[2] == 0xff)
    {
-      fmt = "JPEG";
-      result = 1;  /* JFIF, EXIF, JPEG-LS, etc. */
+      marker = 0xff00U | sig[3];
+      if ((marker >= 0xffc0U && marker <= 0xffcfU) ||
+          (marker >= 0xffdaU && marker <= 0xfffeU))
+      {
+         fmt = "JPEG";
+         result = 1;  /* JFIF, EXIF, JPEG-LS, codestream, etc. */
+      }
+      else
+         return 0;  /* not JPEG */
    }
    else if (memcmp(sig, jpeg_sig_jp2, JPEG_SIG_JP2_SIZE) == 0 ||
             memcmp(sig, jpeg_sig_jpc, JPEG_SIG_JPC_SIZE) == 0)
