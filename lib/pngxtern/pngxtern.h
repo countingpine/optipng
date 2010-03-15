@@ -1,7 +1,7 @@
 /*
  * pngxtern.h - external file format processing for libpng.
  *
- * Copyright (C) 2003-2008 Cosmin Truta.
+ * Copyright (C) 2003-2010 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
  */
@@ -40,11 +40,6 @@ extern "C" {
  *
  * If the function fails to detect a known format, it rewinds the
  * file stream stored in io_ptr and returns 0.
- *
- * If the given format name buffers are non-null, but not large
- * enough, the function returns -1.  The calling application can
- * retry the call after enlarging these buffers.
- *
  * On other errors (e.g. read error or decoding error), the function
  * issues a png_error().
  *
@@ -53,8 +48,7 @@ extern "C" {
  */
 extern PNG_EXPORT(int, pngx_read_image)
    PNGARG((png_structp png_ptr, png_infop info_ptr,
-           png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-           png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size));
+           png_const_charpp fmt_name, png_const_charpp fmt_description));
 
 
 /*
@@ -64,41 +58,36 @@ extern PNG_EXPORT(int, pngx_read_image)
 
 /* BMP */
 int pngx_sig_is_bmp
-   PNGARG((const png_bytep sig, png_size_t sig_size,
-           png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-           png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size));
+   PNGARG((png_bytep sig, size_t sig_size,
+           png_const_charpp fmt_name, png_const_charpp fmt_description));
 int pngx_read_bmp
    PNGARG((png_structp png_ptr, png_infop info_ptr, FILE *stream));
 
 /* GIF */
 int pngx_sig_is_gif
-   PNGARG((const png_bytep sig, png_size_t sig_size,
-           png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-           png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size));
+   PNGARG((png_bytep sig, size_t sig_size,
+           png_const_charpp fmt_name, png_const_charpp fmt_description));
 int pngx_read_gif
    PNGARG((png_structp png_ptr, png_infop info_ptr, FILE *stream));
 
 /* JPEG */
 int pngx_sig_is_jpeg
-   PNGARG((const png_bytep sig, png_size_t sig_size,
-           png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-           png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size));
+   PNGARG((png_bytep sig, size_t sig_size,
+           png_const_charpp fmt_name, png_const_charpp fmt_description));
 int pngx_read_jpeg
    PNGARG((png_structp png_ptr, png_infop info_ptr, FILE *stream));
 
 /* PNM */
 int pngx_sig_is_pnm
-   PNGARG((const png_bytep sig, png_size_t sig_size,
-           png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-           png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size));
+   PNGARG((png_bytep sig, size_t sig_size,
+           png_const_charpp fmt_name, png_const_charpp fmt_description));
 int pngx_read_pnm
    PNGARG((png_structp png_ptr, png_infop info_ptr, FILE *stream));
 
 /* TIFF */
 int pngx_sig_is_tiff
-   PNGARG((const png_bytep sig, png_size_t sig_size,
-           png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-           png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size));
+   PNGARG((png_bytep sig, size_t sig_size,
+           png_const_charpp fmt_name, png_const_charpp fmt_description));
 int pngx_read_tiff
    PNGARG((png_structp png_ptr, png_infop info_ptr, FILE *stream));
 

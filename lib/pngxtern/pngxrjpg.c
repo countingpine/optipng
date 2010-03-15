@@ -1,12 +1,11 @@
 /*
  * pngxrjpg.c - libpng external I/O: JPEG reader stub.
- * Copyright (C) 2001-2009 Cosmin Truta.
+ * Copyright (C) 2001-2010 Cosmin Truta.
  *
- * From the compression point of view, JPEG-to-PNG conversion is not
- * a worthwhile task.  Moreover, the complexity of JPEG decoding
- * would add a significant overhead to the application.  As such, we
- * provide a stub that recognizes the JPEG format, without actually
- * processing it.
+ * From the information-theoretic point of view, JPEG-to-PNG conversion
+ * is not a worthwhile task.  Moreover, a JPEG decoder would add a
+ * significant overhead to the application.  As such, we provide a stub
+ * that recognizes the JPEG format, without actually processing it.
  */
 
 #define PNGX_INTERNAL
@@ -44,9 +43,8 @@ static const png_byte jpeg_sig_jng_jhdr[JPEG_SIG_JNG_SIZE] =
 { 0x00, 0x00, 0x00, 0x1a, 0x4a, 0x48, 0x44, 0x52 };
 
 int /* PRIVATE */
-pngx_sig_is_jpeg(const png_bytep sig, png_size_t sig_size,
-                 png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-                 png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size)
+pngx_sig_is_jpeg(png_bytep sig, size_t sig_size,
+                 png_const_charpp fmt_name, png_const_charpp fmt_description)
 {
    const char *fmt;
    unsigned int marker;
@@ -82,17 +80,11 @@ pngx_sig_is_jpeg(const png_bytep sig, png_size_t sig_size,
       return 0;  /* not JPEG */
 
    /* Store the format name. */
-   if (fmt_name_buf != NULL)
-   {
-      PNGX_ASSERT(fmt_name_buf_size > strlen(fmt));
-      strcpy(fmt_name_buf, fmt);
-   }
-   /* TODO: make fmt_desc more informative. */
-   if (fmt_desc_buf != NULL)
-   {
-      PNGX_ASSERT(fmt_desc_buf_size > strlen(fmt));
-      strcpy(fmt_desc_buf, fmt);
-   }
+   if (fmt_name != NULL)
+      *fmt_name = fmt;
+   /* TODO: make fmt_description more informative. */
+   if (fmt_description != NULL)
+      *fmt_description = fmt;
    return result;
 }
 
@@ -105,7 +97,7 @@ pngx_read_jpeg(png_structp png_ptr, png_infop info_ptr, FILE *stream)
 
    if (fread(buf, JPEG_SIG_SIZE_MAX, 1, stream) != 1)
       return 0;  /* not a JPEG file */
-   sig_code = pngx_sig_is_jpeg(buf, JPEG_SIG_SIZE_MAX, NULL, 0, NULL, 0);
+   sig_code = pngx_sig_is_jpeg(buf, JPEG_SIG_SIZE_MAX, NULL, NULL);
    /* TODO: use the format names passed by pngx_sig_is_jpeg. */
    switch (sig_code)
    {

@@ -1,6 +1,6 @@
 /*
  * pngxread.c - libpng external I/O: read utility functions.
- * Copyright (C) 2001-2008 Cosmin Truta.
+ * Copyright (C) 2001-2010 Cosmin Truta.
  */
 
 #define PNGX_INTERNAL
@@ -12,31 +12,29 @@
 #include <string.h>
 
 
-static const char pngx_png_fmt_name[] =
-   "PNG";
-static const char pngx_png_fmt_desc[] =
-   "Portable Network Graphics";
-static const char pngx_png_datastream_fmt_name[] =
-   "PNG datastream";
-static const char pngx_png_datastream_fmt_desc[] =
-   "Portable Network Graphics embedded datastream";
-
-
 static int
 pngx_sig_is_png(png_structp png_ptr,
-                const png_bytep sig, png_size_t sig_size,
-                png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-                png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size)
+                png_bytep sig, size_t sig_size,
+                png_const_charpp fmt_name, png_const_charpp fmt_description)
 {
    /* The signature of this function differs from the other pngx_sig_is_X()
-    * functions.  For efficiency, the PNG signature bytes are handled here.
+    * functions, to allow extra functionality (e.g. customized error messages)
+    * without requiring a full pngx_read_png().
     */
+
+   static const char pngx_png_standalone_fmt_name[] =
+      "PNG";
+   static const char pngx_png_datastream_fmt_name[] =
+      "PNG datastream";
+   static const char pngx_png_standalone_fmt_description[] =
+      "Portable Network Graphics";
+   static const char pngx_png_datastream_fmt_description[] =
+      "Portable Network Graphics embedded datastream";
 
    static const png_byte png_file_sig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
    static const png_byte mng_file_sig[8] = {138, 77, 78, 71, 13, 10, 26, 10};
    static const png_byte png_ihdr_sig[8] = {0, 0, 0, 13, 73, 72, 68, 82};
 
-   const char *fmt;
    int has_png_sig;
 
    /* Since png_read_png() fails rather abruptly with png_error(),
@@ -59,17 +57,17 @@ pngx_sig_is_png(png_structp png_ptr,
    }
 
    /* Store the format name. */
-   if (fmt_name_buf != NULL)
+   if (fmt_name != NULL)
    {
-      fmt = (has_png_sig ? pngx_png_fmt_name : pngx_png_datastream_fmt_name);
-      PNGX_ASSERT(fmt_name_buf_size > strlen(fmt));
-      strcpy(fmt_name_buf, fmt);
+      *fmt_name = has_png_sig ?
+         pngx_png_standalone_fmt_name :
+         pngx_png_datastream_fmt_name;
    }
-   if (fmt_desc_buf != NULL)
+   if (fmt_description != NULL)
    {
-      fmt = (has_png_sig ? pngx_png_fmt_desc : pngx_png_datastream_fmt_desc);
-      PNGX_ASSERT(fmt_desc_buf_size > strlen(fmt));
-      strcpy(fmt_desc_buf, fmt);
+      *fmt_description = has_png_sig ?
+         pngx_png_standalone_fmt_description :
+         pngx_png_datastream_fmt_description;
    }
    return 1;  /* PNG, really! */
 }
@@ -77,11 +75,10 @@ pngx_sig_is_png(png_structp png_ptr,
 
 int PNGAPI
 pngx_read_image(png_structp png_ptr, png_infop info_ptr,
-                png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-                png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size)
+                png_const_charpp fmt_name, png_const_charpp fmt_description)
 {
    png_byte sig[128];
-   png_size_t num;
+   size_t num;
    int (*read_fn)(png_structp, png_infop, FILE *);
    FILE *stream;
    fpos_t fpos;
@@ -93,17 +90,6 @@ pngx_read_image(png_structp png_ptr, png_infop info_ptr,
       "pngxtern requires a safe allocator");
 #endif
 
-   /* Check the format name buffers. */
-   /* Ensure that the longest short name ("PNG datastream") and
-    * the longest long name ("Portable Network Graphics embedded datastream")
-    * will fit.
-    */
-   if ((fmt_name_buf != NULL &&
-        fmt_name_buf_size < sizeof(pngx_png_datastream_fmt_name)) ||
-       (fmt_desc_buf != NULL &&
-        fmt_desc_buf_size < sizeof(pngx_png_datastream_fmt_desc)))
-      return -1;  /* invalid parameters */
-
    /* Read the signature bytes. */
    stream = (FILE *)png_get_io_ptr(png_ptr);
    PNGX_ASSERT(stream != NULL);
@@ -114,8 +100,7 @@ pngx_read_image(png_structp png_ptr, png_infop info_ptr,
       png_error(png_ptr, "Can't fseek in input file stream");
 
    /* Try the PNG format first. */
-   if (pngx_sig_is_png(png_ptr, sig, num,
-       fmt_name_buf, fmt_name_buf_size, fmt_desc_buf, fmt_desc_buf_size) > 0)
+   if (pngx_sig_is_png(png_ptr, sig, num, fmt_name, fmt_description) > 0)
    {
       png_read_png(png_ptr, info_ptr, 0, NULL);
       if (getc(stream) != EOF)
@@ -127,20 +112,15 @@ pngx_read_image(png_structp png_ptr, png_infop info_ptr,
    }
 
    /* Check the signature bytes against other known image formats. */
-   if (pngx_sig_is_bmp(sig, num,
-       fmt_name_buf, fmt_name_buf_size, fmt_desc_buf, fmt_desc_buf_size) > 0)
+   if (pngx_sig_is_bmp(sig, num, fmt_name, fmt_description) > 0)
       read_fn = pngx_read_bmp;
-   else if (pngx_sig_is_gif(sig, num,
-       fmt_name_buf, fmt_name_buf_size, fmt_desc_buf, fmt_desc_buf_size) > 0)
+   else if (pngx_sig_is_gif(sig, num, fmt_name, fmt_description) > 0)
       read_fn = pngx_read_gif;
-   else if (pngx_sig_is_jpeg(sig, num,
-       fmt_name_buf, fmt_name_buf_size, fmt_desc_buf, fmt_desc_buf_size) > 0)
+   else if (pngx_sig_is_jpeg(sig, num, fmt_name, fmt_description) > 0)
       read_fn = pngx_read_jpeg;
-   else if (pngx_sig_is_pnm(sig, num,
-       fmt_name_buf, fmt_name_buf_size, fmt_desc_buf, fmt_desc_buf_size) > 0)
+   else if (pngx_sig_is_pnm(sig, num, fmt_name, fmt_description) > 0)
       read_fn = pngx_read_pnm;
-   else if (pngx_sig_is_tiff(sig, num,
-       fmt_name_buf, fmt_name_buf_size, fmt_desc_buf, fmt_desc_buf_size) > 0)
+   else if (pngx_sig_is_tiff(sig, num, fmt_name, fmt_description) > 0)
       read_fn = pngx_read_tiff;
    else
       return 0;  /* not a known image format */

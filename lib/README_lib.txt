@@ -18,27 +18,25 @@ Library list
 
 zlib
   * authors:  Jean-loup Gailly and Mark Adler
-  * version:  1.2.3-optipng
+  * version:  1.2.4-optipng
   * location: lib/zlib/
   * derived from original
-    - version:  1.2.3
+    - version:  1.2.4
     - location: http://www.zlib.net/
-    - changes:  lib/zlib/ChangeLog (see the "1.2.3-optipng" section)
-    - details:  lib/lib_diff/zlib.diff
+    - diff:     lib/zlib/zlib-1.2.4-optipng.diff
 
 libpng
   * authors:  Glenn Randers-Pehrson and the PNG Development Group
-  * version:  1.2.33-optipng
+  * version:  1.4.1-optipng
   * location: lib/libpng/
   * derived from original
-    - version:  1.2.33
+    - version:  1.4.1
     - location: http://www.libpng.org/pub/png/libpng.html
-    - changes:  lib/libpng/CHANGES (see the "1.2.33-optipng" section)
-    - details:  lib/lib_diff/libpng.diff
+    - diff:     lib/libpng/libpng-1.4.1-optipng.diff
 
 pngxtern
   * author:   Cosmin Truta
-  * version:  0.6.3
+  * version:  0.6.4
   * location: lib/pngxtern/
   * supported formats: BMP, GIF, PNM (PBM, PGM, PPM), and TIFF (uncompressed)
     - BMP read support derived from bmp2png by MIYASAKA Masaru

@@ -1,5 +1,5 @@
 <!-- Creator     : groff version 1.19.2 -->
-<!-- CreationDate: Sun May 17 23:55:04 2009 -->
+<!-- CreationDate: Sun Mar 14 12:29:16 2010 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -103,14 +103,18 @@ options.</p>
 
 <p style="margin-left:22%;">Select the optimization level.
 <br>
-Use <b>&minus;o0</b> to disable IDAT recompression trials.
-This option has no effect on non-PNG input files. <br>
-Use <b>&minus;o1</b> to enable a single IDAT recompression
-trial. <br>
-Use a higher <i>level</i> to enable more trials (the higher
-the <i>level</i>, the more trials). <br>
+The optimization level 0 enables a set of optimization
+operations that require minimal effort. There will be no
+changes to image attributes like bit depth or color type,
+and no recompression of existing IDAT datastreams. <br>
+The optimization level 1 enables a single IDAT compression
+trial. The trial chosen is what <b>OptiPNG</b> <i>thinks</i>
+it&rsquo;s probably the most effective. <br>
+The optimization levels 2 and higher enable multiple IDAT
+compression trials; the higher the level, the more trials.
+<br>
 The behavior and the default value of this option may change
-across different program versions. Use option
+across different program versions. Use the option
 <b>&minus;h</b> to see the details pertaining to your
 specific version.</p>
 
@@ -167,7 +171,7 @@ a new output file.</p></td>
 </td>
 </table>
 
-<p style="margin-left:22%;">Use this option to override the
+<p style="margin-left:22%;">This option overrides the
 program&rsquo;s decision not to write such file, e.g. when
 the PNG input is digitally signed (using dSIG), or when the
 PNG output becomes larger than the PNG input.</p>
@@ -348,11 +352,11 @@ report on IDAT. This option might slow down the trials.</p></td>
 
 <p style="margin-left:22%;">Select the interlace type
 (0&minus;1). <br>
-Use <b>&minus;i0</b> to produce a non-interlaced output.
-<br>
-Use <b>&minus;i1</b> to produce an interlaced (<i>Adam7</i>)
-output. <br>
-By default, the output will have the same interlace type as
+If the interlace type 0 is selected, the output image shall
+be non-interlaced (i.e. progressive-scanned). If the
+interlace type 1 is selected, the output image shall be
+interlaced using the <i>Adam7</i> method. <br>
+By default, the output shall have the same interlace type as
 the input.</p>
 
 <table width="100%" border=0 rules="none" frame="void"
@@ -402,14 +406,33 @@ palette reduction.</p></td>
 
 
 
+<p style="margin-top: 1em" valign="top"><b>&minus;nx</b></p> </td>
+<td width="7%"></td>
+<td width="78%">
+
+
+<p style="margin-top: 1em" valign="top">Do not apply any
+lossless image reduction: enable the options
+<b>&minus;nb</b>, <b>&minus;nc</b> and <b>&minus;np</b>.</p></td>
+<tr valign="top" align="left">
+<td width="11%"></td>
+<td width="4%">
+
+
+
 <p style="margin-top: 1em" valign="top"><b>&minus;nz</b></p> </td>
 <td width="7%"></td>
 <td width="78%">
 
 
-<p style="margin-top: 1em" valign="top">Do not perform IDAT
-recompression (also disable reductions).</p></td>
+<p style="margin-top: 1em" valign="top">Do not recode IDAT
+datastreams.</p> </td>
 </table>
+
+<p style="margin-left:22%;">The IDAT optimization
+operations that do not require recoding (e.g. IDAT chunk
+concatenation) are still performed. <br>
+This option has effect on PNG input files only.</p>
 
 <p style="margin-left:11%;"><b>&minus;zc</b>
 <i>levels</i></p>
@@ -507,8 +530,8 @@ optimization algorithm consists of the following steps:</p>
 
 
 <p style="margin-top: 1em" valign="top">1.</p></td>
-<td width="8%"></td>
-<td width="78%">
+<td width="3%"></td>
+<td width="83%">
 
 
 <p style="margin-top: 1em" valign="top">Reduce the bit
@@ -522,8 +545,8 @@ image (i.e. the size of the output PNG file).</p></td>
 
 
 <p style="margin-top: 1em" valign="top">2.</p></td>
-<td width="8%"></td>
-<td width="78%">
+<td width="3%"></td>
+<td width="83%">
 
 
 <p style="margin-top: 1em" valign="top">Run a suite of
@@ -536,8 +559,8 @@ file.</p> </td>
 
 
 <p style="margin-top: 1em" valign="top">3.</p></td>
-<td width="8%"></td>
-<td width="78%">
+<td width="3%"></td>
+<td width="83%">
 
 
 <p style="margin-top: 1em" valign="top">Store all IDAT
@@ -549,8 +572,8 @@ incurred by repeated IDAT headers and CRCs.</p></td>
 
 
 <p style="margin-top: 1em" valign="top">4.</p></td>
-<td width="8%"></td>
-<td width="78%">
+<td width="3%"></td>
+<td width="83%">
 
 
 <p style="margin-top: 1em" valign="top">Set the zlib window
@@ -565,15 +588,12 @@ actual input files and user options.</p>
 
 <p style="margin-left:11%; margin-top: 1em">Step 1 may be
 customized via the no-reduce options <b>&minus;nb</b>,
-<b>&minus;nc</b> and <b>&minus;np</b>. Step 2 may be
-customized via the <b>&minus;o</b> option, and may be
-fine-tuned via the options <b>&minus;zc</b>,
+<b>&minus;nc</b>, <b>&minus;np</b> and <b>&minus;nx</b>.
+Step 2 may be customized via the <b>&minus;o</b> option, and
+may be fine-tuned via the options <b>&minus;zc</b>,
 <b>&minus;zm</b>, <b>&minus;zs</b> and <b>&minus;zw</b>.
-Step 3 is always executed; for example, even though IDAT
-recompression is disabled under <b>&minus;o0</b>, all IDAT
-chunks from the input are concatenated into a single IDAT
-chunk in the output. Step 4 is executed only if a new IDAT
-is being created, and may be fine-tuned via the option
+Step 3 is always executed. Step 4 is executed only if a new
+IDAT is being created, and may be fine-tuned via the option
 <b>&minus;zw</b>.</p>
 
 <p style="margin-left:11%; margin-top: 1em">Extremely
@@ -593,7 +613,7 @@ file1.png file2.gif file3.tif</tt></p>
 
 <p style="margin-left:11%; margin-top: 1em"><tt>optipng
 &minus;i1 &minus;o7 &minus;v &minus;full &minus;sim
-experiment.png &minus;log experiment.log</tt></p>
+experiment.png</tt></p>
 
 <a name="BUGS"></a>
 <h2>BUGS</h2>
@@ -628,9 +648,15 @@ support for pipes or streams.</p>
 <b>libpng</b>(3), <b>zlib</b>(3), <b>pngcrush</b>(1),
 <b>pngrewrite</b>(1).</p>
 
-<p style="margin-left:11%; margin-top: 1em">Glenn
-Randers-Pehrson et al. <i>Portable Network Graphics (PNG)
-Specification, Second Edition</i>. <br>
+<a name="STANDARDS"></a>
+<h2>STANDARDS</h2>
+
+
+<p style="margin-left:11%; margin-top: 1em">The files
+produced by <b>OptiPNG</b> are compliant with
+<b>PNG&minus;2003</b>: <br>
+Glenn Randers-Pehrson et al. <i>Portable Network Graphics
+(PNG) Specification, Second Edition</i>. <br>
 W3C Recommendation 10 November 2003; ISO/IEC IS 15948:2003
 (E). <tt><br>
 http://www.w3.org/TR/PNG/</tt></p>

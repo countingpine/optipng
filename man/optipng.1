@@ -1,4 +1,4 @@
-.TH OPTIPNG 1 "2009-May-18" "OptiPNG version 0.6.3"
+.TH OPTIPNG 1 "2010-March-14" "OptiPNG version 0.6.4"
 
 .SH NAME
 .B OptiPNG
@@ -53,17 +53,19 @@ Show a complete summary of options.
 \fB\-o\fP \fIlevel\fP
 Select the optimization level.
 .br
-Use \fB\-o0\fP to disable IDAT recompression trials. This option has no effect
-on non-PNG input files.
+The optimization level 0 enables a set of optimization operations that require
+minimal effort. There will be no changes to image attributes like bit depth
+or color type, and no recompression of existing IDAT datastreams.
 .br
-Use \fB\-o1\fP to enable a single IDAT recompression trial.
+The optimization level 1 enables a single IDAT compression trial. The trial
+chosen is what \fBOptiPNG\fP \fIthinks\fP it's probably the most effective.
 .br
-Use a higher \fIlevel\fP to enable more trials
-(the higher the \fIlevel\fP, the more trials).
+The optimization levels 2 and higher enable multiple IDAT compression trials;
+the higher the level, the more trials.
 .br
 The behavior and the default value of this option may change across different
-program versions. Use option \fB\-h\fP to see the details pertaining to your
-specific version.
+program versions. Use the option \fB\-h\fP to see the details pertaining to
+your specific version.
 .TP
 \fB\-dir\fP \fIdirectory\fP
 Write output file(s) to \fIdirectory\fP.
@@ -82,9 +84,9 @@ When this option is not used, the invalid input files are left unprocessed.
 \fB\-force\fP
 Enforce writing of a new output file.
 .br
-Use this option to override the program's decision not to write such file,
-e.g. when the PNG input is digitally signed (using dSIG), or when the PNG
-output becomes larger than the PNG input.
+This option overrides the program's decision not to write such file, e.g. when
+the PNG input is digitally signed (using dSIG), or when the PNG output becomes
+larger than the PNG input.
 .TP
 \fB\-keep\fP
 Keep a backup of the modified file(s).
@@ -151,11 +153,11 @@ This option might slow down the trials.
 \fB\-i\fP \fItype\fP
 Select the interlace type (0\-1).
 .br
-Use \fB\-i0\fP to produce a non-interlaced output.
+If the interlace type 0 is selected, the output image shall be non-interlaced
+(i.e. progressive-scanned). If the interlace type 1 is selected, the output
+image shall be interlaced using the \fIAdam7\fP method.
 .br
-Use \fB\-i1\fP to produce an interlaced (\fIAdam7\fP) output.
-.br
-By default, the output will have the same interlace type as the input.
+By default, the output shall have the same interlace type as the input.
 .TP
 \fB\-nb\fP
 Do not apply bit depth reduction.
@@ -166,8 +168,17 @@ Do not apply color type reduction.
 \fB\-np\fP
 Do not apply palette reduction.
 .TP
+\fB\-nx\fP
+Do not apply any lossless image reduction:
+enable the options \fB\-nb\fP, \fB\-nc\fP and \fB\-np\fP.
+.TP
 \fB\-nz\fP
-Do not perform IDAT recompression (also disable reductions).
+Do not recode IDAT datastreams.
+.br
+The IDAT optimization operations that do not require recoding (e.g. IDAT
+chunk concatenation) are still performed.
+.br
+This option has effect on PNG input files only.
 .TP
 \fB\-zc\fP \fIlevels\fP
 Select the zlib compression levels used in IDAT compression.
@@ -232,20 +243,20 @@ Rangeset arguments are cumulative; e.g.
 
 .SH "EXTENDED DESCRIPTION"
 The PNG optimization algorithm consists of the following steps:
-.TP
+.TP 4
 1.
 Reduce the bit depth, the color type and the color palette of the image.
 This step may reduce the size of the uncompressed image, which, indirectly, may
 reduce the size of the compressed image (i.e. the size of the output PNG file).
-.TP
+.TP 4
 2.
 Run a suite of compression methods and strategies and select the compression
 parameters that yield the smallest output file.
-.TP
+.TP 4
 3.
 Store all IDAT contents into a single chunk, eliminating the overhead
 incurred by repeated IDAT headers and CRCs.
-.TP
+.TP 4
 4.
 Set the zlib window size inside IDAT to a mininum that does not affect the
 compression ratio, reducing the memory requirements of PNG decoders.
@@ -253,12 +264,10 @@ compression ratio, reducing the memory requirements of PNG decoders.
 Not all of the above steps need to be executed. The behavior depends on the
 actual input files and user options.
 .P
-Step 1 may be customized via the no-reduce options \fB\-nb\fP, \fB\-nc\fP and
-\fB\-np\fP. Step 2 may be customized via the \fB\-o\fP option, and may be
-fine-tuned via the options \fB\-zc\fP, \fB\-zm\fP, \fB\-zs\fP and \fB\-zw\fP.
-Step 3 is always executed; for example, even though IDAT recompression is
-disabled under \fB\-o0\fP, all IDAT chunks from the input are concatenated into
-a single IDAT chunk in the output. Step 4 is executed only if a new IDAT is
+Step 1 may be customized via the no-reduce options \fB\-nb\fP, \fB\-nc\fP,
+\fB\-np\fP and \fB\-nx\fP. Step 2 may be customized via the \fB\-o\fP option,
+and may be fine-tuned via the options \fB\-zc\fP, \fB\-zm\fP, \fB\-zs\fP and
+\fB\-zw\fP. Step 3 is always executed. Step 4 is executed only if a new IDAT is
 being created, and may be fine-tuned via the option \fB\-zw\fP.
 .P
 Extremely exhaustive searches are not generally expected to yield significant
@@ -269,7 +278,7 @@ improvements in compression ratio, and are recommended to advanced users only.
 .P
 \fCoptipng \-o5 file1.png file2.gif file3.tif\fP
 .P
-\fCoptipng \-i1 \-o7 \-v \-full \-sim experiment.png \-log experiment.log\fP
+\fCoptipng \-i1 \-o7 \-v \-full \-sim experiment.png\fP
 
 .SH BUGS
 Lossless image reductions are not completely implemented.
@@ -288,13 +297,16 @@ Metadata is not imported from the external image formats.
 .P
 There is no support for pipes or streams.
 
-.SH SEE ALSO
+.SH "SEE ALSO"
 \fBpng\fP(5),
 \fBlibpng\fP(3),
 \fBzlib\fP(3),
 \fBpngcrush\fP(1),
 \fBpngrewrite\fP(1).
-.PP
+
+.SH STANDARDS
+The files produced by \fBOptiPNG\fP are compliant with \fBPNG\-2003\fP:
+.br
 Glenn Randers-Pehrson et al.
 \fIPortable Network Graphics (PNG) Specification, Second Edition\fP.
 .br

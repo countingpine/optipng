@@ -14,6 +14,19 @@ Legend
  * Other modification (e.g. architectural improvement).
 
 
+Version 0.6.4   14-mar-2010
+-------------
+ + Upgraded libpng to version 1.4.1-optipng [private]
+ + Upgraded zlib to version 1.2.4-optipng [private]
+ + Added the option -nx.
+ * Clarified the behavior of -nz and the relation between -nz and -o0.
+ + Added a filesystem check (resolving normalized paths, symlinks, etc.)
+   to better detect when the output overwrites the input.
+ + Enabled automatic wildcard expansion (i.e. globbing) on Win64.
+ ! Fixed a Unicode build issue on Windows.
+   (Thanks to Fabien Barbier for the fix.)
+
+
 Version 0.6.3   18-may-2009
 -------------
  + Upgraded libpng to version 1.2.36-optipng [private]

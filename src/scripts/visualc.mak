@@ -6,8 +6,8 @@
 
 CC = cl
 LD = $(CC)
-CFLAGS  = -D_CRT_SECURE_NO_WARNINGS -MD -O2 -W4
-LDFLAGS = -MD
+CFLAGS  = -nologo -D_CRT_SECURE_NO_WARNINGS -MD -O2 -W4
+LDFLAGS = -nologo -MD
 
 OPTIPNG = optipng.exe
 ZLIB    = zlib.lib

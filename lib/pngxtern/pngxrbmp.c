@@ -1,6 +1,6 @@
 /*
  * pngxrbmp.c - libpng external I/O: BMP reader.
- * Copyright (C) 2001-2008 Cosmin Truta.
+ * Copyright (C) 2001-2010 Cosmin Truta.
  *
  * This code was derived from "bmp2png.c" by MIYASAKA Masaru, and
  * is distributed under the same copyright and warranty terms as libpng.
@@ -110,13 +110,13 @@ bmp_get_dword(png_bytep ptr)
 /*****************************************************************************/
 
 static void
-bmp_rle8_memset(png_bytep ptr, png_size_t offset, int ch, png_size_t len)
+bmp_rle8_memset(png_bytep ptr, size_t offset, int ch, size_t len)
 {
    png_memset(ptr + offset, ch, len);
 }
 
 static void
-bmp_rle4_memset(png_bytep ptr, png_size_t offset, int ch, png_size_t len)
+bmp_rle4_memset(png_bytep ptr, size_t offset, int ch, size_t len)
 {
    if (len == 0)
       return;
@@ -133,8 +133,8 @@ bmp_rle4_memset(png_bytep ptr, png_size_t offset, int ch, png_size_t len)
       ptr[len / 2] = (png_byte)(ch & 0xf0);
 }
 
-static png_size_t
-bmp_rle8_fread(png_bytep ptr, png_size_t offset, png_size_t len, FILE *stream)
+static size_t
+bmp_rle8_fread(png_bytep ptr, size_t offset, size_t len, FILE *stream)
 {
    size_t result;
 
@@ -144,8 +144,8 @@ bmp_rle8_fread(png_bytep ptr, png_size_t offset, png_size_t len, FILE *stream)
    return result;
 }
 
-static png_size_t
-bmp_rle4_fread(png_bytep ptr, png_size_t offset, png_size_t len, FILE *stream)
+static size_t
+bmp_rle4_fread(png_bytep ptr, size_t offset, size_t len, FILE *stream)
 {
    size_t result;
    int ch;
@@ -205,18 +205,18 @@ bmp_process_mask(png_uint_32 bmp_mask, png_bytep sig_bit, png_bytep shift_bit)
 /* BMP I/O utilities                                                         */
 /*****************************************************************************/
 
-static png_size_t
-bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, png_size_t row_size,
+static size_t
+bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, size_t row_size,
               unsigned int compression, FILE *stream)
 {
-   png_size_t result;
+   size_t result;
    png_bytepp crt_row;
    int inc;
-   png_size_t crtn, dcrtn, endn;
+   size_t crtn, dcrtn, endn;
    unsigned int len, b1, b2;
    int ch;
-   void (*bmp_memset_fn)(png_bytep, png_size_t, int, png_size_t);
-   png_size_t (*bmp_fread_fn)(png_bytep, png_size_t, png_size_t, FILE *);
+   void (*bmp_memset_fn)(png_bytep, size_t, int, size_t);
+   size_t (*bmp_fread_fn)(png_bytep, size_t, size_t, FILE *);
 
    if (row_size == 0)
       return 0;  /* this should not happen */
@@ -309,7 +309,7 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, png_size_t row_size,
                if (ch == EOF)
                   break;
                dcrtn = (b1 < endn - crtn) ? (crtn + b1) : endn;
-               if (b2 > (png_size_t)((end_row - crt_row) * inc))
+               if (b2 > (size_t)((end_row - crt_row) * inc))
                   b2 = (unsigned int)((end_row - crt_row) * inc);
                for ( ; b2 > 0; --b2)
                {
@@ -357,7 +357,7 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, png_size_t row_size,
 static void
 bmp_to_png_rows(png_bytepp row_pointers,
                 png_uint_32 width, png_uint_32 height, unsigned int pixdepth,
-                const png_bytep rgba_sig, const png_bytep rgba_shift)
+                png_bytep rgba_sig, png_bytep rgba_shift)
 {
    png_bytep src_ptr, dest_ptr;
    unsigned int rgba_mask[4];
@@ -433,14 +433,12 @@ bmp_to_png_rows(png_bytepp row_pointers,
 /*****************************************************************************/
 
 int /* PRIVATE */
-pngx_sig_is_bmp(const png_bytep sig, png_size_t sig_size,
-                png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-                png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size)
+pngx_sig_is_bmp(png_bytep sig, size_t sig_size,
+                png_const_charpp fmt_name, png_const_charpp fmt_description)
 {
-   static const char bmp_fmt_name[]    = "BMP";
-   static const char os2bmp_fmt_desc[] = "OS/2 Bitmap";
-   static const char winbmp_fmt_desc[] = "Windows Bitmap";
-   const char *fmt_desc;
+   static const char bmp_fmt_name[] = "BMP";
+   static const char os2bmp_fmt_description[] = "OS/2 Bitmap";
+   static const char winbmp_fmt_description[] = "Windows Bitmap";
    png_uint_32 bihsize;
 
    /* Require at least the bitmap file header and the subsequent 4 bytes. */
@@ -455,19 +453,14 @@ pngx_sig_is_bmp(const png_bytep sig, png_size_t sig_size,
       return 0;  /* garbage in bihsize, this cannot be BMP */
 
    /* Store the format name. */
-   if (fmt_name_buf != NULL)
-   {
-      PNGX_ASSERT(fmt_name_buf_size >= sizeof(bmp_fmt_name));
-      strcpy(fmt_name_buf, bmp_fmt_name);
-   }
-   if (fmt_desc_buf != NULL)
+   if (fmt_name != NULL)
+      *fmt_name = bmp_fmt_name;
+   if (fmt_description != NULL)
    {
       if (bihsize == COREHED_SIZE)
-         fmt_desc = os2bmp_fmt_desc;
+         *fmt_description = os2bmp_fmt_description;
       else
-         fmt_desc = winbmp_fmt_desc;
-      PNGX_ASSERT(fmt_desc_buf_size > strlen(fmt_desc));
-      strcpy(fmt_desc_buf, fmt_desc);
+         *fmt_description = winbmp_fmt_description;
    }
    return 1;  /* BMP */
 }
@@ -492,7 +485,7 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    png_color_8 sig_bit;
    png_bytepp row_pointers, begin_row, end_row;
    unsigned int i;
-   png_size_t y;
+   size_t y;
 
    /* Find the BMP header. */
    for (i = 0; ; ++i)  /* skip macbinary header */
@@ -732,7 +725,7 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
          rgba_sig, rgba_shift);
 
    /* Check the result. */
-   if (y != (png_size_t)height)
+   if (y != (size_t)height)
       png_error(png_ptr, "Error reading BMP file");
 
    return 1;  /* one image has been successfully read */

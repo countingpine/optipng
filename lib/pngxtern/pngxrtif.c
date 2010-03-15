@@ -1,6 +1,6 @@
 /*
  * pngxrtif.c - libpng external I/O: TIFF reader.
- * Copyright (C) 2001-2009 Cosmin Truta.
+ * Copyright (C) 2001-2010 Cosmin Truta.
  */
 
 #define PNGX_INTERNAL
@@ -38,12 +38,11 @@ static void pngx_tiff_warning(const char *msg)
 
 
 int /* PRIVATE */
-pngx_sig_is_tiff(const png_bytep sig, png_size_t sig_size,
-                 png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-                 png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size)
+pngx_sig_is_tiff(png_bytep sig, size_t sig_size,
+                 png_const_charpp fmt_name, png_const_charpp fmt_description)
 {
    const char tiff_fmt_name[] = "TIFF";
-   const char tiff_fmt_desc[] = "Tagged Image File Format";
+   const char tiff_fmt_description[] = "Tagged Image File Format";
 
    /* Require at least the TIFF signature. */
    if (sig_size < 8)
@@ -53,16 +52,10 @@ pngx_sig_is_tiff(const png_bytep sig, png_size_t sig_size,
       return 0;  /* not TIFF */
 
    /* Store the format name. */
-   if (fmt_name_buf != NULL)
-   {
-      PNGX_ASSERT(fmt_name_buf_size >= sizeof(tiff_fmt_name));
-      strcpy(fmt_name_buf, tiff_fmt_name);
-   }
-   if (fmt_desc_buf != NULL)
-   {
-      PNGX_ASSERT(fmt_desc_buf_size >= sizeof(tiff_fmt_desc));
-      strcpy(fmt_desc_buf, tiff_fmt_desc);
-   }
+   if (fmt_name != NULL)
+      *fmt_name = tiff_fmt_name;
+   if (fmt_description != NULL)
+      *fmt_description = tiff_fmt_description;
    return 1;  /* TIFF */
 }
 

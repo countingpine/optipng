@@ -1,6 +1,6 @@
 /*
  * pngxrpnm.c - libpng external I/O: PNM reader.
- * Copyright (C) 2001-2008 Cosmin Truta.
+ * Copyright (C) 2001-2010 Cosmin Truta.
  */
 
 #define PNGX_INTERNAL
@@ -12,9 +12,8 @@
 
 
 int /* PRIVATE */
-pngx_sig_is_pnm(const png_bytep sig, png_size_t sig_size,
-                png_charp fmt_name_buf, png_size_t fmt_name_buf_size,
-                png_charp fmt_desc_buf, png_size_t fmt_desc_buf_size)
+pngx_sig_is_pnm(png_bytep sig, size_t sig_size,
+                png_const_charpp fmt_name, png_const_charpp fmt_description)
 {
    static const char pbm_fmt_name[] = "PBM";
    static const char pgm_fmt_name[] = "PGM";
@@ -41,17 +40,10 @@ pngx_sig_is_pnm(const png_bytep sig, png_size_t sig_size,
       return 0;  /* not PNM */
 
    /* Store the format name. */
-   if (fmt_name_buf != NULL && fmt_name_buf_size > 0)
-   {
-      PNGX_ASSERT(fmt_name_buf_size > 3);
-      strcpy(fmt_name_buf, fmt_names[sig[1] - '1']);
-   }
-   if (fmt_desc_buf != NULL)
-   {
-      const char *fmt_desc = fmt_descriptions[sig[1] - '1'];
-      PNGX_ASSERT(fmt_desc_buf_size > strlen(fmt_desc));
-      strcpy(fmt_desc_buf, fmt_desc);
-   }
+   if (fmt_name != NULL)
+      *fmt_name = fmt_names[sig[1] - '1'];
+   if (fmt_description != NULL)
+      *fmt_description = fmt_descriptions[sig[1] - '1'];
    return 1;  /* PNM */
 }
 
@@ -95,7 +87,7 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    unsigned int format, depth, width, height, maxval;
    unsigned int num_samples, sample_size;
    unsigned int *pnmrow;
-   png_size_t row_size;
+   size_t row_size;
    png_bytepp row_pointers;
    png_color_8 sig_bit;
    unsigned int i, j;
@@ -110,8 +102,8 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    height = pnminfo.height;
    maxval = pnminfo.maxval;
    if (width > (unsigned int)(-1) / depth ||
-       width > (png_size_t)(-1) / sizeof(unsigned int) / depth ||
-       height > (png_size_t)(-1) / sizeof(png_bytep))
+       width > (size_t)(-1) / sizeof(unsigned int) / depth ||
+       height > (size_t)(-1) / sizeof(png_bytep))
       png_error(png_ptr, "Can't handle exceedingly large PNM dimensions");
    sample_size = 1;
    row_size = num_samples = depth * width;

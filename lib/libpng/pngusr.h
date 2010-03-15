@@ -1,7 +1,10 @@
 /*
- * pngusr.h -- private configuration settings for OptiPNG.
+ * pngusr.h
+ * Private libpng configuration settings for OptiPNG.
  *
- * This file is #included by png.h.
+ * Copyright (C) 2003-2010 Cosmin Truta.
+ * This software is distributed under the same licensing and warranty terms
+ * as libpng.
  */
 
 
@@ -10,7 +13,7 @@
 
 
 /*
- * Track down memory leaks, if using MS Visual C++.
+ * Enable the memory leak tracker under MS Visual C++.
  */
 #if defined(_DEBUG) && defined(_MSC_VER)
 #define _CRTDBG_MAP_ALLOC
@@ -21,15 +24,7 @@
 
 
 /*
- * Redefine internal libpng constants.
- */
-#define PNG_ZBUF_SIZE       16384
-#define PNG_USER_WIDTH_MAX  0x7fffffffL
-#define PNG_USER_HEIGHT_MAX 0x7fffffffL
-
-
-/*
- * Remove libpng features that are not needed by OptiPNG.
+ * Remove the libpng features that are not needed by OptiPNG.
  */
 #define PNG_NO_ASSEMBLER_CODE
 #define PNG_NO_ERROR_NUMBERS
@@ -38,7 +33,6 @@
 #define PNG_NO_MNG_FEATURES
 #define PNG_NO_PROGRESSIVE_READ
 #define PNG_NO_SETJMP_SUPPORTED
-#define PNG_NO_SET_USER_LIMITS
 #define PNG_NO_READ_TRANSFORMS
 #define PNG_NO_WRITE_TRANSFORMS
 #define PNG_NO_USER_MEM

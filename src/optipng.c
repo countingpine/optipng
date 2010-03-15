@@ -1,29 +1,29 @@
-/**
- ** OptiPNG: Advanced PNG optimization program.
- ** http://optipng.sourceforge.net/
- **
- ** Copyright (C) 2001-2009 Cosmin Truta.
- **
- ** This software is distributed under the zlib license.
- ** Please see the attached LICENSE for more information.
- **
- ** PNG optimization is described in detail in the PNG-Tech article
- ** "A guide to PNG optimization"
- ** http://www.cs.toronto.edu/~cosmin/pngtech/optipng.html
- **
- ** The idea of running multiple compression trials with different
- ** PNG filters and zlib parameters is inspired from the pngcrush
- ** program by Glenn Randers-Pehrson.
- ** The idea of performing lossless image reductions is inspired from
- ** the pngrewrite program by Jason Summers.
- **
- ** Requirements:
- **    ANSI C89, ISO C90 or ISO C99 compiler and library.
- **    zlib version 1.2.1 or newer.
- **    libpng version 1.2.9 or newer, with pngxtern.
- **    cexcept version 2.0.1 or newer.
- **    POSIX or Windows API for enhanced functionality.
- **/
+/*
+ * OptiPNG: Advanced PNG optimization program.
+ * http://optipng.sourceforge.net/
+ *
+ * Copyright (C) 2001-2010 Cosmin Truta.
+ *
+ * This software is distributed under the zlib license.
+ * Please see the attached LICENSE for more information.
+ *
+ * PNG optimization is described in detail in the PNG-Tech article
+ * "A guide to PNG optimization"
+ * http://optipng.sourceforge.net/pngtech/optipng.html
+ *
+ * The idea of running multiple compression trials with different
+ * PNG filters and zlib parameters is inspired from the pngcrush
+ * program by Glenn Randers-Pehrson.
+ * The idea of performing lossless image reductions is inspired from
+ * the pngrewrite program by Jason Summers.
+ *
+ * Requirements:
+ *    ANSI/ISO C compiler and library.
+ *    zlib version 1.2.1 or newer.
+ *    libpng version 1.2.9 or newer, with pngxtern.
+ *    cexcept version 2.0.1 or newer.
+ *    POSIX or Windows API for enhanced functionality.
+ */
 
 #include <ctype.h>
 #include <errno.h>
@@ -82,7 +82,7 @@ static const char *msg_help =
    "General options:\n"
    "    -fix\t\tenable error recovery\n"
    "    -force\t\tenforce writing of a new output file\n"
-#if 0  /* parallel processing is not implemented */
+#if 0  /* not implemented */
    "    -jobs <number>\tallow parallel jobs\n"
 #endif
    "    -keep\t\tkeep a backup of the modified files\n"
@@ -90,9 +90,6 @@ static const char *msg_help =
    "    -quiet\t\tquiet mode\n"
    "    -simulate\t\tsimulation mode\n"
    "    -snip\t\tcut one image out of multi-image or animation files\n"
-#if 0  /* multi-image splitting is not implemented */
-   "    -split\t\tsplit multi-image/animation files into separate images\n"
-#endif
    "    -out <file>\t\twrite output file to <file>\n"
    "    -dir <directory>\twrite output file(s) to <directory>\n"
    "    -log <file>\t\tlog messages to <file>\n"
@@ -112,13 +109,14 @@ static const char *msg_help =
    "    -nb\t\t\tno bit depth reduction\n"
    "    -nc\t\t\tno color type reduction\n"
    "    -np\t\t\tno palette reduction\n"
-#if 0  /* metadata optimization is not implemented */
+#if 0  /* not implemented */
    "    -nm\t\t\tno metadata optimization\n"
 #endif
-   "    -nz\t\t\tno IDAT recompression (also disable reductions)\n"
+   "    -nx\t\t\tno reductions\n"
+   "    -nz\t\t\tno IDAT recoding\n"
    "Optimization details:\n"
    "    The optimization level presets\n"
-   "        -o0  <=>  -nz\n"
+   "        -o0  <=>  -o1 -nx -nz\n"
    "        -o1  <=>  [use the libpng heuristics]\t(1 trial)\n"
    "        -o2  <=>  -zc9 -zm8 -zs0-3 -f0,5\t(8 trials)\n"
    "        -o3  <=>  -zc9 -zm8-9 -zs0-3 -f0,5\t(16 trials)\n"
@@ -135,7 +133,7 @@ static const char *msg_help =
    "    optipng file.png\t\t\t\t(default speed)\n"
    "    optipng -o5 file.png\t\t\t(moderately slow)\n"
    "    optipng -o7 file.png\t\t\t(very slow)\n"
-   "    optipng -i1 -o7 -v -full -sim experiment.png -log experiment.log\n";
+   "    optipng -i1 -o7 -v -full -sim experiment.png\n";
 
 
 static enum { OP_NONE, OP_HELP, OP_RUN } operation;
@@ -145,7 +143,9 @@ static FILE *log_file;
 int start_of_line;
 
 
-/** Error handling **/
+/*
+ * Error handling
+ */
 static void
 error(const char *fmt, ...)
 {
@@ -161,21 +161,24 @@ error(const char *fmt, ...)
 }
 
 
-/** Panic handling **/
+/*
+ * Panic handling
+ */
 static void
 panic(const char *msg)
 {
     /* Print the panic message to stderr and terminate abnormally. */
     fprintf(stderr, "\n** INTERNAL ERROR: %s\n", msg);
-    fprintf(stderr, "Please submit a defect report.\n");
-    fprintf(stderr, PROGRAM_URI "\n\n");
+    fprintf(stderr, "Please submit a defect report.\n" PROGRAM_URI "\n\n");
     fflush(stderr);
     osys_terminate();
 }
 
 
-/** String-to-integer conversion **/
-static long
+/*
+ * String-to-integer conversion
+ */
+static int
 str2long(const char *str, long *value)
 {
     char *endptr;
@@ -219,23 +222,28 @@ str2long(const char *str, long *value)
 }
 
 
-/** Command line error handling **/
+/*
+ * Command line error handling
+ */
 static void
-err_option(const char *opt_desc, const char *opt_arg)
+err_option(const char *option, const char *option_arg)
 {
-    /* Issue an error regarding the incorrect use of the option. */
-    if (opt_arg != NULL && opt_arg[0] != 0)
-        error("Invalid %s: %s", opt_desc, opt_arg);
+    /* Issue an error regarding the incorrect value of the option argument. */
+    if (option_arg != NULL && option_arg[0] != 0)
+        error("Invalid argument for option %s: %s", option, option_arg);
     else
-        error("Missing %s", opt_desc);
+        error("Missing argument for option %s", option);
 }
 
 
-/** Command line parsing **/
+/*
+ * Command line parsing
+ */
 static int
-scan_option(char *str, char opt_buf[], size_t opt_buf_size, char **opt_arg_ptr)
+scan_option(const char *str,
+            char opt_buf[], size_t opt_buf_size, char **opt_arg_ptr)
 {
-    char *ptr;
+    const char *ptr;
     unsigned int opt_len;
 
     /* Check if arg is an "-option". */
@@ -284,12 +292,14 @@ scan_option(char *str, char opt_buf[], size_t opt_buf_size, char **opt_arg_ptr)
         ++ptr;
     else while (isspace(*ptr))  /* "-option arg" */
         ++ptr;
-    *opt_arg_ptr = (*ptr != 0) ? ptr : NULL;
+    *opt_arg_ptr = (*ptr != 0) ? (char *)ptr : NULL;
     return 1;
 }
 
 
-/** Command line parsing **/
+/*
+ * Command line parsing
+ */
 static void
 parse_args(int argc, char *argv[])
 {
@@ -322,11 +332,11 @@ parse_args(int argc, char *argv[])
         argv[i] = NULL;
 
         /* Check the simple options (without option arguments). */
-        if (strcmp(opt, "-") == 0)  /* "--" */
+        if (strcmp("-", opt) == 0)  /* "--" */
         {
             stop_switch = 1;
         }
-        else if (strcmp(opt, "?") == 0 ||
+        else if (strcmp("?", opt) == 0 ||
                  string_prefix_min_cmp("help", opt, 1) == 0)
         {
             options.help = 1;
@@ -347,25 +357,29 @@ parse_args(int argc, char *argv[])
         {
             options.keep = 1;
         }
-        else if (strcmp(opt, "nb") == 0)
+        else if (strcmp("nb", opt) == 0)
         {
             options.nb = 1;
         }
-        else if (strcmp(opt, "nc") == 0)
+        else if (strcmp("nc", opt) == 0)
         {
             options.nc = 1;
         }
-#if 0
-        else if (strcmp(opt, "nm") == 0)
+        else if (strcmp("nm", opt) == 0)
         {
-            options.nm = 1;
+            /* options.nm = 1; */
+            error("Metadata optimization is not implemented");
         }
-#endif
-        else if (strcmp(opt, "np") == 0)
+        else if (strcmp("np", opt) == 0)
         {
             options.np = 1;
         }
-        else if (strcmp(opt, "nz") == 0)
+        else if (strcmp("nx", opt) == 0)
+        {
+            options.nb = options.nc = options.np = 1;
+            /* options.nm = 1; */
+        }
+        else if (strcmp("nz", opt) == 0)
         {
             options.nz = 1;
         }
@@ -373,8 +387,10 @@ parse_args(int argc, char *argv[])
         {
             options.preserve = 1;
         }
-        else if (string_prefix_min_cmp("quiet", opt, 1) == 0)
+        else if (string_prefix_min_cmp("quiet", opt, 1) == 0 ||
+                 string_prefix_min_cmp("silent", opt, 3) == 0)
         {
+            /* The option -silent is silently accepted. */
             options.quiet = 1;
         }
         else if (string_prefix_min_cmp("simulate", opt, 2) == 0)
@@ -385,7 +401,7 @@ parse_args(int argc, char *argv[])
         {
             options.snip = 1;
         }
-        else if (strcmp(opt, "v") == 0)
+        else if (strcmp("v", opt) == 0)
         {
             options.verbose = 1;
             options.version = 1;
@@ -418,61 +434,61 @@ parse_args(int argc, char *argv[])
         {
             /* Do nothing, an option without argument is already recognized. */
         }
-        else if (strcmp(opt, "o") == 0)
+        else if (strcmp("o", opt) == 0)
         {
             if (str2long(xopt, &lval) != 0 || lval < 0 || lval > 99)
-                err_option("optimization level", xopt);
+                err_option("-o", xopt);
             val = (int)lval;
             if (options.optim_level < 0)
                 options.optim_level = val;
             else if (options.optim_level != val)
                 error("Multiple optimization levels are not permitted");
         }
-        else if (strcmp(opt, "i") == 0)
+        else if (strcmp("i", opt) == 0)
         {
             if (str2long(xopt, &lval) != 0 || lval < 0 || lval > 1)
-                err_option("interlace type", xopt);
+                err_option("-i", xopt);
             val = (int)lval;
             if (options.interlace < 0)
                 options.interlace = (int)val;
             else if (options.interlace != (int)val)
                 error("Multiple interlace types are not permitted");
         }
-        else if (strcmp(opt, "b") == 0)
+        else if (strcmp("b", opt) == 0)
         {
             /* options.bit_depth = ... */
             error("Selection of bit depth is not implemented");
         }
-        else if (strcmp(opt, "c") == 0)
+        else if (strcmp("c", opt) == 0)
         {
             /* options.color_type = ... */
             error("Selection of color type is not implemented");
         }
-        else if (strcmp(opt, "f") == 0)
+        else if (strcmp("f", opt) == 0)
         {
             if (bitset_parse(xopt, &set) != 0)
-                err_option("filter(s)", xopt);
+                err_option("-f", xopt);
             options.filter_set |= set;
         }
-        else if (strcmp(opt, "zc") == 0)
+        else if (strcmp("zc", opt) == 0)
         {
             if (bitset_parse(xopt, &set) != 0)
-                err_option("zlib compression level(s)", xopt);
+                err_option("-zc", xopt);
             options.compr_level_set |= set;
         }
-        else if (strcmp(opt, "zm") == 0)
+        else if (strcmp("zm", opt) == 0)
         {
             if (bitset_parse(xopt, &set) != 0)
-                err_option("zlib memory level(s)", xopt);
+                err_option("-zm", xopt);
             options.mem_level_set |= set;
         }
-        else if (strcmp(opt, "zs") == 0)
+        else if (strcmp("zs", opt) == 0)
         {
             if (bitset_parse(xopt, &set) != 0)
-                err_option("zlib compression strategy", xopt);
+                err_option("-zs", xopt);
             options.strategy_set |= set;
         }
-        else if (strcmp(opt, "zw") == 0)
+        else if (strcmp("zw", opt) == 0)
         {
             if (str2long(xopt, &lval) != 0)
                 lval = 0;
@@ -480,7 +496,7 @@ parse_args(int argc, char *argv[])
                 if ((1L << val) == lval)
                     break;
             if (val < 8)
-                err_option("zlib window size", xopt);
+                err_option("-zw", xopt);
             if (options.window_bits == 0)
                 options.window_bits = val;
             else if (options.window_bits != val)
@@ -489,30 +505,36 @@ parse_args(int argc, char *argv[])
         else if (string_prefix_min_cmp("out", opt, 2) == 0)
         {
             if (options.out_name != NULL)
-                error("Duplicate output file name");
+                error("Multiple output file names are not permitted");
             if (xopt[0] == 0)
-                err_option("output file name", xopt);
+                err_option("-out", xopt);
             options.out_name = xopt;
         }
         else if (string_prefix_min_cmp("dir", opt, 1) == 0)
         {
             if (options.dir_name != NULL)
-                error("Duplicate output dir name");
+                error("Multiple output dir names are not permitted");
             if (xopt[0] == 0)
-                err_option("output dir name", xopt);
+                err_option("-dir", xopt);
             options.dir_name = xopt;
         }
         else if (string_prefix_min_cmp("log", opt, 1) == 0)
         {
             if (options.log_name != NULL)
-                error("Duplicate log file name");
+                error("Multiple log file names are not permitted");
             if (xopt[0] == 0)
-                err_option("log file name", xopt);
+                err_option("-log", xopt);
             options.log_name = xopt;
         }
         else if (string_prefix_min_cmp("jobs", opt, 1) == 0)
         {
             error("Parallel processing is not implemented");
+        }
+        else if (strcmp("erase", opt) == 0 ||
+                 strcmp("strip", opt) == 0 ||
+                 strcmp("protect", opt) == 0)
+        {
+            error("Lossy operations are not currently supported");
         }
         else
         {
@@ -524,9 +546,9 @@ parse_args(int argc, char *argv[])
     if (options.out_name != NULL)
     {
         if (file_count > 1)
-            error("-out requires one input file");
+            error("The option -out requires one input file");
         if (options.dir_name != NULL)
-            error("-out and -dir are mutually exclusive");
+            error("The options -out and -dir are mutually exclusive");
     }
     if (options.log_name != NULL)
     {
@@ -534,15 +556,13 @@ parse_args(int argc, char *argv[])
             error("To prevent accidental data corruption,"
                   " the log file name must end with \".log\"");
     }
-    if (options.optim_level == 0)
-        options.nz = 1;
-    if (options.nz)
-        options.nb = options.nc = options.np = 1;
     operation = (options.help || file_count == 0) ? OP_HELP : OP_RUN;
 }
 
 
-/** Initialization **/
+/*
+ * Initialization
+ */
 static void
 app_init(void)
 {
@@ -562,7 +582,9 @@ app_init(void)
 }
 
 
-/** Finalization **/
+/*
+ * Finalization
+ */
 static void
 app_finish(void)
 {
@@ -574,7 +596,9 @@ app_finish(void)
 }
 
 
-/** Application-defined printf callback **/
+/*
+ * Application-defined printf callback
+ */
 static void
 app_printf(const char *fmt, ...)
 {
@@ -599,7 +623,9 @@ app_printf(const char *fmt, ...)
 }
 
 
-/** Application-defined control print callback **/
+/*
+ * Application-defined control print callback
+ */
 static void
 app_print_cntrl(int cntrl_code)
 {
@@ -642,13 +668,15 @@ app_print_cntrl(int cntrl_code)
     }
 
     if (con_file != NULL)
-        fprintf(con_file, con_str);
+        fputs(con_str, con_file);
     if (log_file != NULL)
-        fprintf(log_file, log_str);
+        fputs(log_str, log_file);
 }
 
 
-/** Application-defined progress update callback **/
+/*
+ * Application-defined progress update callback
+ */
 static void
 app_progress(unsigned long current_step, unsigned long total_steps)
 {
@@ -664,7 +692,9 @@ app_progress(unsigned long current_step, unsigned long total_steps)
 }
 
 
-/** File list processing **/
+/*
+ * File list processing
+ */
 static int
 process_files(int argc, char *argv[])
 {
@@ -698,7 +728,9 @@ process_files(int argc, char *argv[])
 }
 
 
-/** main **/
+/*
+ * main
+ */
 int
 main(int argc, char *argv[])
 {

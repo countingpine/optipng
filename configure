@@ -3,62 +3,97 @@
 # This a hand-crafted, experimental, and, well, uncommented configure script.
 # Your feedback will be appreciated.
 
-for arg in "$@"
+trap "rm -f conftest* core a.out; exit 1" 1 2 3 15
+
+prefix=${prefix-/usr/local}
+exec_prefix=${exec_prefix-'${prefix}'}
+gcc=0
+with_system_zlib=0
+with_system_libpng=0
+
+for option in "$@"
 do
-    case $arg in
-        -h | --h | -help | --help )
-            echo "Usage:"
-            echo "    $0 [options]"
-            echo "Options:"
-            echo "    -h, -help               Show this help"
-            echo "    -with-system-zlib       Use the system-supplied zlib"
-            echo "    -with-system-libpng     Use the system-supplied libpng"
-            echo "Environment variables:"
-            echo "    CC                      C compiler command"
-            exit 0
-            ;;
-        -with-system-zlib | --with-system-zlib )
-            with_system_zlib=1
-            ;;
-        -with-system-libpng | --with-system-libpng )
-            with_system_libpng=1
-            ;;
-        * )
-            echo "Unknown option: $1"
-            echo "Type \"$0 -help\" for help"
-            exit 1
-            ;;
+    case $option in
+    *=* )
+        optarg=`expr "X$option" : 'X[^=]*=\(.*\)'`
+        ;;
+    * )
+        optarg=""
+        ;;
+    esac
+    case $option in
+    -h | --h | -help | --help )
+        echo "Usage:"
+        echo "    $0 [options]"
+        echo "Options:"
+        echo "    -h, -help               Show this help"
+        echo "    -prefix=PREFIX          Install architecture-independent files in PREFIX"
+        echo "                            [/usr/local]"
+        echo "    -exec-prefix=EPREFIX    Install architecture-dependent files in EPREFIX"
+        echo "                            [PREFIX]"
+        echo "    -with-system-zlib       Use the system-supplied zlib"
+        echo "    -with-system-libpng     Use the system-supplied libpng"
+        echo "Environment variables:"
+        echo "    CC                      C compiler command"
+        exit 0
+        ;;
+    -prefix=* | --prefix=* )
+        prefix=$optarg
+        ;;
+    -prefix | --prefix )
+        prefix=$2
+        shift
+        ;;
+    -exec-prefix=* | --exec-prefix=* | -exec_prefix=* | --exec_prefix=* )
+        exec_prefix=$optarg
+        ;;
+    -exec-prefix | --exec-prefix | -exec_prefix | --exec_prefix )
+        exec_prefix=$2
+        shift
+        ;;
+    -with-system-zlib | --with-system-zlib )
+        with_system_zlib=1
+        ;;
+    -with-system-libpng | --with-system-libpng )
+        with_system_libpng=1
+        ;;
+    * )
+        echo "Unknown option: $option"
+        echo "Type \"$0 -help\" for help"
+        exit 64  # EX_USAGE
+        ;;
     esac
 done
 
-if test "$with_system_zlib"
+update_re="
+    s:^\\(prefix *= *\\).*\$:\\1$prefix:
+    s:^\\(exec_prefix *= *\\).*\$:\\1$exec_prefix:
+"
+if test $with_system_zlib -ne 0
 then
-    zlib_inc_del='s:\(.\)-I\$(ZDIR):\1:g'
-    zlib_lib_del='s:\(.\)\$(ZDIR)/\$(ZLIB):\1:g'
-    zlib_sys_ins='/^SYSLIBS *=/s:$: -lz:'
+    update_re_zlib='
+        s:\(.\)-I\$(ZDIR):\1:g
+        s:\(.\)\$(ZDIR)/\$(ZLIB):\1:g
+        /^SYSLIBS *=/s:$: -lz:
+    '
 fi
-if test "$with_system_libpng"
+if test $with_system_libpng -ne 0
 then
-    libpng_inc_del='s:\(.\)-I$(PNGDIR):\1:g'
-    libpng_lib_del='s:\(.\)$(PNGDIR)/$(PNGLIB):\1:g'
-    libpng_sys_ins='/^SYSLIBS *=/s:$: -lpng:'
+    update_re_libpng='
+        s:\(.\)-I$(PNGDIR):\1:g
+        s:\(.\)$(PNGDIR)/$(PNGLIB):\1:g
+        /^SYSLIBS *=/s:$: -lpng:
+    '
 fi
-if test "${zlib_sys_ins}${libpng_sys_ins}"
-then
-    sed -e "$zlib_inc_del" -e "$libpng_inc_del" \
-        -e "$zlib_lib_del" -e "$libpng_lib_del" \
-        -e "$zlib_sys_ins" -e "$libpng_sys_ins" \
-        src/scripts/unix.mak.in > src/scripts/unix.mak
-    sed -e "$zlib_inc_del" -e "$libpng_inc_del" \
-        -e "$zlib_lib_del" -e "$libpng_lib_del" \
-        -e "$zlib_sys_ins" -e "$libpng_sys_ins" \
-        src/scripts/gcc.mak.in > src/scripts/gcc.mak
-else
-    cp -f -p src/scripts/unix.mak.in src/scripts/unix.mak
-    cp -f -p src/scripts/gcc.mak.in src/scripts/gcc.mak
-fi
+for makefile in \
+    src/scripts/unix.mak src/scripts/gcc.mak \
+    lib/pngxtern/scripts/unix.mak lib/pngxtern/scripts/gcc.mak
+do
+    sed -e "$update_re" -e "$update_re_zlib" -e "$update_re_libpng" \
+        $makefile.in > $makefile
+done
 
-test=hello$$
+test=conftest$$
 cat > $test.c <<EOM
 int hello() { return 42; }
 EOM
@@ -66,34 +101,43 @@ EOM
 test -z "$CC" && echo "Checking for gcc..."
 cc="${CC-gcc}"
 case "$cc" in
-    *gcc* ) gcc=1;;
+*gcc* )
+    gcc=1
+    ;;
 esac
-if test "$gcc" && ($cc -c $cflags $test.c) 2>/dev/null
+
+if test $gcc -ne 0 && ($cc -c $cflags $test.c) 2>/dev/null
 then
     CC="${CC-gcc}"
-    makefile=scripts/gcc.mak
+    #MAKEFILE="${MAKEFILE-gcc.mak}"
+    MAKEFILE=gcc.mak
 else
     CC="${CC-cc}"
-    makefile=scripts/unix.mak
+    #MAKEFILE="${MAKEFILE-unix.mak}"
+    MAKEFILE=unix.mak
 fi
 rm -f $test.c $test.o
 
-sed -e "s:@MAKEFILE@:${makefile}:g" -e "s:@CC@:${CC}:g" \
-    Makefile.in > Makefile
-sed -e "s:@MAKEFILE@:${makefile}:g" -e "s:@CC@:${CC}:g" \
-    src/Makefile.in > src/Makefile
+update_re="
+    s:@MAKEFILE@:scripts/$MAKEFILE:g
+    s:@CC@:$CC:g
+    s:@prefix@:$prefix:
+    s:@exec_prefix@:$exec_prefix:
+"
+sed "$update_re" Makefile.in > Makefile
+sed "$update_re" src/Makefile.in > src/Makefile
 
-if test -z "$with_system_zlib"
+if test $with_system_zlib -eq 0
 then
     echo "Configuring zlib..."
-    (cd lib/zlib && ./configure)
+    (cd lib/zlib && ./configure --static)
     if test $? -ne 0
     then
         echo "Could not configure: zlib"
         exit 1
     fi
 fi
-#if test -z "$with_system_libpng"
+#if test $with_system_libpng -eq 0
 #then
 #    echo "Configuring libpng..."
 #    (cd lib/libpng && ./configure)

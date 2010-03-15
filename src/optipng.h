@@ -1,12 +1,12 @@
-/**
- ** optipng.h
- ** OptiPNG programming interface.
- **
- ** Copyright (C) 2001-2009 Cosmin Truta.
- **
- ** This software is distributed under the zlib license.
- ** Please see the attached LICENSE for more information.
- **/
+/*
+ * optipng.h
+ * OptiPNG programming interface.
+ *
+ * Copyright (C) 2001-2010 Cosmin Truta.
+ *
+ * This software is distributed under the zlib license.
+ * Please see the attached LICENSE for more information.
+ */
 
 
 #ifndef OPTIPNG_H
@@ -21,7 +21,7 @@ extern "C" {
 
 
 /*
- * Program options (e.g. extracted from the command line)
+ * User options (e.g. extracted from the command line)
  */
 struct opng_options
 {
@@ -51,7 +51,7 @@ struct opng_options
 
 
 /*
- * Program UI callbacks
+ * User interface callbacks
  */
 struct opng_ui
 {
