@@ -13,17 +13,15 @@ man1dir=${mandir}/man1
 all: optipng.1.txt optipng.1.ps optipng.1.pdf optipng.1.html
 
 optipng.1.txt: optipng.1
-	nroff -man -c $< | col -b -x | uniq > $@
+	nroff -man -c -Tascii $< | col -b -x | uniq > $@
 
 optipng.1.ps: optipng.1
-	#troff -man $< > $@
 	groff -man -Tps -P-g $< > $@
 
 optipng.1.pdf: optipng.1.ps
 	ps2pdf $< $@
 
 optipng.1.html: optipng.1
-	#man2html $< > $@
 	groff -man -Thtml -P-l $< > $@
 
 install: optipng.1

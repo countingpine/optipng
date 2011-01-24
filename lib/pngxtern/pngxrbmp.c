@@ -322,7 +322,7 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, size_t row_size,
             }
             else  /* b2 >= 3 bytes in absolute mode */
             {
-               len = (b2 <= endn - crtn) ? b2 : (endn - crtn);
+               len = (b2 <= endn - crtn) ? b2 : (unsigned int)(endn - crtn);
                if (bmp_fread_fn(*crt_row, crtn, len, stream) != len)
                   break;
                crtn += len;
@@ -330,7 +330,7 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, size_t row_size,
          }
          else  /* b1 > 0 bytes in run-length encoded mode */
          {
-            len = (b1 <= endn - crtn) ? b1 : (endn - crtn);
+            len = (b1 <= endn - crtn) ? b1 : (unsigned int)(endn - crtn);
             bmp_memset_fn(*crt_row, crtn, (int)b2, len);
             crtn += len;
          }

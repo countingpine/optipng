@@ -1,20 +1,18 @@
 /*
  * gifdump.c
  *
- * Copyright (C) 2003-2009 Cosmin Truta.
+ * Copyright (C) 2003-2010 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as gifread.c.
  */
 
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "gifread.h"
 
 
-static int exitCode = 0;
-
-
-void GIFDump(const char *filename)
+int GIFDump(const char *filename)
 {
     FILE *stream;
     struct GIFScreen screen;
@@ -26,8 +24,7 @@ void GIFDump(const char *filename)
     if (stream == NULL)
     {
         fprintf(stderr, "Error: Can't open %s\n", filename);
-        exitCode = 1;
-        return;
+        return -1;
     }
 
     printf("File: %s\n", filename);
@@ -47,16 +44,15 @@ void GIFDump(const char *filename)
         switch (GIFReadNextBlock(&image, &ext, stream))
         {
         case GIF_TERMINATOR:  /* ';' */
-            printf("\n");
             fclose(stream);
-            return;
+            return 0;
         case GIF_IMAGE:       /* ',' */
-           printf("Image: %u x %u @ (%u, %u)\n",
-               image.Width, image.Height, image.LeftPos, image.TopPos);
-           if (image.LocalColorFlag)
-               printf("  Local colors: %u\n", image.LocalNumColors);
-           printf("  Interlaced: %s\n", image.InterlaceFlag ? "YES" : "NO");
-           break;
+            printf("Image: %u x %u @ (%u, %u)\n",
+                   image.Width, image.Height, image.LeftPos, image.TopPos);
+            if (image.LocalColorFlag)
+                printf("  Local colors: %u\n", image.LocalNumColors);
+            printf("  Interlaced: %s\n", image.InterlaceFlag ? "YES" : "NO");
+            break;
         case GIF_EXTENSION:   /* '!' */
             if (ext.Label == GIF_GRAPHICCTL)
             {
@@ -70,6 +66,7 @@ void GIFDump(const char *filename)
             }
             else
                 printf("Extension: 0x%02X\n", ext.Label);
+            break;
         }
     }
 }
@@ -77,16 +74,22 @@ void GIFDump(const char *filename)
 
 int main(int argc, char *argv[])
 {
+    int exitCode;
     int i;
 
     if (argc <= 1)
     {
-        fprintf(stderr, "Usage: gifdump <files.gif...>\n");
-        return 1;
+        printf("Usage: gifdump <files.gif...>\n");
+        return 0;
     }
 
+    exitCode = EXIT_SUCCESS;
     for (i = 1; i < argc; ++i)
-        GIFDump(argv[i]);
+    {
+        if (GIFDump(argv[i]) == -1)
+            exitCode = EXIT_FAILURE;
+        printf("\n");
+    }
 
     return exitCode;
 }

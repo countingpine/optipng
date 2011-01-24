@@ -1,22 +1,29 @@
-/*
- * gifread.c
+/**
+ * @file gifread.c
+ * A simple GIF reader.
  *
- * Copyright (C) 2003-2009 Cosmin Truta.
+ * @author Cosmin Truta
+ *
+ * @section Copyright
+ * Copyright (C) 2003-2010 Cosmin Truta.
  * This software was derived from "giftopnm.c" by David Koblas,
  * and is distributed under the same copyright and warranty terms.
  *
  * The original copyright notice is provided below.
- */
-
-/* +-------------------------------------------------------------------+ */
-/* | Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)    | */
-/* |   Permission to use, copy, modify, and distribute this software   | */
-/* |   and its documentation for any purpose and without fee is hereby | */
-/* |   granted, provided that the above copyright notice appear in all | */
-/* |   copies and that both that copyright notice and this permission  | */
-/* |   notice appear in supporting documentation.  This software is    | */
-/* |   provided "as is" without express or implied warranty.           | */
-/* +-------------------------------------------------------------------+ */
+ * <pre>
+ * +-------------------------------------------------------------------+
+ * | Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)    |
+ * |   Permission to use, copy, modify, and distribute this software   |
+ * |   and its documentation for any purpose and without fee is hereby |
+ * |   granted, provided that the above copyright notice appear in all |
+ * |   copies and that both that copyright notice and this permission  |
+ * |   notice appear in supporting documentation.  This software is    |
+ * |   provided "as is" without express or implied warranty.           |
+ * +-------------------------------------------------------------------+
+ * </pre>
+ *
+ * @bug Currently, this module is not thread-safe.
+ **/
 
 
 #include <limits.h>
@@ -26,13 +33,11 @@
 #include "gifread.h"
 
 
-#define FALSE   0
-#define TRUE    1
+#define FALSE 0
+#define TRUE  1
 
-#define MAX_LZW_BITS    12
+#define MAX_LZW_BITS 12
 
-
-/* These macros are masquerading as inline functions. */
 
 #define GIF_FREAD(buf, len, file) \
     { if (fread(buf, len, 1, file) <= 0) GIFError(ErrRead); }
@@ -62,9 +67,9 @@ static int  LZWGetCode(int code_size, int flag, FILE *stream);
 static int  LZWReadByte(int flag, int input_code_size, FILE *stream);
 
 
-/**
+/*
  * Reads the GIF screen and the global color table.
- **/
+ */
 void GIFReadScreen(struct GIFScreen *screen, FILE *stream)
 {
     unsigned char buf[7];
@@ -113,9 +118,9 @@ void GIFReadScreen(struct GIFScreen *screen, FILE *stream)
 }
 
 
-/**
+/*
  * Initializes the GIF image structure.
- **/
+ */
 void GIFInitImage(struct GIFImage *image, struct GIFScreen *screen,
                   unsigned char **rows)
 {
@@ -124,21 +129,21 @@ void GIFInitImage(struct GIFImage *image, struct GIFScreen *screen,
 }
 
 
-/**
+/*
  * Initializes the GIF extension structure.
  */
 void GIFInitExtension(struct GIFExtension *ext, struct GIFScreen *screen,
-                      unsigned char *buf, unsigned int size)
+                      unsigned char *buffer, unsigned int bufferSize)
 {
     ext->Screen     = screen;
-    ext->BufferSize = size;
-    ext->Buffer     = buf;
+    ext->BufferSize = bufferSize;
+    ext->Buffer     = buffer;
 }
 
 
-/**
+/*
  * Reads the next GIF block (image or extension) structure.
- **/
+ */
 int GIFReadNextBlock(struct GIFImage *image, struct GIFExtension *ext,
                      FILE *stream)
 {
@@ -168,9 +173,9 @@ int GIFReadNextBlock(struct GIFImage *image, struct GIFExtension *ext,
 }
 
 
-/**
+/*
  * Reads the next GIF image and local color table.
- **/
+ */
 static void GIFReadNextImage(struct GIFImage *image, FILE *stream)
 {
     struct GIFScreen *screen;
@@ -211,9 +216,9 @@ static void GIFReadNextImage(struct GIFImage *image, FILE *stream)
 }
 
 
-/**
+/*
  * Reads the next GIF extension.
- **/
+ */
 static void GIFReadNextExtension(struct GIFExtension *ext, FILE *stream)
 {
     unsigned int offset, len;
@@ -551,10 +556,10 @@ fini:
 }
 
 
-/**
+/*
  * Constructs a GIF graphic control extension structure
  * from a raw extension structure.
- **/
+ */
 void GIFGetGraphicCtl(struct GIFExtension *ext,
                       struct GIFGraphicCtlExt *graphicExt)
 {
@@ -581,7 +586,8 @@ void GIFGetGraphicCtl(struct GIFExtension *ext,
 }
 
 
-/* The GIF spec says that if neither global nor local
+/*
+ * The GIF spec says that if neither global nor local
  * color maps are present, the decoder should use a system
  * default map, which should have black and white as the
  * first two colors. So we use black, white, red, green, blue,
@@ -591,20 +597,21 @@ void GIFGetGraphicCtl(struct GIFExtension *ext,
  */
 static /*const*/ unsigned char DefaultColorTable[] =
 {
-     0,   0,   0,  /* black  */
-   255, 255, 255,  /* white  */
-   255,   0,   0,  /* red    */
-     0, 255, 255,  /* cyan   */
-     0, 255,   0,  /* green  */
-   255,   0, 255,  /* purple */
-     0,   0, 255,  /* blue   */
-   255, 255,   0,  /* yellow */
+      0,   0,   0,  /* black  */
+    255, 255, 255,  /* white  */
+    255,   0,   0,  /* red    */
+      0, 255, 255,  /* cyan   */
+      0, 255,   0,  /* green  */
+    255,   0, 255,  /* purple */
+      0,   0, 255,  /* blue   */
+    255, 255,   0,  /* yellow */
 };
 
-/**
+
+/*
  * Returns the local or the global color table (whichever is applicable),
  * or a predefined color table if both of these tables are missing.
- **/
+ */
 unsigned char *GIFGetColorTable(struct GIFImage *image,
                                 unsigned int *numColors)
 {
@@ -631,24 +638,35 @@ unsigned char *GIFGetColorTable(struct GIFImage *image,
 }
 
 
-/**
- * Error handling.
- **/
-
+/*
+ * The default error handler.
+ */
 static void GIFDefaultError(const char *msg)
 {
     fprintf(stderr, "%s\n", msg);
     exit(EXIT_FAILURE);
 }
 
+
+/*
+ * The default warning handler.
+ */
 static void GIFDefaultWarning(const char *msg)
 {
     fprintf(stderr, "%s\n", msg);
 }
 
+
+/*
+ * The error handling callback.
+ */
 void (*GIFError)(const char *msg)
     = GIFDefaultError;
 
+
+/*
+ * The warning handling callback.
+ */
 void (*GIFWarning)(const char *msg)
     = GIFDefaultWarning;
 

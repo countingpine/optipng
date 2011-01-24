@@ -5,8 +5,7 @@
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
  *
- * This file contains symbols used in OptiPNG/pngxtern and proposed for
- * addition to libpng.
+ * This file contains proposed additions to libpng.
  */
 
 
@@ -20,11 +19,9 @@
  * Hopefully, there will be a PNG_ASSERT in libpng someday.
  * Meanwhile, we provide a plain version, based on assert.
  */
-#ifndef PNGX_ASSERT
 #include <assert.h>
 #define PNGX_ASSERT(cond) assert(cond)
 #define PNGX_ASSERT_MSG(cond, msg) assert(cond)
-#endif
 
 
 #ifdef __cplusplus
@@ -33,12 +30,12 @@ extern "C" {
 
 
 /* Store data into the info structure. */
-extern PNG_EXPORT(void, pngx_set_compression_type)
-   PNGARG((png_structp png_ptr, png_infop info_ptr, int compression_type));
-extern PNG_EXPORT(void, pngx_set_filter_type)
-   PNGARG((png_structp png_ptr, png_infop info_ptr, int filter_type));
-extern PNG_EXPORT(void, pngx_set_interlace_type)
-   PNGARG((png_structp png_ptr, png_infop info_ptr, int interlace_type));
+void PNGAPI pngx_set_compression_type
+   (png_structp png_ptr, png_infop info_ptr, int compression_type);
+void PNGAPI pngx_set_filter_type
+   (png_structp png_ptr, png_infop info_ptr, int filter_type);
+void PNGAPI pngx_set_interlace_type
+   (png_structp png_ptr, png_infop info_ptr, int interlace_type);
 
 
 #if PNG_LIBPNG_VER >= 10400
@@ -55,17 +52,20 @@ typedef png_uint_32 pngx_alloc_size_t;
  * On failure issue a png_error() or return NULL,
  * depending on the status of PNG_FLAG_MALLOC_NULL_MEM_OK.
  */
-extern PNG_EXPORT(png_bytepp, pngx_malloc_rows)
-   PNGARG((png_structp png_ptr, png_infop info_ptr, int filler));
-extern PNG_EXPORT(png_bytepp, pngx_malloc_rows_extended)
-   PNGARG((png_structp png_ptr, png_infop info_ptr,
-           pngx_alloc_size_t min_row_size, int filler));
+png_bytepp PNGAPI pngx_malloc_rows
+   (png_structp png_ptr, png_infop info_ptr, int filler);
+png_bytepp PNGAPI pngx_malloc_rows_extended
+   (png_structp png_ptr, png_infop info_ptr,
+    pngx_alloc_size_t min_row_size, int filler);
 #endif
 
 
-#if PNG_LIBPNG_VER >= 10400
+/*
+ * I/O states were introduced in libpng-1.4.0, but they can be reliably used
+ * starting with libpng-1.4.5 only.
+ */
+#if PNG_LIBPNG_VER >= 10405
 
-/* The support for I/O states is now integrated in libpng-1.4 */
 #ifndef PNG_IO_STATE_SUPPORTED
 #error This module requires libpng with PNG_IO_STATE_SUPPORTED
 #endif
@@ -86,24 +86,23 @@ extern PNG_EXPORT(png_bytepp, pngx_malloc_rows_extended)
 #define PNGX_IO_MASK_OP         PNG_IO_MASK_OP
 #define PNGX_IO_MASK_LOC        PNG_IO_MASK_LOC
 
-#else /* PNG_LIBPNG_VER < 10400 */
+#else /* PNG_LIBPNG_VER < 10405 */
 
 /* Compatibility backports of functions added to libpng 1.4 */
-extern PNG_EXPORT(png_uint_32, pngx_get_io_state)
-   PNGARG((png_structp png_ptr));
-extern PNG_EXPORT(png_bytep, pngx_get_io_chunk_name)
-   PNGARG((png_structp png_ptr));
+png_uint_32 PNGAPI pngx_get_io_state(png_structp png_ptr);
+png_bytep PNGAPI pngx_get_io_chunk_name(png_structp png_ptr);
 /* Note: although these backports have several limitations in comparison
  * to the actual libpng 1.4 functions, they work properly in OptiPNG,
  * as long as that they are used in conjunction with the wrappers below.
  */
 
 /* Compatibility wrappers for old libpng functions */
-extern PNG_EXPORT(void, pngx_set_read_fn) PNGARG((png_structp png_ptr,
-   png_voidp io_ptr, png_rw_ptr read_data_fn));
-extern PNG_EXPORT(void, pngx_set_write_fn) PNGARG((png_structp png_ptr,
-   png_voidp io_ptr, png_rw_ptr write_data_fn, png_flush_ptr output_flush_fn));
-extern PNG_EXPORT(void, pngx_write_sig) PNGARG((png_structp png_ptr));
+void PNGAPI pngx_set_read_fn
+   (png_structp png_ptr, png_voidp io_ptr, png_rw_ptr read_data_fn);
+void PNGAPI pngx_set_write_fn
+   (png_structp png_ptr, png_voidp io_ptr, png_rw_ptr write_data_fn,
+    png_flush_ptr output_flush_fn);
+void PNGAPI pngx_write_sig(png_structp png_ptr);
 
 /* Flags returned by png_get_io_state() */
 #define PNGX_IO_NONE        0x0000  /* no I/O at this moment */
@@ -116,7 +115,7 @@ extern PNG_EXPORT(void, pngx_write_sig) PNGARG((png_structp png_ptr));
 #define PNGX_IO_MASK_OP     0x000f  /* current operation: reading/writing */
 #define PNGX_IO_MASK_LOC    0x00f0  /* current location: sig/hdr/data/crc */
 
-#endif /* ?PNG_LIBPNG_VER >= 10400 */
+#endif
 
 
 #ifdef __cplusplus

@@ -1,21 +1,28 @@
 CC = @CC@
+CFLAGS = @CFLAGS@
+LD = @LD@
+LDFLAGS = @LDFLAGS@
 
 all:
-	cd src; \
-	${MAKE} -f @MAKEFILE@ CC="${CC}"; \
+	cd src && \
+	${MAKE} -f @MAKEFILE@ \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}" && \
 	cd ..
 
 install:
-	cd src; \
-	${MAKE} -f @MAKEFILE@ install CC="${CC}"; \
+	cd src && \
+	${MAKE} -f @MAKEFILE@ install \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}" && \
 	cd ..
 
 uninstall:
-	cd src; \
-	${MAKE} -f @MAKEFILE@ uninstall CC="${CC}"; \
+	cd src && \
+	${MAKE} -f @MAKEFILE@ uninstall \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}" && \
 	cd ..
 
 clean:
-	cd src; \
-	${MAKE} -f @MAKEFILE@ clean CC="${CC}"; \
+	cd src && \
+	${MAKE} -f @MAKEFILE@ clean \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}" && \
 	cd ..

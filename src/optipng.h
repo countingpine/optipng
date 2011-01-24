@@ -81,6 +81,30 @@ int opng_optimize(const char *infile_name);
 int opng_finalize(void);
 
 
+/*
+ * Encoder limits and default values
+ */
+#define OPNG_OPTIM_LEVEL_DEFAULT    2
+#define OPNG_OPTIM_LEVEL_MIN        0
+#define OPNG_OPTIM_LEVEL_MAX        7
+
+#define OPNG_COMPR_LEVEL_MIN        1
+#define OPNG_COMPR_LEVEL_MAX        9
+#define OPNG_COMPR_LEVEL_SET_MASK   ((1 << (9+1)) - (1 << 1))  /* 0x03fe */
+
+#define OPNG_MEM_LEVEL_MIN          1
+#define OPNG_MEM_LEVEL_MAX          9
+#define OPNG_MEM_LEVEL_SET_MASK     ((1 << (9+1)) - (1 << 1))  /* 0x03fe */
+
+#define OPNG_STRATEGY_MIN           0
+#define OPNG_STRATEGY_MAX           3
+#define OPNG_STRATEGY_SET_MASK      ((1 << (3+1)) - (1 << 0))  /* 0x000f */
+
+#define OPNG_FILTER_MIN             0
+#define OPNG_FILTER_MAX             5
+#define OPNG_FILTER_SET_MASK        ((1 << (5+1)) - (1 << 0))  /* 0x003f */
+
+
 #ifdef __cplusplus
 }  /* extern "C" */
 #endif

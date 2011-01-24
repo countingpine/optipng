@@ -1,13 +1,20 @@
 CC = @CC@
+CFLAGS = @CFLAGS@
+LD = @LD@
+LDFLAGS = @LDFLAGS@
 
 all:
-	${MAKE} -f @MAKEFILE@ CC="${CC}"
+	${MAKE} -f @MAKEFILE@ \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}"
 
 install:
-	${MAKE} -f @MAKEFILE@ install CC="${CC}"
+	${MAKE} -f @MAKEFILE@ install \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}"
 
 uninstall:
-	${MAKE} -f @MAKEFILE@ uninstall CC="${CC}"
+	${MAKE} -f @MAKEFILE@ uninstall \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}"
 
 clean:
-	${MAKE} -f @MAKEFILE@ clean CC="${CC}"
+	${MAKE} -f @MAKEFILE@ clean \
+	  CC="${CC}" CFLAGS="${CFLAGS}" LD="${LD}" LDFLAGS="${LDFLAGS}"

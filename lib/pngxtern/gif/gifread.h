@@ -1,26 +1,36 @@
-/*
- * gifread.h
+/**
+ * @file gifread.h
+ * A simple GIF reader.
  *
- * Copyright (C) 2003-2009 Cosmin Truta.
+ * @author Cosmin Truta
+ *
+ * @section Copyright
+ * Copyright (C) 2003-2010 Cosmin Truta.
  * This software was derived from "giftopnm.c" by David Koblas,
  * and is distributed under the same copyright and warranty terms.
  *
  * The original copyright notice is provided below.
- */
-
-/* +-------------------------------------------------------------------+ */
-/* | Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)    | */
-/* |   Permission to use, copy, modify, and distribute this software   | */
-/* |   and its documentation for any purpose and without fee is hereby | */
-/* |   granted, provided that the above copyright notice appear in all | */
-/* |   copies and that both that copyright notice and this permission  | */
-/* |   notice appear in supporting documentation.  This software is    | */
-/* |   provided "as is" without express or implied warranty.           | */
-/* +-------------------------------------------------------------------+ */
+ * <pre>
+ * +-------------------------------------------------------------------+
+ * | Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)    |
+ * |   Permission to use, copy, modify, and distribute this software   |
+ * |   and its documentation for any purpose and without fee is hereby |
+ * |   granted, provided that the above copyright notice appear in all |
+ * |   copies and that both that copyright notice and this permission  |
+ * |   notice appear in supporting documentation.  This software is    |
+ * |   provided "as is" without express or implied warranty.           |
+ * +-------------------------------------------------------------------+
+ * </pre>
+ **/
 
 
 #ifndef GIFREAD_H
 #define GIFREAD_H
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 #define GIF_PLAINTEXT   0x01
@@ -31,10 +41,11 @@
 #define GIF_COMMENT     0xfe
 #define GIF_APPLICATION 0xff
 
-#define GIF_NUMCOLORS_MAX    256
-#define GIF_IND_RED          0
-#define GIF_IND_GREEN        1
-#define GIF_IND_BLUE         2
+#define GIF_NUMCOLORS_MAX 256
+
+#define GIF_IND_RED   0
+#define GIF_IND_GREEN 1
+#define GIF_IND_BLUE  2
 
 
 /**
@@ -116,14 +127,14 @@ void GIFInitImage(struct GIFImage *image, struct GIFScreen *screen,
 
 /**
  * Initializes the GIF extension structure.
- * @param ext     (out)  an extension structure.
- * @param screen  (in)   a screen structure.
- * @param buf     (in)   a dynamically-allocated memory buffer;
- *                       can be NULL.
- * @param size    (in)   the size of <code>buf</code>.
+ * @param ext         (out)  an extension structure.
+ * @param screen      (in)   a screen structure.
+ * @param buffer      (in)   a dynamically-allocated memory buffer;
+ *                           can be NULL.
+ * @param bufferSize  (in)   the size of the memory buffer.
  **/
 void GIFInitExtension(struct GIFExtension *ext, struct GIFScreen *screen,
-                      unsigned char *buf, unsigned int size);
+                      unsigned char *buffer, unsigned int bufferSize);
 
 /**
  * Reads the next GIF block (image or extension) structure.
@@ -156,10 +167,21 @@ unsigned char *GIFGetColorTable(struct GIFImage *image,
 
 
 /**
- * Error handling.
+ * The error handling callback.
+ * @param msg  the error message.
  **/
 extern void (*GIFError)(const char *msg);
+
+/**
+ * The warning handling callback.
+ * @param msg  the warning message.
+ **/
 extern void (*GIFWarning)(const char *msg);
+
+
+#ifdef __cplusplus
+}  /* extern "C" */
+#endif
 
 
 #endif  /* GIFREAD_H */

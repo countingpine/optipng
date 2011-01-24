@@ -113,10 +113,6 @@ SOURCE=..\..\src\osys.c
 # End Source File
 # Begin Source File
 
-SOURCE=..\..\src\strutil.c
-# End Source File
-# Begin Source File
-
 SOURCE=..\..\src\xtra\wildargs.c
 # End Source File
 # End Group
@@ -142,10 +138,6 @@ SOURCE=..\..\src\osys.h
 # Begin Source File
 
 SOURCE=..\..\src\proginfo.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\..\src\strutil.h
 # End Source File
 # End Group
 # Begin Group "Resource Files"

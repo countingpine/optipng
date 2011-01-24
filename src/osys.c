@@ -9,14 +9,17 @@
  */
 
 
+#include "osys.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+
 /*
  * Auto-configuration.
  */
-#if defined UNIX || defined __unix || defined __unix__ || defined __UNIX__ || \
+#if defined UNIX || defined __UNIX__ || defined __unix || defined __unix__ || \
     defined _POSIX_SOURCE || defined _POSIX_C_SOURCE || defined _XOPEN_SOURCE
 #  define OSYS_UNIX
 /* To be continued. */
@@ -90,8 +93,6 @@
 #  include <windows.h>
 #endif
 
-#include "osys.h"
-
 
 /*
  * More auto-configuration.
@@ -148,6 +149,12 @@
 
 
 /*
+ * Utility macro.
+ */
+#define OSYS_UNUSED(x) ((void)((x) ? 0 : 0))
+
+
+/*
  * Creates a new file path by changing the directory component of
  * a given file path.
  */
@@ -174,8 +181,8 @@ osys_path_chdir(char *buffer, size_t bufsize,
 
     /* Make sure the buffer is large enough. */
     dirlen = strlen(new_dirname);
-    if (dirlen + strlen(path) + 2 >= bufsize)
-        return NULL;  /* overflow */
+    if (dirlen + strlen(path) + 2 >= bufsize)  /* overflow */
+        return NULL;
 
     /* Copy the new directory name. Also append a slash if necessary. */
     if (dirlen > 0)
@@ -183,16 +190,20 @@ osys_path_chdir(char *buffer, size_t bufsize,
         strcpy(buffer, new_dirname);
 #ifdef OSYS_PATH_DOS
         if (dirlen == 2 && buffer[1] == ':' && OSYS_PATH_IS_DRIVE(buffer[0]))
-            (void)0;  /* do nothing */
+        {
+            /* Special case: do not append slash to "C:". */
+        }
         else
 #endif
-        if (strchr(OSYS_PATH_STRLIST_SLASH, buffer[dirlen - 1]) == NULL)
-            buffer[dirlen++] = OSYS_PATH_CHR_SLASH;  /* append slash to dir */
+        {
+            if (strchr(OSYS_PATH_STRLIST_SLASH, buffer[dirlen - 1]) == NULL)
+                buffer[dirlen++] = OSYS_PATH_CHR_SLASH;
+        }
     }
 
     /* Append the file name. */
     strcpy(buffer + dirlen, path);
-    return buffer;  /* success */
+    return buffer;
 }
 
 
@@ -206,12 +217,12 @@ osys_path_chext(char *buffer, size_t bufsize,
 {
     size_t i, pos;
 
-    if (new_extname[0] != OSYS_PATH_CHR_DOT)
-        return NULL;  /* invalid argument */
+    if (new_extname[0] != OSYS_PATH_CHR_DOT)  /* invalid argument */
+        return NULL;
     for (i = 0, pos = (size_t)(-1); old_path[i] != 0; ++i)
     {
-        if (i >= bufsize)
-            return NULL;  /* overflow */
+        if (i >= bufsize)  /* overflow */
+            return NULL;
         if ((buffer[i] = old_path[i]) == OSYS_PATH_CHR_DOT)
             pos = i;
     }
@@ -219,10 +230,10 @@ osys_path_chext(char *buffer, size_t bufsize,
         i = pos;  /* go back only if old_path has an extension */
     for ( ; ; ++i, ++new_extname)
     {
-        if (i >= bufsize)
-            return NULL;  /* overflow */
+        if (i >= bufsize)  /* overflow */
+            return NULL;
         if ((buffer[i] = *new_extname) == 0)
-            return buffer;  /* success */
+            return buffer;
     }
 }
 
@@ -363,8 +374,10 @@ osys_ftest(const char *path, const char *mode)
     if (strchr(mode, 'x') != NULL)
         faccess |= OSYS_FTEST_EXEC;
     if (faccess == 0 && freg == 0)
+    {
         if (strchr(mode, 'e') == NULL)
             return 0;
+    }
 
 #if defined OSYS_UNIX || defined OSYS_DOS_OS2
 
@@ -482,7 +495,11 @@ osys_ftest_eq(const char *path1, const char *path2)
 
 #else  /* generic */
 
-    return -1;  /* unknown */
+    OSYS_UNUSED(path1);
+    OSYS_UNUSED(path2);
+
+    /* Always unknown. */
+    return -1;
 
 #endif
 }
@@ -546,8 +563,11 @@ osys_fattr_copy(const char *dest_path, const char *src_path)
 
 #else  /* generic */
 
-    /* Do nothing. */
-    return 0;
+    OSYS_UNUSED(dest_path);
+    OSYS_UNUSED(src_path);
+
+    /* Always fail. */
+    return -1;
 
 #endif
 }
@@ -618,8 +638,10 @@ osys_dir_make(const char *dirname)
 
 #else  /* generic */
 
-    /* Do nothing. */
-    return 0;
+    OSYS_UNUSED(dirname);
+
+    /* Always fail. */
+    return -1;
 
 #endif
 }

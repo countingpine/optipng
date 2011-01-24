@@ -26,17 +26,17 @@ FILES
 
        OptiPNG processes each image file given in the command line as follows:
 
-       - If it is in PNG format:
+       - If the image is in PNG format:
 
-              Attempt  to optimize the given file in-place. If optimization is
-              successful, or if the option -force is in  effect,  replace  the
-              original  file  with its optimized version. The original file is
+              Attempts to optimize the given file in-place. If optimization is
+              successful,  or  if the option -force is in effect, replaces the
+              original file with its optimized version. The original  file  is
               backed up if the option -keep is in effect.
 
-       - If it is in an external format:
+       - If the image is in an external format:
 
-              Create an optimized PNG version of the given  file.  The  output
-              file  name  is composed from the original file name and the .png
+              Creates  an  optimized PNG version of the given file. The output
+              file name is composed from the original file name and  the  .png
               extension.
 
 OPTIONS
@@ -46,48 +46,48 @@ OPTIONS
 
        -o level
               Select the optimization level.
-              The optimization level 0 enables a set  of  optimization  opera-
-              tions  that  require minimal effort. There will be no changes to
+              The  optimization  level  0 enables a set of optimization opera-
+              tions that require minimal effort. There will be no  changes  to
               image attributes like bit depth or color type, and no recompres-
               sion of existing IDAT datastreams.
-              The  optimization  level  1  enables  a  single IDAT compression
+              The optimization level  1  enables  a  single  IDAT  compression
               trial. The trial chosen is what OptiPNG thinks it's probably the
               most effective.
-              The  optimization  levels 2 and higher enable multiple IDAT com-
+              The optimization levels 2 and higher enable multiple  IDAT  com-
               pression trials; the higher the level, the more trials.
-              The behavior and the default value of  this  option  may  change
-              across  different program versions. Use the option -h to see the
+              The  behavior  and  the  default value of this option may change
+              across different program versions. Use the option -h to see  the
               details pertaining to your specific version.
 
        -dir directory
               Write output file(s) to directory.
 
-       -fix   Enable error recovery. This option has no effect on valid  input
+       -fix   Enable  error recovery. This option has no effect on valid input
               files.
-              The  program will spend a reasonable amount of effort to recover
-              as much data as possible, without  increasing  the  output  file
-              size,  but  the success cannot be generally guaranteed. The pro-
-              gram may even increase the file size,  e.g.,  by  reconstructing
-              missing  critical  data. Under this option, integrity shall take
+              The program will spend a reasonable amount of effort to  recover
+              as  much  data  as  possible, without increasing the output file
+              size, but the success cannot be generally guaranteed.  The  pro-
+              gram  may  even  increase the file size, e.g., by reconstructing
+              missing critical data. Under this option, integrity  shall  take
               precedence over file size.
-              When this option is not used, the invalid input files  are  left
+              When  this  option is not used, the invalid input files are left
               unprocessed.
 
        -force Enforce writing of a new output file.
-              This  option  overrides the program's decision not to write such
-              file, e.g. when the PNG input is digitally signed (using  dSIG),
+              This option overrides the program's decision not to  write  such
+              file,  e.g. when the PNG input is digitally signed (using dSIG),
               or when the PNG output becomes larger than the PNG input.
 
        -keep  Keep a backup of the modified file(s).
-              The  files that use the backup names prior to the program execu-
+              The files that use the backup names prior to the program  execu-
               tion are not overwritten.
 
        -log file
-              Log messages to file.  For safety reasons, file  must  have  the
+              Log  messages  to  file.  For safety reasons, file must have the
               extension .log.
 
        -out file
-              Write  output  file  to  file.   The  command  line must contain
+              Write output file  to  file.   The  command  line  must  contain
               exactly one input file.
 
        -preserve
@@ -95,15 +95,15 @@ OPTIONS
               where applicable.
 
        -quiet Run in quiet mode.
-              These  messages  are still written to the log file if the option
+              These messages are still written to the log file if  the  option
               -log is in effect.
 
        -simulate
-              Run in simulation mode: perform the trials, but  do  not  create
+              Run  in  simulation  mode: perform the trials, but do not create
               output files.
 
        -snip  Cut one image out of multi-image, animation or video file(s).
-              Depending  on  the input format, this may be either the first or
+              Depending on the input format, this may be either the  first  or
               the most relevant (e.g. the largest) image.
 
        -v     Enable the options -verbose and -version.
@@ -119,23 +119,23 @@ OPTIONS
    PNG encoding and optimization options
        -f filters
               Select the PNG delta filters.
-              The filters argument is specified as a  rangeset  (e.g.  -f0-5),
-              and  the default filters value depends on the optimization level
+              The  filters  argument  is specified as a rangeset (e.g. -f0-5),
+              and the default filters value depends on the optimization  level
               set by the option -o.
-              The filter values 0, 1, 2, 3 and 4  indicate  static  filtering,
+              The  filter  values  0, 1, 2, 3 and 4 indicate static filtering,
               and correspond to the standard PNG filter codes (None, Left, Up,
-              Average and Paeth, respectively). The filter value  5  indicates
-              adaptive  filtering,  whose  effect  is defined by the libpng(3)
+              Average  and  Paeth, respectively). The filter value 5 indicates
+              adaptive filtering, whose effect is  defined  by  the  libpng(3)
               library used by OptiPNG.
 
-       -full  Produce a full report on IDAT.  This option might slow down  the
+       -full  Produce  a full report on IDAT.  This option might slow down the
               trials.
 
        -i type
               Select the interlace type (0-1).
-              If  the  interlace type 0 is selected, the output image shall be
+              If the interlace type 0 is selected, the output image  shall  be
               non-interlaced (i.e. progressive-scanned). If the interlace type
-              1  is  selected,  the output image shall be interlaced using the
+              1 is selected, the output image shall be  interlaced  using  the
               Adam7 method.
               By default, the output shall have the same interlace type as the
               input.
@@ -146,26 +146,26 @@ OPTIONS
 
        -np    Do not apply palette reduction.
 
-       -nx    Do  not  apply  any lossless image reduction: enable the options
+       -nx    Do not apply any lossless image reduction:  enable  the  options
               -nb, -nc and -np.
 
        -nz    Do not recode IDAT datastreams.
-              The IDAT optimization operations that do  not  require  recoding
+              The  IDAT  optimization  operations that do not require recoding
               (e.g. IDAT chunk concatenation) are still performed.
               This option has effect on PNG input files only.
 
        -zc levels
               Select the zlib compression levels used in IDAT compression.
-              The  levels  argument  is specified as a rangeset (e.g. -zc6-9),
-              and the default levels value depends on the  optimization  level
+              The levels argument is specified as a  rangeset  (e.g.  -zc6-9),
+              and  the  default levels value depends on the optimization level
               set by the option -o.
               The effect of this option is defined by the zlib(3) library used
               by OptiPNG.
 
        -zm levels
               Select the zlib memory levels used in IDAT compression.
-              The levels argument is specified as a  rangeset  (e.g.  -zm8-9),
-              and  the  default levels value depends on the optimization level
+              The  levels  argument  is specified as a rangeset (e.g. -zm8-9),
+              and the default levels value depends on the  optimization  level
               set by the option -o.
               The effect of this option is defined by the zlib(3) library used
               by OptiPNG.
@@ -277,4 +277,4 @@ AUTHOR
        the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.6.4            2010-March-14                      OPTIPNG(1)
+OptiPNG version 0.6.5             2011-Jan-24                       OPTIPNG(1)

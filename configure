@@ -5,8 +5,8 @@
 
 trap "rm -f conftest* core a.out; exit 1" 1 2 3 15
 
-prefix=${prefix-/usr/local}
-exec_prefix=${exec_prefix-'${prefix}'}
+prefix="${prefix-/usr/local}"
+exec_prefix="${exec_prefix-\$(prefix)}"
 gcc=0
 with_system_zlib=0
 with_system_libpng=0
@@ -35,6 +35,9 @@ do
         echo "    -with-system-libpng     Use the system-supplied libpng"
         echo "Environment variables:"
         echo "    CC                      C compiler command"
+        echo "    CFLAGS                  C compiler flags"
+        echo "    LD                      Linker command"
+        echo "    LDFLAGS                 Linker flags"
         exit 0
         ;;
     -prefix=* | --prefix=* )
@@ -58,7 +61,7 @@ do
         with_system_libpng=1
         ;;
     * )
-        echo "Unknown option: $option"
+        echo "error: unknown option: $option"
         echo "Type \"$0 -help\" for help"
         exit 64  # EX_USAGE
         ;;
@@ -100,6 +103,7 @@ EOM
 
 test -z "$CC" && echo "Checking for gcc..."
 cc="${CC-gcc}"
+cflags="$CFLAGS"
 case "$cc" in
 *gcc* )
     gcc=1
@@ -108,24 +112,28 @@ esac
 
 if test $gcc -ne 0 && ($cc -c $cflags $test.c) 2>/dev/null
 then
-    CC="${CC-gcc}"
-    #MAKEFILE="${MAKEFILE-gcc.mak}"
     MAKEFILE=gcc.mak
+    CC="${CC-gcc}"
+    LD="${LD-\$(CC)}"
 else
-    CC="${CC-cc}"
-    #MAKEFILE="${MAKEFILE-unix.mak}"
     MAKEFILE=unix.mak
+    CC="${CC-cc}"
+    LD="${LD-\$(CC)}"
 fi
 rm -f $test.c $test.o
 
-update_re="
-    s:@MAKEFILE@:scripts/$MAKEFILE:g
-    s:@CC@:$CC:g
-    s:@prefix@:$prefix:
-    s:@exec_prefix@:$exec_prefix:
-"
-sed "$update_re" Makefile.in > Makefile
-sed "$update_re" src/Makefile.in > src/Makefile
+if test -z "$CFLAGS"
+then
+    update_cflags="s:CFLAGS *= *[^ ]* *::g"
+else
+    update_cflags="s%@CFLAGS@%$CFLAGS%g"
+fi
+if test -z "$LDFLAGS"
+then
+    update_ldflags="s:LDFLAGS *= *[^ ]* *::g"
+else
+    update_ldflags="s%@LDFLAGS@%$LDFLAGS%g"
+fi
 
 if test $with_system_zlib -eq 0
 then
@@ -133,17 +141,70 @@ then
     (cd lib/zlib && ./configure --static)
     if test $? -ne 0
     then
-        echo "Could not configure: zlib"
+        echo "error: could not configure: zlib"
+        exit 1
+    fi
+else
+    echo "Checking for system zlib..."
+    test=conftest$$
+cat > $test.c <<EOM
+#include <zlib.h>
+#if ZLIB_VERNUM < 0x1210
+#error This program requires zlib version 1.2.1 or higher.
+#endif
+int dummy;
+EOM
+    ($cc -c $cflags $test.c) 2>/dev/null
+    status=$?
+    rm -f $test.c $test.o
+    if test $status -ne 0
+    then
+        echo "error: missing zlib or incorrect zlib version"
+        echo "note: zlib version 1.2.1 or higher is required"
         exit 1
     fi
 fi
-#if test $with_system_libpng -eq 0
-#then
-#    echo "Configuring libpng..."
-#    (cd lib/libpng && ./configure)
-#    if test $? -ne 0
-#    then
-#        echo "Could not configure: libpng"
-#        exit 1
-#    fi
-#fi
+
+if test $with_system_libpng -eq 0
+then
+    echo "Using pre-configured libpng..."
+    #echo "Configuring libpng..."
+    #(cd lib/libpng && ./configure)
+    #if test $? -ne 0
+    #then
+    #    echo "Could not configure: libpng"
+    #    exit 1
+    #fi
+else
+    echo "Checking for system libpng..."
+    test=conftest$$
+cat > $test.c <<EOM
+#include <png.h>
+#if PNG_LIBPNG_VER < 10209 || PNG_LIBPNG_VER >= 10500
+#error This program requires libpng version 1.2.9 or higher, or version 1.4.x
+#endif
+int dummy;
+EOM
+    ($cc -c $cflags $test.c) 2>/dev/null
+    status=$?
+    rm -f $test.c $test.o
+    if test $status -ne 0
+    then
+        echo "error: missing libpng or incorrect libpng version"
+        echo "note: libpng version 1.2.x (1.2.9 or higher) or version 1.4.x is required"
+        echo "note: libpng version 1.5.x or higher can be used as a private build only"
+        exit 1
+    fi
+fi
+
+update_re="
+    s%@MAKEFILE@%scripts/$MAKEFILE%g
+    s%@prefix@%$prefix%g
+    s%@exec_prefix@%$exec_prefix%g
+    s%@CC@%$CC%g
+    s%@LD@%$LD%g
+    $update_cflags
+    $update_ldflags
+"
+sed "$update_re" Makefile.in > Makefile
+sed "$update_re" src/Makefile.in > src/Makefile

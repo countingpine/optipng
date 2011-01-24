@@ -1,4 +1,4 @@
-.TH OPTIPNG 1 "2010-March-14" "OptiPNG version 0.6.4"
+.TH OPTIPNG 1 "2011-Jan-24" "OptiPNG version 0.6.5"
 
 .SH NAME
 .B OptiPNG
@@ -32,16 +32,16 @@ GIF, BMP, PNM and TIFF.
 .B OptiPNG
 processes each image file given in the command line as follows:
 .P
-\- If it is in PNG format:
+\- If the image is in PNG format:
 .IP
-Attempt to optimize the given file in-place. If optimization is successful, or
-if the option \fB\-force\fP is in effect, replace the original file with its
+Attempts to optimize the given file in-place. If optimization is successful, or
+if the option \fB\-force\fP is in effect, replaces the original file with its
 optimized version. The original file is backed up if the option \fB\-keep\fP
 is in effect.
 .P
-\- If it is in an external format:
+\- If the image is in an external format:
 .IP
-Create an optimized PNG version of the given file. The output file name is
+Creates an optimized PNG version of the given file. The output file name is
 composed from the original file name and the \fC.png\fP extension.
 
 .SH OPTIONS

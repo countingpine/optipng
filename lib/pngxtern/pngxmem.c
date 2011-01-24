@@ -42,6 +42,11 @@ pngx_malloc_rows_extended(png_structp png_ptr, png_infop info_ptr,
 
    /* Allocate memory for the row index. */
    height = png_get_image_height(png_ptr, info_ptr);
+   if (height > (pngx_alloc_size_t)(-1) / sizeof(png_bytep))
+   {
+      png_warning(png_ptr, "Image height is too large");
+      return NULL;
+   }
    rows = (png_bytepp)png_malloc(png_ptr,
       (pngx_alloc_size_t)(height * sizeof(png_bytep)));
    if (rows == NULL)

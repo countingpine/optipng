@@ -1,59 +1,58 @@
 
-OptiPNG 0.6.4: Advanced PNG optimizer.
-Copyright (C) 2001-2010 Cosmin Truta.
+OptiPNG 0.6.5: Advanced PNG optimizer.
+Copyright (C) 2001-2011 Cosmin Truta.
 ======================================
-
-Goals
------
-  Provide a powerful PNG converter/optimizer.
-  Demonstrate how to implement an efficient PNG encoder.
 
 License
 -------
-  Open-Source (zlib/libpng license).
-  Please see the attached LICENSE.
+  Open-Source (the zlib license)
+  See the accompanying LICENSE.txt
 
-URI
----
+Resources
+---------
   Home page:
     http://optipng.sourceforge.net/
   Download:
     http://sourceforge.net/project/showfiles.php?group_id=151404
+  Announcements:
+    https://sourceforge.net/news/?group_id=151404
   Support:
     http://sourceforge.net/tracker/?group_id=151404
+    ctruta (at) gmail (dot) com
 
 Build instructions
 ------------------
   Extract the source archive:
-    e.g. "tar -xzf optipng-0.6.4.tar.gz" or "unzip optipng-0.6.4.zip"
+        tar -xzf optipng-0.6.5.tar.gz   # or:
+        unzip optipng-0.6.5.zip
 
-  Go to the source directory:
-    "cd optipng-0.6.4/src/"
+  On Unix:
+  - Run configure and make:
+        cd optipng-0.6.5/
+        ./configure && make
 
-  Run the appropriate makefile from the scripts directory:
-    e.g. "make -f scripts/gcc.mak" or "nmake -f scripts/visualc.mak"
-  OR
-  If you are using Microsoft Visual C++ 6.0 or later,
-    load and build the project "prj/visualc6/optipng.dsw"
+  On Windows, using Microsoft Visual C++ 6.0 or later:
+  - Load and build the project:
+        optipng-0.6.5/prj/visualc6/optipng.dsw
+  - The output directory is:
+        optipng-0.6.5/bin/
+
+  Alternatively, use the applicable makefile as follows:
+        cd optipng-0.6.5/src/
+        make -f scripts/bcc32.mak       # or:
+        make -f scripts/gcc.mak         # or:
+        nmake -f scripts/visualc.mak    # etc.
 
 Installation instructions
 -------------------------
-  Follow the build instructions above.
+  Build the program according to the instructions above.
 
   On Unix:
-    Make the "install" target, using the same makefile
-    that was used for building the program:
-      e.g. "make -f scripts/gcc.mak install"
-    To uninstall, make the "uninstall" target:
-      e.g. "make -f scripts/gcc.mak uninstall"
+  - Make the "install" target:
+        sudo make install
+  - To uninstall, make the "uninstall" target:
+        sudo make uninstall
 
   On Windows:
-    Copy "optipng.exe" to a directory found in PATH.
-
-Support
--------
-  Visit the SourceForge.net tracker:
-    http://sourceforge.net/tracker/?group_id=151404
-  OR
-  Send email to ctruta (at) gmail (dot) com
+    Copy optipng.exe to a directory found in PATH.
 

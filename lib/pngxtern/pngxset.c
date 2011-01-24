@@ -8,7 +8,7 @@
  * This module contains functions proposed for addition to libpng.
  */
 
-#include "png.h"
+#define PNGX_INTERNAL
 #include "pngx.h"
 
 
@@ -25,7 +25,7 @@
 
 void PNGAPI
 pngx_set_compression_type(png_structp png_ptr, png_infop info_ptr,
-   int compression_type)
+                          int compression_type)
 {
    png_uint_32 width, height;
    int bit_depth, color_type, interlace_type, filter_type;
@@ -42,7 +42,7 @@ pngx_set_compression_type(png_structp png_ptr, png_infop info_ptr,
 
 void PNGAPI
 pngx_set_filter_type(png_structp png_ptr, png_infop info_ptr,
-   int filter_type)
+                     int filter_type)
 {
    png_uint_32 width, height;
    int bit_depth, color_type, interlace_type, compression_type;
@@ -59,7 +59,7 @@ pngx_set_filter_type(png_structp png_ptr, png_infop info_ptr,
 
 void PNGAPI
 pngx_set_interlace_type(png_structp png_ptr, png_infop info_ptr,
-   int interlace_type)
+                        int interlace_type)
 {
    png_uint_32 width, height;
    int bit_depth, color_type, compression_type, filter_type;

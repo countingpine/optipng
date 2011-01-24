@@ -41,8 +41,8 @@ int /* PRIVATE */
 pngx_sig_is_tiff(png_bytep sig, size_t sig_size,
                  png_const_charpp fmt_name, png_const_charpp fmt_description)
 {
-   const char tiff_fmt_name[] = "TIFF";
-   const char tiff_fmt_description[] = "Tagged Image File Format";
+   static const char tiff_fmt_name[] = "TIFF";
+   static const char tiff_fmt_description[] = "Tagged Image File Format";
 
    /* Require at least the TIFF signature. */
    if (sig_size < 8)

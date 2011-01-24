@@ -25,6 +25,7 @@
  *    POSIX or Windows API for enhanced functionality.
  */
 
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdarg.h>
@@ -32,12 +33,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "proginfo.h"
 #include "optipng.h"
+#include "proginfo.h"
+
 #include "cbitset.h"
 #include "osys.h"
-#include "strutil.h"
 #include "png.h"
+#include "pngx.h"
 #include "zlib.h"
 
 
@@ -176,63 +178,221 @@ panic(const char *msg)
 
 
 /*
- * String-to-integer conversion
+ * String utility
  */
 static int
-str2long(const char *str, long *value)
+opng_strcasecmp(const char *str1, const char *str2)
 {
-    char *endptr;
+    int ch1, ch2;
+
+    /* Perform a case-insensitive string comparison. */
+    for ( ; ; )
+    {
+        ch1 = tolower(*str1++);
+        ch2 = tolower(*str2++);
+        if (ch1 != ch2)
+            return ch1 - ch2;
+        if (ch1 == 0)
+            return 0;
+    }
+    /* FIXME: This function is not MBCS-aware. */
+}
+
+
+/*
+ * String utility
+ */
+static char *
+opng_strltrim(const char *str)
+{
+    /* Skip the leading whitespace characters. */
+    while (isspace(*str))
+        ++str;
+    return (char *)str;
+}
+
+
+/*
+ * String utility
+ */
+static char *
+opng_strtail(const char *str, size_t num)
+{
+    size_t len;
+
+    /* Return up to num rightmost characters. */
+    len = strlen(str);
+    if (len <= num)
+        return (char *)str;
+    return (char *)str + len - num;
+}
+
+
+/*
+ * String conversion utility
+ */
+static int
+opng_str2ulong_base10(unsigned long *out_val, const char *in_str,
+                      int allow_multiplier)
+{
+    const char *begin_ptr;
+    char *end_ptr;
+    unsigned long multiplier;
 
     /* Extract the value from the string. */
-    *value = strtol(str, &endptr, 10);
-    if (endptr == NULL || endptr == str)
+    /* Do not allow the minus sign, not even for -0. */
+    begin_ptr = end_ptr = opng_strltrim(in_str);
+    if (*begin_ptr >= '0' && *begin_ptr <= '9')
+        *out_val = strtoul(begin_ptr, &end_ptr, 10);
+    if (begin_ptr == end_ptr)
     {
         errno = EINVAL;  /* matching failure */
+        *out_val = 0;
         return -1;
     }
 
-    /* Check for the 'kilo' suffix. */
-    if (*endptr == 'k' || *endptr == 'K')
+    if (allow_multiplier)
     {
-        ++endptr;
-        if (*value > LONG_MAX / 1024)
+        /* Check for the following SI suffixes:
+         *   'K' or 'k': kibi (1024)
+         *   'M':        mebi (1024 * 1024)
+         *   'G':        gibi (1024 * 1024 * 1024)
+         */
+        if (*end_ptr == 'k' || *end_ptr == 'K')
         {
-            errno = ERANGE;  /* overflow */
-            *value = LONG_MAX;
+            ++end_ptr;
+            multiplier = 1024UL;
         }
-        else if (*value < LONG_MIN / 1024)
+        else if (*end_ptr == 'M')
         {
-            errno = ERANGE;  /* overflow */
-            *value = LONG_MIN;
+            ++end_ptr;
+            multiplier = 1024UL * 1024UL;
+        }
+        else if (*end_ptr == 'G')
+        {
+            ++end_ptr;
+            multiplier = 1024UL * 1024UL * 1024UL;
         }
         else
-            *value *= 1024;
+            multiplier = 1;
+        if (multiplier > 1)
+        {
+            if (*out_val > ULONG_MAX / multiplier)
+            {
+                errno = ERANGE;  /* overflow */
+                *out_val = ULONG_MAX;
+            }
+            else
+                *out_val *= multiplier;
+        }
     }
 
     /* Check for trailing garbage. */
-    while (isspace(*endptr))
-        ++endptr;  /* skip whitespace */
-    if (*endptr != 0)
+    if (*opng_strltrim(end_ptr) != 0)
     {
         errno = EINVAL;  /* garbage in input */
         return -1;
     }
-
     return 0;
 }
 
 
 /*
- * Command line error handling
+ * String conversion utility
+ */
+static int
+opng_rangeset2bitset(bitset_t *out_val, const char *in_str)
+{
+    size_t end_idx;
+
+    /* Extract the bitset value from the rangeset string. */
+    *out_val = rangeset_string_to_bitset(in_str, &end_idx);
+    if (end_idx == 0 || *opng_strltrim(in_str + end_idx) != 0)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+    return 0;
+}
+
+
+/*
+ * Command line utility
  */
 static void
-err_option(const char *option, const char *option_arg)
+err_option_arg(const char *opt, const char *opt_arg)
 {
     /* Issue an error regarding the incorrect value of the option argument. */
-    if (option_arg != NULL && option_arg[0] != 0)
-        error("Invalid argument for option %s: %s", option, option_arg);
+    if (opt_arg == NULL || *opng_strltrim(opt_arg) == 0)
+        error("Missing argument for option %s", opt);
     else
-        error("Missing argument for option %s", option);
+        error("Invalid argument for option %s: %s", opt, opt_arg);
+}
+
+
+/*
+ * Command line utility
+ */
+static int
+check_num_option(const char *opt, const char *opt_arg,
+                 int lowest, int highest)
+{
+    unsigned long value;
+
+    /* Extract the numeric value from the option argument. */
+    if (opng_str2ulong_base10(&value, opt_arg, 0) != 0 ||
+            value > INT_MAX || (int)value < lowest || (int)value > highest)
+        err_option_arg(opt, opt_arg);
+    return (int)value;
+}
+
+
+/*
+ * Command line utility
+ */
+static int
+check_power2_option(const char *opt, const char *opt_arg,
+                    int lowest, int highest)
+{
+    unsigned long value;
+    int result;
+
+    /* Extract the exact log2 of the numeric value from the option argument. */
+    /* Allow the 'k', 'M', 'G' suffixes. */
+    if (opng_str2ulong_base10(&value, opt_arg, 1) == 0)
+    {
+        if (lowest < 0)
+            lowest = 0;
+        if (highest > (int)(CHAR_BIT * sizeof(long) - 2))
+            highest = (int)(CHAR_BIT * sizeof(long) - 2);
+        for (result = lowest; result <= highest; ++result)
+        {
+            if ((1UL << result) == value)
+                return result;
+        }
+    }
+    err_option_arg(opt, opt_arg);
+    return -1;
+}
+
+
+/*
+ * Command line utility
+ */
+static bitset_t
+check_rangeset_option(const char *opt, const char *opt_arg,
+                      bitset_t result_mask)
+{
+    bitset_t result;
+
+    /* Extract the rangeset from the option argument. */
+    if (opng_rangeset2bitset(&result, opt_arg) == 0)
+        result &= result_mask;
+    else
+        result = BITSET_EMPTY;
+    if (result == BITSET_EMPTY)
+        err_option_arg(opt, opt_arg);
+    return result;
 }
 
 
@@ -304,12 +464,12 @@ static void
 parse_args(int argc, char *argv[])
 {
     char opt[16];
+    size_t opt_len;
     char *arg, *xopt;
     unsigned int file_count;
-    int stop_switch, i;
-    int val;
-    long lval;
+    int stop_switch;
     bitset_t set;
+    int val, i;
 
     /* Initialize. */
     memset(&options, 0, sizeof(options));
@@ -327,91 +487,109 @@ parse_args(int argc, char *argv[])
             ++file_count;
             continue;  /* leave file names for process_files() */
         }
+        opt_len = strlen(opt);
 
         /* Prevent process_files() from seeing this arg. */
         argv[i] = NULL;
 
         /* Check the simple options (without option arguments). */
-        if (strcmp("-", opt) == 0)  /* "--" */
+        if (strcmp("-", opt) == 0)
         {
+            /* -- */
             stop_switch = 1;
         }
         else if (strcmp("?", opt) == 0 ||
-                 string_prefix_min_cmp("help", opt, 1) == 0)
+                 strncmp("help", opt, opt_len) == 0)
         {
+            /* -? | -h | ... | -help */
             options.help = 1;
         }
-        else if (string_prefix_min_cmp("fix", opt, 2) == 0)
+        else if (strncmp("fix", opt, opt_len) == 0 && opt_len >= 2)
         {
+            /* -fi | -fix */
             options.fix = 1;
         }
-        else if (string_prefix_min_cmp("force", opt, 2) == 0)
+        else if (strncmp("force", opt, opt_len) == 0 && opt_len >= 2)
         {
+            /* -fo | ... | -force */
             options.force = 1;
         }
-        else if (string_prefix_min_cmp("full", opt, 2) == 0)
+        else if (strncmp("full", opt, opt_len) == 0 && opt_len >= 2)
         {
+            /* -fu | ... | -full */
             options.full = 1;
         }
-        else if (string_prefix_min_cmp("keep", opt, 1) == 0)
+        else if (strncmp("keep", opt, opt_len) == 0)
         {
+            /* -k | ... | -keep */
             options.keep = 1;
         }
         else if (strcmp("nb", opt) == 0)
         {
+            /* -nb */
             options.nb = 1;
         }
         else if (strcmp("nc", opt) == 0)
         {
+            /* -nc */
             options.nc = 1;
         }
         else if (strcmp("nm", opt) == 0)
         {
+            /* -nm */
             /* options.nm = 1; */
             error("Metadata optimization is not implemented");
         }
         else if (strcmp("np", opt) == 0)
         {
+            /* -np */
             options.np = 1;
         }
         else if (strcmp("nx", opt) == 0)
         {
+            /* -nx */
             options.nb = options.nc = options.np = 1;
             /* options.nm = 1; */
         }
         else if (strcmp("nz", opt) == 0)
         {
+            /* -nz */
             options.nz = 1;
         }
-        else if (string_prefix_min_cmp("preserve", opt, 1) == 0)
+        else if (strncmp("preserve", opt, opt_len) == 0)
         {
+            /* -p | ... | -preserve */
             options.preserve = 1;
         }
-        else if (string_prefix_min_cmp("quiet", opt, 1) == 0 ||
-                 string_prefix_min_cmp("silent", opt, 3) == 0)
+        else if (strncmp("quiet", opt, opt_len) == 0)
         {
-            /* The option -silent is silently accepted. */
+            /* -q | ... | -quiet */
             options.quiet = 1;
         }
-        else if (string_prefix_min_cmp("simulate", opt, 2) == 0)
+        else if (strncmp("simulate", opt, opt_len) == 0 && opt_len >= 2)
         {
+            /* -si | ... | -simulate */
             options.simulate = 1;
         }
-        else if (string_prefix_min_cmp("snip", opt, 2) == 0)
+        else if (strncmp("snip", opt, opt_len) == 0 && opt_len >= 2)
         {
+            /* -sn | ... | -snip */
             options.snip = 1;
         }
         else if (strcmp("v", opt) == 0)
         {
+            /* -v */
             options.verbose = 1;
             options.version = 1;
         }
-        else if (string_prefix_min_cmp("verbose", opt, 4) == 0)
+        else if (strncmp("verbose", opt, opt_len) == 0 && opt_len >= 4)
         {
+            /* -verb | ... | -verbose */
             options.verbose = 1;
         }
-        else if (string_prefix_min_cmp("version", opt, 4) == 0)
+        else if (strncmp("version", opt, opt_len) == 0 && opt_len >= 4)
         {
+            /* -vers | ... | -version */
             options.version = 1;
         }
         else  /* possibly an option with an argument */
@@ -432,13 +610,12 @@ parse_args(int argc, char *argv[])
         /* Check the options that have option arguments. */
         if (xopt == NULL)
         {
-            /* Do nothing, an option without argument is already recognized. */
+            /* An option without argument has already been recognized. */
         }
         else if (strcmp("o", opt) == 0)
         {
-            if (str2long(xopt, &lval) != 0 || lval < 0 || lval > 99)
-                err_option("-o", xopt);
-            val = (int)lval;
+            /* -o NUM */
+            val = check_num_option("-o", xopt, 0, INT_MAX);
             if (options.optim_level < 0)
                 options.optim_level = val;
             else if (options.optim_level != val)
@@ -446,94 +623,95 @@ parse_args(int argc, char *argv[])
         }
         else if (strcmp("i", opt) == 0)
         {
-            if (str2long(xopt, &lval) != 0 || lval < 0 || lval > 1)
-                err_option("-i", xopt);
-            val = (int)lval;
+            /* -i NUM */
+            val = check_num_option("-i", xopt, 0, 1);
             if (options.interlace < 0)
-                options.interlace = (int)val;
-            else if (options.interlace != (int)val)
+                options.interlace = val;
+            else if (options.interlace != val)
                 error("Multiple interlace types are not permitted");
         }
         else if (strcmp("b", opt) == 0)
         {
+            /* -b NUM */
             /* options.bit_depth = ... */
             error("Selection of bit depth is not implemented");
         }
         else if (strcmp("c", opt) == 0)
         {
+            /* -c NUM */
             /* options.color_type = ... */
             error("Selection of color type is not implemented");
         }
         else if (strcmp("f", opt) == 0)
         {
-            if (bitset_parse(xopt, &set) != 0)
-                err_option("-f", xopt);
+            /* -f SET */
+            set = check_rangeset_option("-f", xopt, OPNG_FILTER_SET_MASK);
             options.filter_set |= set;
         }
         else if (strcmp("zc", opt) == 0)
         {
-            if (bitset_parse(xopt, &set) != 0)
-                err_option("-zc", xopt);
+            /* -zc SET */
+            set = check_rangeset_option("-zc", xopt, OPNG_COMPR_LEVEL_SET_MASK);
             options.compr_level_set |= set;
         }
         else if (strcmp("zm", opt) == 0)
         {
-            if (bitset_parse(xopt, &set) != 0)
-                err_option("-zm", xopt);
+            /* -zm SET */
+            set = check_rangeset_option("-zm", xopt, OPNG_MEM_LEVEL_SET_MASK);
             options.mem_level_set |= set;
         }
         else if (strcmp("zs", opt) == 0)
         {
-            if (bitset_parse(xopt, &set) != 0)
-                err_option("-zs", xopt);
+            /* -zs SET */
+            set = check_rangeset_option("-zs", xopt, OPNG_STRATEGY_SET_MASK);
             options.strategy_set |= set;
         }
         else if (strcmp("zw", opt) == 0)
         {
-            if (str2long(xopt, &lval) != 0)
-                lval = 0;
-            for (val = 15; val >= 8; --val)
-                if ((1L << val) == lval)
-                    break;
-            if (val < 8)
-                err_option("-zw", xopt);
+            /* -zw NUM */
+            val = check_power2_option("-zw", xopt, 8, 15);
             if (options.window_bits == 0)
                 options.window_bits = val;
             else if (options.window_bits != val)
                 error("Multiple window sizes are not permitted");
         }
-        else if (string_prefix_min_cmp("out", opt, 2) == 0)
+        else if (strncmp("out", opt, opt_len) == 0 && opt_len >= 2)
         {
+            /* -ou PATH | -out PATH */
             if (options.out_name != NULL)
                 error("Multiple output file names are not permitted");
             if (xopt[0] == 0)
-                err_option("-out", xopt);
+                err_option_arg("-out", NULL);
             options.out_name = xopt;
         }
-        else if (string_prefix_min_cmp("dir", opt, 1) == 0)
+        else if (strncmp("dir", opt, opt_len) == 0)
         {
+            /* -d PATH | ... | -dir PATH */
             if (options.dir_name != NULL)
                 error("Multiple output dir names are not permitted");
             if (xopt[0] == 0)
-                err_option("-dir", xopt);
+                err_option_arg("-dir", NULL);
             options.dir_name = xopt;
         }
-        else if (string_prefix_min_cmp("log", opt, 1) == 0)
+        else if (strncmp("log", opt, opt_len) == 0)
         {
+            /* -l PATH | ... | -log PATH */
             if (options.log_name != NULL)
                 error("Multiple log file names are not permitted");
             if (xopt[0] == 0)
-                err_option("-log", xopt);
+                err_option_arg("-log", NULL);
             options.log_name = xopt;
         }
-        else if (string_prefix_min_cmp("jobs", opt, 1) == 0)
+        else if (strncmp("jobs", opt, opt_len) == 0)
         {
+            /* -j NUM | ... | -jobs NUM */
             error("Parallel processing is not implemented");
         }
         else if (strcmp("erase", opt) == 0 ||
                  strcmp("strip", opt) == 0 ||
                  strcmp("protect", opt) == 0)
         {
+            /* -erase DATA | -strip DATA | -protect DATA */
             error("Lossy operations are not currently supported");
         }
         else
@@ -552,9 +730,9 @@ parse_args(int argc, char *argv[])
     }
     if (options.log_name != NULL)
     {
-        if (string_suffix_case_cmp(options.log_name, ".log") != 0)
-            error("To prevent accidental data corruption,"
-                  " the log file name must end with \".log\"");
+        if (opng_strcasecmp(".log", opng_strtail(options.log_name, 4)) != 0)
+            error("To prevent accidental data corruption, "
+                  "the log file name must end with \".log\"");
     }
     operation = (options.help || file_count == 0) ? OP_HELP : OP_RUN;
 }

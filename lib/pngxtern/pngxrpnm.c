@@ -101,9 +101,10 @@ pngx_read_pnm(png_structp png_ptr, png_infop info_ptr, FILE *stream)
    width  = pnminfo.width;
    height = pnminfo.height;
    maxval = pnminfo.maxval;
+   if (format > PNM_P6)
+      png_error(png_ptr, "Can't handle PNM formats newer than PPM (\"P6\")");
    if (width > (unsigned int)(-1) / depth ||
-       width > (size_t)(-1) / sizeof(unsigned int) / depth ||
-       height > (size_t)(-1) / sizeof(png_bytep))
+       width > (size_t)(-1) / sizeof(unsigned int) / depth)
       png_error(png_ptr, "Can't handle exceedingly large PNM dimensions");
    sample_size = 1;
    row_size = num_samples = depth * width;

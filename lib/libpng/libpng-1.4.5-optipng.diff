@@ -1,0 +1,30 @@
+diff -ru libpng-1.4.5/png.h libpng-1.4.5-optipng/png.h
+--- libpng-1.4.5/png.h	2010-12-09 08:48:10.000000000 -0500
++++ libpng-1.4.5-optipng/png.h	2010-12-09 14:05:00.000000000 -0500
+@@ -1,4 +1,13 @@
+ 
++/* libpng version 1.4.5-optipng
++ *
++ * This is a MODIFIED version of libpng by Cosmin Truta.
++ * The modification is NOT COPYRIGHTED and NOT WARRANTED.
++ *
++ * PLEASE DO NOT SEND BUG REPORTS TO THE AUTHORS OF libpng!
++ */
++#define PNG_USER_CONFIG
++
+ /* png.h - header file for PNG reference library
+  *
+  * libpng version 1.4.5 - December 9, 2010
+@@ -358,9 +367,9 @@
+  */
+ 
+ /* Version information for png.h - this should match the version in png.c */
+-#define PNG_LIBPNG_VER_STRING "1.4.5"
++#define PNG_LIBPNG_VER_STRING "1.4.5-optipng"
+ #define PNG_HEADER_VERSION_STRING \
+-   " libpng version 1.4.5 - December 9, 2010\n"
++   " libpng version 1.4.5-optipng - December 9, 2010\n"
+ 
+ #define PNG_LIBPNG_VER_SONUM   14
+ #define PNG_LIBPNG_VER_DLLNUM  14
+Only in libpng-1.4.5-optipng: pngusr.h

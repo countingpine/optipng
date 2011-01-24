@@ -1,7 +1,7 @@
 /*
  * opngreduc.c - libpng extension: lossless image reductions.
  *
- * Copyright (C) 2003-2010 Cosmin Truta.
+ * Copyright (C) 2003-2011 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
  *
@@ -22,13 +22,25 @@
 #define PNG_INTERNAL
 #define PNG_NO_PEDANTIC_WARNINGS
 #include "png.h"
-#if PNG_LIBPNG_VER >= 10400
-#include "pngpriv.h"
-#else
-#define trans_alpha trans
-#define trans_color trans_values
-#endif
 #include "opngreduc.h"
+
+#if PNG_LIBPNG_VER >= 10400
+#ifdef PNG_USER_PRIVATEBUILD
+#include "pngpriv.h"
+#endif
+#endif
+
+#ifndef OPNG_ASSERT
+#include <assert.h>
+#define OPNG_ASSERT(cond) assert(cond)
+#define OPNG_ASSERT_MSG(cond, msg) assert(cond)
+#endif
+
+#ifdef png_debug
+#define opng_debug(level, msg) png_debug(level, msg)
+#else
+#define opng_debug(level, msg) ((void)0)
+#endif
 
 
 #ifdef OPNG_IMAGE_REDUCTIONS_SUPPORTED
@@ -44,9 +56,33 @@ __error__ "OPNG_IMAGE_REDUCTIONS_SUPPORTED" requires support for bKGD,hIST,sBIT,
 #endif
 
 
+/*****************************************************************************
+ * Quick and dirty libpng hacks - don't look ;-)
+ *****************************************************************************/
+
+#if PNG_LIBPNG_VER < 10400
+#define trans_alpha trans
+#define trans_color trans_values
+#endif
+
+#define OPNG_FILLER 0x8000L
+#ifdef PNG_FILLER
+#if PNG_FILLER != OPNG_FILLER
+__error__ "PNG_FILLER" has an unexpected value
+#endif
+#endif
+
+#define OPNG_FLAG_FILLER_AFTER 0x0080
+#ifdef PNG_FLAG_FILLER_AFTER
+#if PNG_FLAG_FILLER_AFTER != OPNG_FLAG_FILLER_AFTER
+__error__ "PNG_FLAG_FILLER_AFTER" has an unexpected value
+#endif
+#endif
+
 /*
- * This is a quick, dirty, and yet important internal verification routine.
- * It will go away when opngreduc.c is incorporated into libpng.
+ * Check if it's safe to access libpng's internal structures directly.
+ * Some fields might have their offsets shifted due to changes in
+ * libpng's configuration.
  */
 static void
 _opng_validate_internal(png_structp png_ptr, png_infop info_ptr)
@@ -57,11 +93,6 @@ _opng_validate_internal(png_structp png_ptr, png_infop info_ptr)
    png_bytep trans_alpha;
    int num_trans;
    png_color_16p trans_color;
-
-   /* Make sure it's safe to access libpng's internal structures directly.
-    * Some fields might have their offsets shifted due to changes in
-    * libpng configuration.
-    */
 
    /* Check info_ptr. */
    if (png_get_rows(png_ptr, info_ptr) != info_ptr->row_pointers)
@@ -94,6 +125,10 @@ error:
 }
 
 
+/*****************************************************************************
+ * To be added to png.c
+ *****************************************************************************/
+
 /*
  * Check if the image information is valid.
  * The image information is said to be valid if all the required
@@ -108,7 +143,7 @@ opng_validate_image(png_structp png_ptr, png_infop info_ptr)
 {
    int result, error;
 
-   png_debug(1, "in opng_validate_image\n");
+   opng_debug(1, "in opng_validate_image");
 
    if (png_ptr == NULL || info_ptr == NULL)
       return 0;
@@ -170,6 +205,10 @@ opng_validate_image(png_structp png_ptr, png_infop info_ptr)
             ((int)(G1) - (int)(G2)) :   \
             ((int)(B1) - (int)(B2)))))
 
+
+/*****************************************************************************
+ * To be added to pngreduc.c
+ *****************************************************************************/
 
 /*
  * Build a color+alpha palette in which the entries are sorted by
@@ -351,7 +390,7 @@ opng_analyze_bits(png_structp png_ptr, png_infop info_ptr,
       offset_color, offset_alpha;
    png_color_16p background;
 
-   png_debug(1, "in opng_analyze_bits\n");
+   opng_debug(1, "in opng_analyze_bits");
 
    bit_depth = info_ptr->bit_depth;
    if (bit_depth < 8)
@@ -511,13 +550,17 @@ opng_reduce_bits(png_structp png_ptr, png_infop info_ptr,
    png_bytepp row_ptr;
    png_bytep src_ptr, dest_ptr;
    png_uint_32 height, width, i, j;
-   unsigned int
-      src_bit_depth, dest_bit_depth, src_byte_depth, dest_byte_depth,
-      src_color_type, dest_color_type, src_channels, dest_channels,
-      src_sample_size, dest_sample_size, src_offset_alpha;
-   unsigned int tran_tbl[8], k;
+   unsigned int src_bit_depth, dest_bit_depth;
+   unsigned int src_byte_depth, dest_byte_depth;
+   unsigned int src_color_type, dest_color_type;
+   unsigned int src_channels, dest_channels;
+   unsigned int src_sample_size, dest_sample_size;
+   unsigned int dest_pixel_depth;
+   unsigned int src_offset_alpha;
+   unsigned int tran_tbl[8];
+   unsigned int k;
 
-   png_debug(1, "in opng_reduce_bits\n");
+   opng_debug(1, "in opng_reduce_bits");
 
    /* See which reductions may be performed. */
    reductions = opng_analyze_bits(png_ptr, info_ptr, reductions);
@@ -561,7 +604,7 @@ opng_reduce_bits(png_structp png_ptr, png_infop info_ptr,
 
    src_sample_size  = src_channels * src_byte_depth;
    dest_sample_size = dest_channels * dest_byte_depth;
-   OPNG_ASSERT(src_sample_size > dest_sample_size);
+   dest_pixel_depth = dest_channels * dest_bit_depth;
 
    if (!(png_ptr->transformations & PNG_FILLER) ||
        (png_ptr->flags & PNG_FLAG_FILLER_AFTER))
@@ -605,6 +648,7 @@ opng_reduce_bits(png_structp png_ptr, png_infop info_ptr,
    }
 
    /* Translate the samples to the new image type. */
+   OPNG_ASSERT(src_sample_size > dest_sample_size);
    row_ptr = info_ptr->row_pointers;
    height  = info_ptr->height;
    width   = info_ptr->width;
@@ -697,11 +741,11 @@ opng_reduce_bits(png_structp png_ptr, png_infop info_ptr,
    }
 
    /* Update the image info. */
+   png_ptr->rowbytes    = info_ptr->rowbytes    = 0;
    png_ptr->bit_depth   = info_ptr->bit_depth   = (png_byte)dest_bit_depth;
    png_ptr->color_type  = info_ptr->color_type  = (png_byte)dest_color_type;
    png_ptr->channels    = info_ptr->channels    = (png_byte)dest_channels;
-   png_ptr->pixel_depth = info_ptr->pixel_depth =
-      (png_byte)(dest_bit_depth * dest_channels);
+   png_ptr->pixel_depth = info_ptr->pixel_depth = (png_byte)dest_pixel_depth;
    if (reductions & OPNG_REDUCE_STRIP_ALPHA)
    {
       png_ptr->transformations &= ~PNG_FILLER;
@@ -729,7 +773,7 @@ opng_reduce_palette_bits(png_structp png_ptr, png_infop info_ptr,
    unsigned int src_mask_init, src_mask, src_shift, dest_shift;
    unsigned int sample, dest_buf;
 
-   png_debug(1, "in opng_reduce_palette_bits\n");
+   opng_debug(1, "in opng_reduce_palette_bits");
 
    /* Check if the reduction applies. */
    if (!(reductions & OPNG_REDUCE_8_TO_4_2_1) ||
@@ -819,7 +863,8 @@ opng_reduce_palette_bits(png_structp png_ptr, png_infop info_ptr,
    }
 
    /* Update the image info. */
-   png_ptr->bit_depth   = info_ptr->bit_depth   =
+   png_ptr->rowbytes    = info_ptr->rowbytes    = 0;
+   png_ptr->bit_depth   = info_ptr->bit_depth   = (png_byte)dest_bit_depth;
    png_ptr->pixel_depth = info_ptr->pixel_depth = (png_byte)dest_bit_depth;
 
    return OPNG_REDUCE_8_TO_4_2_1;
@@ -848,7 +893,7 @@ opng_reduce_to_palette(png_structp png_ptr, png_infop info_ptr,
    unsigned int gray, red, green, blue, alpha;
    unsigned int prev_gray, prev_red, prev_green, prev_blue, prev_alpha;
 
-   png_debug(1, "in opng_reduce_to_palette\n");
+   opng_debug(1, "in opng_reduce_to_palette");
 
    if (info_ptr->bit_depth != 8)
       return OPNG_REDUCE_NONE;  /* nothing is done in this case */
@@ -1028,6 +1073,7 @@ opng_reduce_to_palette(png_structp png_ptr, png_infop info_ptr,
    }
 
    /* Update the image info. */
+   png_ptr->rowbytes    = info_ptr->rowbytes    = 0;
    png_ptr->color_type  = info_ptr->color_type  = PNG_COLOR_TYPE_PALETTE;
    png_ptr->channels    = info_ptr->channels    = 1;
    png_ptr->pixel_depth = info_ptr->pixel_depth = 8;
@@ -1060,7 +1106,7 @@ opng_analyze_sample_usage(png_structp png_ptr, png_infop info_ptr,
    png_uint_32 width, height, i, j;
    unsigned int bit_depth, init_shift, init_mask, shift, mask;
 
-   png_debug(1, "in opng_analyze_sample_usage\n");
+   opng_debug(1, "in opng_analyze_sample_usage");
 
    row_ptr = info_ptr->row_pointers;
    height  = info_ptr->height;
@@ -1125,7 +1171,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    png_color_16 gray_trans;
    png_byte crt_trans_value, last_trans_value;
 
-   png_debug(1, "in opng_reduce_palette\n");
+   opng_debug(1, "in opng_reduce_palette");
 
    height      = info_ptr->height;
    width       = info_ptr->width;
@@ -1272,6 +1318,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
       png_set_tRNS(png_ptr, info_ptr, NULL, 0, &gray_trans);
 
    /* Update the image info. */
+   png_ptr->rowbytes   = info_ptr->rowbytes   = 0;
    png_ptr->color_type = info_ptr->color_type = PNG_COLOR_TYPE_GRAY;
    png_free_data(png_ptr, info_ptr, PNG_FREE_PLTE, -1);
    info_ptr->valid &= ~PNG_INFO_PLTE;
@@ -1294,7 +1341,7 @@ opng_reduce_image(png_structp png_ptr, png_infop info_ptr,
    unsigned int color_type;
    png_uint_32 result;
 
-   png_debug(1, "in opng_reduce_image_type\n");
+   opng_debug(1, "in opng_reduce_image_type");
 
    if (!opng_validate_image(png_ptr, info_ptr))
    {
@@ -1302,16 +1349,6 @@ opng_reduce_image(png_structp png_ptr, png_infop info_ptr,
          "Image reduction requires the presence of the critical info");
       return OPNG_REDUCE_NONE;
    }
-
-#if 0  /* PNG_INTERLACE must be recognized! */
-   if (png_ptr->transformations)
-   {
-      png_warning(png_ptr,
-         "Image reduction cannot be applied "
-         "under the presence of transformations");
-      return OPNG_REDUCE_NONE;
-   }
-#endif
 
    color_type = info_ptr->color_type;
 

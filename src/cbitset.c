@@ -1,192 +1,306 @@
-/**
- ** cbitset.c
- ** Simple C routines for bitset handling.
- **
- ** Copyright (C) 2001-2006 Cosmin Truta.
- **
- ** This software is distributed under the same licensing and warranty
- ** terms as OptiPNG.  Please see the attached LICENSE for more info.
- **/
+/*
+ * cbitset.c
+ * Plain old bitset data type.
+ *
+ * Copyright (C) 2001-2010 Cosmin Truta.
+ *
+ * This software is distributed under the zlib license.
+ * Please see the attached LICENSE for more information.
+ */
 
 
-#include <ctype.h>
-#include <limits.h>
-#include <stddef.h>
 #include "cbitset.h"
 
-
-/* private helper: ASSERT */
-#ifndef ASSERT
-#ifdef CDEBUG
-#include <assert.h>
-#define ASSERT(cond) assert(cond)
-#else  /* !CDEBUG */
-#define ASSERT(cond) ((void)0)
-#endif /* ?CDEBUG */
-#endif /* ?ASSERT */
+#include <ctype.h>
+#include <errno.h>
+#include <stddef.h>
 
 
-/* private helper: SKIP_SPACES */
-#if 0
-#define SKIP_SPACES(_str)  \
-    { while (*(_str) != 0 && isspace(*(_str))) ++(_str); }
-#else
-#define SKIP_SPACES(_str)  \
-    { while (isspace(*(_str))) ++(_str); }
-#endif
+/*
+ * Private helper macros: _bitset_MIN and _bitset_MAX.
+ */
+#define _bitset_MIN(a, b) \
+    ((a) < (b) ? (a) : (b))
+#define _bitset_MAX(a, b) \
+    ((a) > (b) ? (a) : (b))
 
 
-/**
+/*
+ * Private helper macro: _bitset_PTR_SKIP_PRED.
+ *
+ * Skips the given pointer past the elements that satisfy the given predicate.
+ * E.g., _bitset_PTR_SKIP_PRED(str, isspace) skips the leading whitespace.
+ */
+#define _bitset_PTR_SKIP_PRED(ptr, predicate) \
+    { while (predicate(*(ptr))) ++(ptr); }
+
+
+/*
  * Counts the number of elements in a bitset.
- **/
-int bitset_count(bitset_t set)
+ */
+unsigned int bitset_count(bitset_t set)
 {
-    int result;
-    unsigned int i;
+    unsigned int result;
 
-    if (BITSET_GET_OVERFLOW(set))
-        return -1;
-
+    /* Apply Wegner's method. */
     result = 0;
-    for (i = 0; i < BITSET_SIZE; ++i)
-        if (BITSET_GET(set, i))
-            ++result;
+    while (set != BITSET_EMPTY)
+    {
+        set &= (set - 1);
+        ++result;
+    }
     return result;
 }
 
 
-/**
- * Converts a string to a bitset value.
- **/
-bitset_t string_to_bitset(const char *str, char **end_ptr)
+/*
+ * Finds the first element in a bitset.
+ */
+int bitset_find_first(bitset_t set)
+{
+    int i;
+
+    for (i = 0; i <= BITSET_ELT_MAX; ++i)
+    {
+        if (bitset_test(set, i))
+            return i;
+    }
+    return -1;
+}
+
+
+/*
+ * Finds the next element in a bitset.
+ */
+int bitset_find_next(bitset_t set, int elt)
+{
+    int i;
+
+    for (i = _bitset_MAX(elt, -1) + 1; i <= BITSET_ELT_MAX; ++i)
+    {
+        if (bitset_test(set, i))
+            return i;
+    }
+    return -1;
+}
+
+
+/*
+ * Finds the last element in a bitset.
+ */
+int bitset_find_last(bitset_t set)
+{
+    int i;
+
+    for (i = BITSET_ELT_MAX; i >= 0; --i)
+    {
+        if (bitset_test(set, i))
+            return i;
+    }
+    return -1;
+}
+
+
+/*
+ * Finds the previous element in a bitset.
+ */
+int bitset_find_prev(bitset_t set, int elt)
+{
+    int i;
+
+    for (i = _bitset_MIN(elt, BITSET_ELT_MAX + 1) - 1; i >= 0; --i)
+    {
+        if (bitset_test(set, i))
+            return i;
+    }
+    return -1;
+}
+
+
+/*
+ * Converts a string to a bitset.
+ */
+bitset_t string_to_bitset(const char *str, size_t *end_idx)
 {
     bitset_t result;
     const char *ptr;
-    int overflow;
-
-    ASSERT(str != NULL);
+    int out_of_range;
 
     ptr = str;
-    SKIP_SPACES(ptr);
+    _bitset_PTR_SKIP_PRED(ptr, isspace);
     if (*ptr != '0' && *ptr != '1')
     {
-        if (end_ptr != NULL)
-            *end_ptr = (char *)str;
+        /* Invalid input. */
+        if (end_idx != NULL)
+            *end_idx = 0;
+#ifdef EINVAL
+        errno = EINVAL;
+#endif
         return BITSET_EMPTY;
     }
 
     result = BITSET_EMPTY;
-    overflow = 0;
+    out_of_range = 0;
     for ( ; ; ++ptr)
     {
         if (*ptr == '0' || *ptr == '1')
         {
             result = (result << 1) | (*ptr - '0');
-            if (BITSET_GET_OVERFLOW(result))
-                overflow = 1;
+            if (bitset_test(result, BITSET_ELT_MAX))
+                out_of_range = 1;
         }
         else
         {
-            if (end_ptr != NULL)
-                *end_ptr = (char *)ptr;
-            if (overflow)
-                BITSET_SET_OVERFLOW(result);
+            if (end_idx != NULL)
+                *end_idx = (size_t)(ptr - str);
+            if (out_of_range)
+            {
+                bitset_set(&result, BITSET_ELT_MAX);
+#ifdef ERANGE
+                errno = ERANGE;
+#endif
+            }
             return result;
         }
     }
 }
 
 
-/**
- * Converts a bitset value to a string.
- **/
-char *bitset_to_string(bitset_t set, char *str_buf, size_t str_buf_size)
+/*
+ * Converts a bitset to a string.
+ */
+size_t bitset_to_string(char *sbuf, size_t sbuf_size, bitset_t set)
 {
+    size_t result;
     char *ptr;
     int i;
 
-    ASSERT(str_buf != NULL);
-
-    for (i = BITSET_SIZE - 1; i > 0; --i)
-        if (BITSET_GET(set, i))
+    for (i = BITSET_ELT_MAX; i > 0; --i)
+    {
+        if (bitset_test(set, i))
             break;
-    if ((size_t)(i + 1) >= str_buf_size)
-        return NULL;  /* insufficient buffer space */
+    }
 
-    ptr = str_buf;
+    result = (size_t)i + 1;
+    if (result >= sbuf_size)
+    {
+        /* Buffer too small. */
+        return result;
+    }
+
+    ptr = sbuf;
     for ( ; i >= 0; --i)
-    {
-        /* C ALERT ** (cond ? '1' : '0') is int instead of char */
-        *ptr++ = (char)(BITSET_GET(set, i) ? '1' : '0');
-    }
-    *ptr = 0;
-    return str_buf;
+        *ptr++ = (char)(bitset_test(set, i) ? '1' : '0');
+    *ptr = (char)0;
+    return result;
 }
 
 
-/**
- * Parses an enumeration string to a bitset value.
- **/
-int bitset_parse(const char *text, bitset_t *out_bitset)
+/*
+ * Converts a rangeset string to a bitset.
+ */
+bitset_t rangeset_string_to_bitset(const char *str, size_t *end_idx)
 {
-    unsigned int num1, num2, i;
-    int is_range;
+    bitset_t result;
+    const char *ptr;
+    int state;
+    int num, num1, num2;
+    int out_of_range;
 
-    ASSERT(text != NULL);
-    ASSERT(out_bitset != NULL);
+    result = BITSET_EMPTY;
+    ptr = str;
+    state = 0;
+    out_of_range = 0;
+    num1 = num2 = -1;
 
-    *out_bitset = BITSET_EMPTY;
-    for ( ; ; ++text)
+    for ( ; ; )
     {
-        SKIP_SPACES(text);
-        if (*text == 0)
-            return 0;  /* success */
-
-        num1 = UINT_MAX;  /* unassigned */
-        num2 = 0;
-        is_range = 0;
-        while ((*text >= '0' && *text <= '9') || (*text == '-'))
+        _bitset_PTR_SKIP_PRED(ptr, isspace);
+        switch (state)
         {
-            if (*text == '-')  /* range */
+        case 0:  /* "" */
+        case 2:  /* "N-" */
+            /* Expecting number; go to next state. */
+            if (*ptr >= '0' && *ptr <= '9')
             {
-                is_range = 1;
-                if (num1 == UINT_MAX)
-                    num1 = 0;  /* default */
-                num2 = BITSET_SIZE - 1;  /* default */
-                ++text;
-            }
-            else  /* number */
-            {
-                for (num2 = 0; *text >= '0' && *text <= '9'; ++text)
+                num = 0;
+                do
                 {
-                    num2 = 10 * num2 + (*text - '0');
-                    if (num2 > BITSET_SIZE)  /* overflow protection */
-                        num2 = BITSET_SIZE;
-                }
-                if (!is_range)
-                    num1 = num2;
+                    num = 10 * num + (*ptr - '0');
+                    if (num > BITSET_ELT_MAX)
+                    {
+                        out_of_range = 1;
+                        num = BITSET_ELT_MAX;
+                    }
+                    ++ptr;
+                } while (*ptr >= '0' && *ptr <= '9');
+                if (state == 0)
+                    num1 = num;
+                num2 = num;
+                ++state;
+                continue;
             }
-            SKIP_SPACES(text);
+            break;
+        case 1:  /* "N" */
+            /* Expecting range operator; go to next state. */
+            if (*ptr == '-')
+            {
+                ++ptr;
+                num2 = BITSET_ELT_MAX;
+                ++state;
+                continue;
+            }
+            break;
         }
 
-        if (num2 >= BITSET_SIZE)
+        if (state > 0)  /* "N", "N-" or "N-N" */
         {
-            num2 = BITSET_SIZE - 1;
-            BITSET_SET_OVERFLOW(*out_bitset);
+            /* Store the partial result; go to state 0. */
+            state = 0;
+            if (num2 > BITSET_ELT_MAX)
+            {
+                out_of_range = 1;
+                num2 = BITSET_ELT_MAX;
+            }
+            if (num1 <= num2)
+                bitset_set_range(&result, num1, num2);
+            else
+                out_of_range = 1;
         }
-        for (i = num1; i <= num2; ++i)
-            BITSET_SET(*out_bitset, i);
 
-        if (*text == 0)
-            return 0;  /* success */
-        if (*text != ',' && *text != ';')  /* not a separator */
-            return -1;  /* failure */
+        if (*ptr == ',' || *ptr == ';')
+        {
+            /* Separator: continue the loop. */
+            ++ptr;
+            continue;
+        }
+        else
+        {
+            /* Unexpected character or end of string: break the loop. */
+            break;
+        }
     }
+
+    if (num1 == -1)
+    {
+        /* There were no partial results. */
+        if (end_idx != NULL)
+            *end_idx = 0;
+        /* No EINVAL here: the empty set is a valid input. */
+        return BITSET_EMPTY;
+    }
+    if (end_idx != NULL)
+        *end_idx = (size_t)(ptr - str);
+#ifdef ERANGE
+    if (out_of_range)
+        errno = ERANGE;
+#endif
+    return result;
 }
 
 
-/**
- * Converts a bitset value to a parsable enumeration string.
- **/
-char *bitset_deparse(bitset_t set, char *text_buf, size_t text_buf_size);
+/*
+ * Converts a bitset to a rangeset string.
+ */
+size_t bitset_to_rangeset_string(char *sbuf, size_t sbuf_size, bitset_t set);
 /* not implemented */
