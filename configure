@@ -1,148 +1,245 @@
 #!/bin/sh
 
-# This a hand-crafted, experimental, and, well, uncommented configure script.
-# Your feedback will be appreciated.
-
 trap "rm -f conftest* core a.out; exit 1" 1 2 3 15
 
 prefix="${prefix-/usr/local}"
 exec_prefix="${exec_prefix-\$(prefix)}"
-gcc=0
-with_system_zlib=0
-with_system_libpng=0
+bindir="${bindir-\$(exec_prefix)/bin}"
+mandir="${mandir-\$(prefix)/man}"
+man1dir="${man1dir-\$(mandir)/man1}"
 
-for option in "$@"
+cc="${CC-gcc}"
+#cc="${CC-clang}"
+#cc="${CC-c99}"
+cflags="$CFLAGS"
+
+with_system_libpng=0
+with_system_zlib=0
+
+with_preconfigured_libpng=1
+with_preconfigured_zlib=0
+
+for arg in "$@"
 do
-    case $option in
+    case "$arg" in
+    -- )
+        option="$arg"
+        ;;
+    --* )
+        option=`expr "X$arg" : 'X-\(.*\)'`
+        ;;
+    * )
+        option="$arg"
+        ;;
+    esac
+    case "$arg" in
     *=* )
-        optarg=`expr "X$option" : 'X[^=]*=\(.*\)'`
+        optarg=`expr "X$arg" : 'X[^=]*=\(.*\)'`
         ;;
     * )
         optarg=""
         ;;
     esac
-    case $option in
-    -h | --h | -help | --help )
+    case "$option" in
+    -help | -hel | -he | -h )
         echo "Usage:"
         echo "    $0 [options]"
         echo "Options:"
         echo "    -h, -help               Show this help"
+        echo "Installation directories:"
         echo "    -prefix=PREFIX          Install architecture-independent files in PREFIX"
-        echo "                            [/usr/local]"
+        echo "                            [default: $prefix]"
         echo "    -exec-prefix=EPREFIX    Install architecture-dependent files in EPREFIX"
-        echo "                            [PREFIX]"
-        echo "    -with-system-zlib       Use the system-supplied zlib"
+        echo "                            [default: PREFIX]"
+        echo "    -bindir=DIR             Install executable in DIR [default: EPREFIX/bin]"
+        echo "    -mandir=DIR             Install manual in DIR [default: PREFIX/man]"
+        echo "Optional packages:"
         echo "    -with-system-libpng     Use the system-supplied libpng"
+        echo "                            [default: false]"
+        echo "    -with-system-zlib       Use the system-supplied zlib"
+        echo "                            [default: with-system-libpng]"
         echo "Environment variables:"
         echo "    CC                      C compiler command"
-        echo "    CFLAGS                  C compiler flags"
         echo "    LD                      Linker command"
-        echo "    LDFLAGS                 Linker flags"
+        echo "    CFLAGS                  C compiler flags (e.g. -O3)"
+        echo "    CPPFLAGS                C preprocessor flags (e.g. -I DIR)"
+        echo "    LDFLAGS                 Linker flags (e.g. -L DIR)"
+        echo "    LIBS                    Additional libraries (e.g. -lfoo)"
         exit 0
         ;;
-    -prefix=* | --prefix=* )
-        prefix=$optarg
-        ;;
-    -prefix | --prefix )
-        prefix=$2
+    -prefix | -prefi | -pref | -pre | -pr | -p )
+        prefix="$2"
         shift
         ;;
-    -exec-prefix=* | --exec-prefix=* | -exec_prefix=* | --exec_prefix=* )
-        exec_prefix=$optarg
+    -prefix=* | -prefi=* | -pref=* | -pre=* | -pr=* | -p=* )
+        prefix="$optarg"
         ;;
-    -exec-prefix | --exec-prefix | -exec_prefix | --exec_prefix )
-        exec_prefix=$2
+    -exec-prefix | -exec_prefix | -exec-prefi | -exec_prefi \
+    | -exec-pref |  -exec_pref | -exec-pre | -exec_pre \
+    | -exec-pr | -exec_pr | -exec-p | -exec_p | exec- | -exec_ \
+    | -exec | -exe | -ex | -e )
+        exec_prefix="$2"
         shift
         ;;
-    -with-system-zlib | --with-system-zlib )
+    -exec-prefix=* | -exec_prefix=* | -exec-prefi=* | -exec_prefi=* \
+    | -exec-pref=* |  -exec_pref=* | -exec-pre=* | -exec_pre=* \
+    | -exec-pr=* | -exec_pr=* | -exec-p=* | -exec_p=* | exec-=* | -exec_=* \
+    | -exec=* | -exe=* | -ex=* | -e=* )
+        exec_prefix="$optarg"
+        ;;
+    -bindir | -bindi | -bind | -bin | -bi | -b )
+        bindir="$2"
+        shift
+        ;;
+    -bindir=* | -bindi=* | -bind=* | -bin=* | -bi=* | -b=* )
+        bindir="$optarg"
+        ;;
+    -mandir | -mandi | -mand | -man | -ma | -m )
+        mandir="$2"
+        shift
+        ;;
+    -mandir=* | -mandi=* | -mand=* | -man=* | -ma=* | -m=* )
+        mandir="$optarg"
+        ;;
+    -with-system-libpng )
+        with_system_libpng=1
+        with_system_zlib=1
+        # The system-supplied libpng requires the system-supplied zlib.
+        ;;
+    -with-system-zlib )
         with_system_zlib=1
         ;;
-    -with-system-libpng | --with-system-libpng )
-        with_system_libpng=1
-        ;;
     * )
-        echo "error: unknown option: $option"
+        echo "error: unknown option: $arg"
         echo "Type \"$0 -help\" for help"
         exit 64  # EX_USAGE
         ;;
     esac
 done
 
-update_re="
-    s:^\\(prefix *= *\\).*\$:\\1$prefix:
-    s:^\\(exec_prefix *= *\\).*\$:\\1$exec_prefix:
-"
-if test $with_system_zlib -ne 0
+if test "$with_system_libpng" -ne 0
 then
-    update_re_zlib='
-        s:\(.\)-I\$(ZDIR):\1:g
-        s:\(.\)\$(ZDIR)/\$(ZLIB):\1:g
-        /^SYSLIBS *=/s:$: -lz:
-    '
+    sed_config_libpng="
+        s:@USE_SYSTEM_LIBPNG_TRUE@::g
+        s:@USE_SYSTEM_LIBPNG_FALSE@:#:g
+    "
+else
+    sed_config_libpng="
+        s:@USE_SYSTEM_LIBPNG_FALSE@::g
+        s:@USE_SYSTEM_LIBPNG_TRUE@:#:g
+    "
 fi
-if test $with_system_libpng -ne 0
+
+if test "$with_system_zlib" -ne 0
 then
-    update_re_libpng='
-        s:\(.\)-I$(PNGDIR):\1:g
-        s:\(.\)$(PNGDIR)/$(PNGLIB):\1:g
-        /^SYSLIBS *=/s:$: -lpng:
-    '
+    sed_config_zlib="
+        s:@USE_SYSTEM_ZLIB_TRUE@::g
+        s:@USE_SYSTEM_ZLIB_FALSE@:#:g
+    "
+else
+    sed_config_zlib="
+        s:@USE_SYSTEM_ZLIB_FALSE@::g
+        s:@USE_SYSTEM_ZLIB_TRUE@:#:g
+    "
+    case `uname -s` in
+    mingw* | MINGW* | windows* | WINDOWS* )
+        with_preconfigured_zlib=1
+        sed_config_zlib="
+            $sed_config_zlib
+            s:@ZLIB_MK@:win32/Makefile.gcc:g
+            /MAKE.*ZLIB_MK/ s:distclean:clean:
+        "
+        ;;
+    esac
 fi
-for makefile in \
-    src/scripts/unix.mak src/scripts/gcc.mak \
-    lib/pngxtern/scripts/unix.mak lib/pngxtern/scripts/gcc.mak
-do
-    sed -e "$update_re" -e "$update_re_zlib" -e "$update_re_libpng" \
-        $makefile.in > $makefile
-done
 
 test=conftest$$
 cat > $test.c <<EOM
 int hello() { return 42; }
 EOM
 
-test -z "$CC" && echo "Checking for gcc..."
-cc="${CC-gcc}"
-cflags="$CFLAGS"
+gccish=0
 case "$cc" in
-*gcc* )
-    gcc=1
+*gcc* | *clang* )
+    echo "Checking for $cc..."
+    if ($cc -c $cflags $test.c) 2>/dev/null
+    then
+        gccish=1
+    fi
     ;;
 esac
 
-if test $gcc -ne 0 && ($cc -c $cflags $test.c) 2>/dev/null
-then
-    MAKEFILE=gcc.mak
-    CC="${CC-gcc}"
-    LD="${LD-\$(CC)}"
-else
-    MAKEFILE=unix.mak
-    CC="${CC-cc}"
-    LD="${LD-\$(CC)}"
-fi
 rm -f $test.c $test.o
 
-if test -z "$CFLAGS"
+if test $gccish -ne 0
 then
-    update_cflags="s:CFLAGS *= *[^ ]* *::g"
+    CC="${CC-$cc}"
+    CFLAGS="${CFLAGS--O2 -Wall -Wextra}"
 else
-    update_cflags="s%@CFLAGS@%$CFLAGS%g"
+    CC="${CC-cc}"
+    CFLAGS="${CFLAGS--O}"
 fi
-if test -z "$LDFLAGS"
+
+if test $with_system_libpng -eq 0
 then
-    update_ldflags="s:LDFLAGS *= *[^ ]* *::g"
+    if test "$with_preconfigured_libpng" -ne 0
+    then
+        echo "Using pre-configured libpng..."
+        if test $gccish -ne 0
+        then
+            sed_config_libpng="
+                $sed_config_libpng
+                s:@LIBPNG_MK@:scripts/makefile.gcc:g
+            "
+        else
+            sed_config_libpng="
+                $sed_config_libpng
+                s:@LIBPNG_MK@:scripts/makefile.std:g
+            "
+        fi
+    else
+        echo "Configuring libpng..."
+        (cd src/libpng && ./configure)
+        if test $? -ne 0
+        then
+            echo "error: could not configure: libpng"
+            exit 1
+        fi
+    fi
 else
-    update_ldflags="s%@LDFLAGS@%$LDFLAGS%g"
+    echo "Checking for system libpng..."
+    test=conftest$$
+cat > $test.c <<EOM
+#include <png.h>
+#if PNG_LIBPNG_VER < 10209
+#error This program requires libpng version 1.2.9 or higher
+#endif
+int dummy;
+EOM
+    ($CC -c $CFLAGS $test.c) 2>/dev/null
+    status=$?
+    rm -f $test.c $test.o
+    if test $status -ne 0
+    then
+        echo "error: missing libpng or incorrect libpng version"
+        echo "note: libpng version 1.2.9 or higher is required"
+        exit 1
+    fi
 fi
 
 if test $with_system_zlib -eq 0
 then
-    echo "Configuring zlib..."
-    (cd lib/zlib && ./configure --static)
-    if test $? -ne 0
+    if test "$with_preconfigured_zlib" -ne 0
     then
-        echo "error: could not configure: zlib"
-        exit 1
+        echo "Using pre-configured zlib..."
+    else
+        echo "Configuring zlib..."
+        (cd src/zlib && ./configure --static)
+        if test $? -ne 0
+        then
+            echo "error: could not configure: zlib"
+            exit 1
+        fi
     fi
 else
     echo "Checking for system zlib..."
@@ -154,7 +251,7 @@ cat > $test.c <<EOM
 #endif
 int dummy;
 EOM
-    ($cc -c $cflags $test.c) 2>/dev/null
+    ($CC -c $CFLAGS $test.c) 2>/dev/null
     status=$?
     rm -f $test.c $test.o
     if test $status -ne 0
@@ -165,46 +262,42 @@ EOM
     fi
 fi
 
-if test $with_system_libpng -eq 0
-then
-    echo "Using pre-configured libpng..."
-    #echo "Configuring libpng..."
-    #(cd lib/libpng && ./configure)
-    #if test $? -ne 0
-    #then
-    #    echo "Could not configure: libpng"
-    #    exit 1
-    #fi
-else
-    echo "Checking for system libpng..."
-    test=conftest$$
-cat > $test.c <<EOM
-#include <png.h>
-#if PNG_LIBPNG_VER < 10209 || PNG_LIBPNG_VER >= 10500
-#error This program requires libpng version 1.2.9 or higher, or version 1.4.x
-#endif
-int dummy;
-EOM
-    ($cc -c $cflags $test.c) 2>/dev/null
-    status=$?
-    rm -f $test.c $test.o
-    if test $status -ne 0
-    then
-        echo "error: missing libpng or incorrect libpng version"
-        echo "note: libpng version 1.2.x (1.2.9 or higher) or version 1.4.x is required"
-        echo "note: libpng version 1.5.x or higher can be used as a private build only"
-        exit 1
-    fi
-fi
-
-update_re="
-    s%@MAKEFILE@%scripts/$MAKEFILE%g
-    s%@prefix@%$prefix%g
-    s%@exec_prefix@%$exec_prefix%g
-    s%@CC@%$CC%g
-    s%@LD@%$LD%g
-    $update_cflags
-    $update_ldflags
+sed_config="
+    $sed_config_libpng
+    $sed_config_zlib
+    s#@prefix@#$prefix#g
+    s#@exec_prefix@#$exec_prefix#g
+    s#@bindir@#$bindir#g
+    s#@mandir@#$mandir#g
+    s#@man1dir@#$man1dir#g
+    s#@CC@#${CC-cc}#g
+    s#@CFLAGS@#${CFLAGS--O}#g
+    s#@CPP@#${CPP-\$(CC) -E}#g
+    s#@CPPFLAGS@#${CPPFLAGS-}#g
+    s#@LD@#${LD-\$(CC)}#g
+    s#@LDFLAGS@#${LDFLAGS--s}#g
+    s#@AR@#${AR-ar}#g
+    s#@ARFLAGS@#${ARFLAGS-cru}#g
+    s#@RANLIB@#${RANLIB-ranlib}#g
+    s#@LIBS@#${LIBS-}#g
+    s#@LIBM@#${LIBM--lm}#g
+    s#@LIBZ@#${LIBZ--lz}#g
+    s#@LIBPNG@#${LIBPNG--lpng}#g
+    s#@DIFF@#${DIFF-diff -b -u}#g
+    s#@RM_F@#${RM_F-rm -f}#g
+    s#@[A-Z]*_MK@#Makefile#g
+    s# *\$##
 "
-sed "$update_re" Makefile.in > Makefile
-sed "$update_re" src/Makefile.in > src/Makefile
+
+for makefile in \
+    ./Makefile \
+    src/Makefile \
+    src/gifread/Makefile \
+    src/minitiff/Makefile \
+    src/optipng/Makefile \
+    src/optipng/man/Makefile \
+    src/pngxtern/Makefile \
+    src/pnmio/Makefile
+do
+    sed "$sed_config" $makefile.in > $makefile
+done

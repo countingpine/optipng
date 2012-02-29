@@ -1,7 +1,7 @@
 
-OptiPNG 0.6.5: Advanced PNG optimizer.
+OptiPNG 0.7: Advanced PNG optimizer.
 Copyright (C) 2001-2011 Cosmin Truta.
-======================================
+=====================================
 
 License
 -------
@@ -22,26 +22,14 @@ Resources
 
 Build instructions
 ------------------
-  Extract the source archive:
-        tar -xzf optipng-0.6.5.tar.gz   # or:
-        unzip optipng-0.6.5.zip
-
-  On Unix:
-  - Run configure and make:
-        cd optipng-0.6.5/
+  On Unix, or under a Bourne-compatible shell, run ./configure and make:
+        cd optipng-0.7/
         ./configure && make
 
-  On Windows, using Microsoft Visual C++ 6.0 or later:
-  - Load and build the project:
-        optipng-0.6.5/prj/visualc6/optipng.dsw
-  - The output directory is:
-        optipng-0.6.5/bin/
-
-  Alternatively, use the applicable makefile as follows:
-        cd optipng-0.6.5/src/
-        make -f scripts/bcc32.mak       # or:
-        make -f scripts/gcc.mak         # or:
-        nmake -f scripts/visualc.mak    # etc.
+  Alternatively, use a pre-configured makefile that matches your compiler;
+  e.g.:
+        cd optipng-0.7/
+        nmake -f build/visualc.mk
 
 Installation instructions
 -------------------------
@@ -54,5 +42,5 @@ Installation instructions
         sudo make uninstall
 
   On Windows:
-    Copy optipng.exe to a directory found in PATH.
+  - Copy optipng.exe to a directory found in PATH.
 

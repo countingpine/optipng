@@ -9,10 +9,36 @@ Legend
  + Added or improved feature.
  - Removed feature.
  ! Fixed bug.
-!! Fixed dangerous bug
-   (data/metadata loss or serious security hazard).
+!! Fixed critical bug
+   (crash, data/metadata loss or security hazard).
  * Other modification (e.g. architectural improvement).
 
+Version 0.7     29-feb-2012
+-----------
+ * Upgraded libpng to version 1.4.9.
+ * Upgraded zlib to version 1.2.6-optipng.
+!! Resolved a rarely-occurring out-of-bounds memory access error in
+   Z_RLE, by upgrading zlib.  (Thanks to Christopher Wichura for the
+   report, and thanks to Mark Adler for fixing zlib.)
+ + Added the popularly-requested option -strip.
+   The only suboption currently supported is "-strip all".
+ + Added the option -clobber.
+   (Thanks in part to Maciej Pilichowski for the contribution.)
+ + Added the option -backup, as an alias of -keep.
+ + Added the option -silent, as an alias of -quiet.
+ - Deprecated the option -log.
+ * Changed the activity display output from STDOUT to STDERR.
+ + Allowed the option -preserve to save high-resolution timestamps
+   on Unix, if the POSIX-1.2008 API is available.  This feature was
+   previously available on Windows only.
+ ! Fixed a minor precision error in the display of file size percents.
+ ! Fixed a memory leak that occurred when reading broken GIF images.
+ ! Fixed various build issues.
+   (Thanks to Sebastian Pipping and Ville Skytta for the fixes.)
+ * Resolved all remaining compatibility issues with libpng-1.5.
+   (Thanks in part to Adam Ciarcinski for the contribution.)
+ * Added build support for clang.
+ * Reorganized the source directory structure.
 
 Version 0.6.5   24-jan-2011
 -------------
@@ -34,7 +60,6 @@ Version 0.6.5   24-jan-2011
  * Added various enhancements to the configure+make build system.
    (Thanks in part to Elias Pipping and Dmitri Zubko.)
 
-
 Version 0.6.4   14-mar-2010
 -------------
  * Upgraded libpng to version 1.4.1-optipng [private]
@@ -46,7 +71,6 @@ Version 0.6.4   14-mar-2010
  + Enabled automatic wildcard expansion (i.e. globbing) on Win64.
  ! Fixed a Unicode build issue on Windows.
    (Thanks to Fabien Barbier for the fix.)
-
 
 Version 0.6.3   18-may-2009
 -------------
@@ -63,7 +87,6 @@ Version 0.6.3   18-may-2009
  * Simplified the option abbreviation rules.  Option names can now be
    abbreviated to their shortest unique prefix, as in X11 applications.
 
-
 Version 0.6.2    9-nov-2008
 -------------
  * Upgraded libpng to version 1.2.33-optipng [private]
@@ -76,12 +99,11 @@ Version 0.6.2    9-nov-2008
  * Added a programming interface to the optimization engine, in order
    to facilitate the development of PNG-optimizing GUI apps and plugins.
 
-
 Version 0.6.1   20-jul-2008
 -------------
  * Upgraded cexcept to version 2.0.1.
  + Added a configure script, to be used instead of unix-secure.mak.
- ! Fixed a build issue that occured when using libpng from the system.
+ ! Fixed a build issue that occurred when using libpng from the system.
    (Thanks to Nelson A. de Oliveira for the report.)
  ! Fixed processing when image reduction yields an output larger than
    the original.  (Thanks to Michael Krishtopa for the report.)
@@ -89,7 +111,6 @@ Version 0.6.1   20-jul-2008
    (Thanks to Bill Koch for the report.)
  - Removed displaying of partial progress when abandoning IDATs under
    the -v option.  The percentages displayed were not very accurate.
-
 
 Version 0.6     15-jun-2008
 -----------
@@ -116,8 +137,7 @@ Version 0.6     15-jun-2008
    (Thanks to Christian Davideck for the report.)
  * Provided more detailed image information at the start of processing.
  * Provided a more detailed summary at the end of processing, under the
-   presence of the -v option and/or the occurence of exceptional events.
-
+   presence of the -v option and/or the occurrence of exceptional events.
 
 Version 0.5.5   28-jan-2007
 -------------
@@ -136,7 +156,6 @@ Version 0.5.5   28-jan-2007
    (Thanks to Martin Packman for the report.)
  ! Fixed the behavior of "-dir [DRIVE]:" on Windows.
 
-
 Version 0.5.4   11-aug-2006
 -------------
  + Added user options -out and -dir, to specify the name of
@@ -144,7 +163,6 @@ Version 0.5.4   11-aug-2006
    (Thanks to Alexander Lucas for the suggestion.)
  * Added support for builds based on the system-supplied libpng.
    (Thanks to Nelson A. de Oliveira for the valuable help.)
-
 
 Version 0.5.3   23-jul-2006
 -------------
@@ -156,13 +174,11 @@ Version 0.5.3   23-jul-2006
  + Prevented accidental file corruption when using option "-log".
  ! Fixed (again) a small typo in the online help.
 
-
 Version 0.5.2    7-may-2006
 -------------
  + Improved handling of inexact PNM-to-PNG conversions.
  ! Fixed a typo that was breaking the build on some Unix platforms.
    (Thanks to Aaron Reitz for the report.)
-
 
 Version 0.5.1   30-apr-2006
 -------------
@@ -179,7 +195,6 @@ Version 0.5.1   30-apr-2006
  ! Fixed a small typo in the help screen.
    (Thanks to A. Costa and Nelson A. de Oliveira for the report.)
 
-
 Version 0.5     14-jan-2006
 -----------
 ++ Added pngxtern, a libpng add-on for external image format
@@ -192,12 +207,11 @@ Version 0.5     14-jan-2006
    reported under the user option -v.
  - Removed reporting of some IDAT sizes that exceeded the optimum.
    (This was NOT a bug, but a "feature" that confused some users.)
- ! Fixed an RGB-to-gray reduction problem that occured under some
+ ! Fixed an RGB-to-gray reduction problem that occurred under some
    specific background colors.
  * Added support for builds based on the system-supplied zlib.
    (Thanks to Nelson A. de Oliveira for the suggestion.)
  * Modified LICENSE.  It is now a verbatim spell of the zlib license.
-
 
 Version 0.4.8   10-may-2005
 -------------
@@ -207,7 +221,6 @@ Version 0.4.8   10-may-2005
    (Thanks to Nicolas Le Gland for the report.)
  + Packed the Windows executable using UPX.
    (Thanks to [Warriant] for the suggestion.)
-
 
 Version 0.4.7   30-oct-2004
 -------------
@@ -220,7 +233,6 @@ Version 0.4.7   30-oct-2004
    terminate earlier in some circumstances.
  + Implemented error recovery, when PLTE is too small, and/or
    tRNS is too large.
-
 
 Version 0.4.6   25-oct-2004
 -------------
@@ -238,7 +250,6 @@ Version 0.4.6   25-oct-2004
  + Added user option -full to avoid the premature termination of
    trials; useful for debugging.
 
-
 Version 0.4.5   31-may-2004
 -------------
  * Upgraded zlib to version 1.2.1.f-cos2 [private]
@@ -253,18 +264,15 @@ Version 0.4.5   31-may-2004
  ! Eliminated memory leaks.
    (Thanks to Niels de Koning for the help.)
 
-
 Version 0.4.4   20-nov-2003
 -------------
  * Upgraded zlib to version 1.2.1
 ++ Added support for the Z_RLE strategy.
 
-
 Version 0.4.3   12-aug-2003
 -------------
  ! Fixed a reduction problem that caused an assertion failure.
    (Thanks to Dimitri Papadopoulos for the report.)
-
 
 Version 0.4.2   30-jun-2003
 -------------
@@ -276,11 +284,9 @@ Version 0.4.2   30-jun-2003
  + Displayed the IDAT size difference as a percentage.
    (Thanks to Nehal Mistry for the suggestion.)
 
-
 Version 0.4.1   19-may-2003
 -------------
  ! Fixed the removal of trailing sterile palette entries.
-
 
 Version 0.4     12-may-2003
 -----------
@@ -290,12 +296,10 @@ Version 0.4     12-may-2003
  ! Eliminated a spurious warning when the zlib window size
    is set to 256.
 
-
 Version 0.3.2   11-mar-2003
 -------------
  + Added support for updating sBIT during reductions.
  ! Fixed the reduction of the alpha channel.
-
 
 Version 0.3.1   25-feb-2003
 -------------
@@ -303,7 +307,6 @@ Version 0.3.1   25-feb-2003
    larger than the input.
    (Thanks to James H. Cloos, Jr. for the report.)
  + Added the HISTORY document (this file).
-
 
 Version 0.3     24-feb-2003
 -----------
@@ -317,12 +320,10 @@ This is the first public release of OptiPNG.
  + Added many user options.
  + Added documentation.
 
-
 Version 0.2     27-dec-2001
 -----------
  + Added support for optimization level presets.
  + Added user option for changing the interlacing.
-
 
 Version 0.1     17-dec-2001
 -----------
@@ -330,9 +331,8 @@ Version 0.1     17-dec-2001
    This improves the speed of OptiPNG significantly.
  * Structured exception handling is provided by cexcept.
 
-
-Version 0.0     10-dec-2001
------------
+Version 0.0.1   10-dec-2001
+-------------
 This is the very first version of OptiPNG.
 It compresses IDAT repeatedly, iterating through zlib compression
 and strategy levels, and PNG filters.
