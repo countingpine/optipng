@@ -1,0 +1,26 @@
+==================
+Coding style guide
+==================
+
+Structural conventions:
+- Indent using 4 spaces.  Do not use tabs.
+- Use Allman-style curly brackets.
+- Limit the line length to 79 characters + 1 EOL.
+
+Naming conventions:
+- Use lower_case_identifiers_separated_by_underscore.
+- Use UPPER_CASE_MACROS_SEPARATED_BY_UNDERSCORE.
+- Use UPPER_CASE_ENUMS_SEPARATED_BY_UNDERSCORE.
+- Prepend optk_ / OPTK_ to all OPTK symbols.
+- Prepend opng_ / OPNG_ to all the other OPNGLIB symbols.
+
+Data structure conventions:
+- Prefer enum { CONSTANTS } to #define MACROS.
+- Use typedef type_name_t for types that are meant to be opaque.
+- Use non-typedef'ed struct structure_name { } for structures
+  whose content is meant to be known.
+
+Doxygen:
+- Use Doxygen comments in the public headers only.
+- Use non-doxygenated comments elsewhere.
+- Use @tag (not \tag).
