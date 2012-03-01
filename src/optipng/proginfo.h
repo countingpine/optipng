@@ -2,14 +2,31 @@
  * proginfo.h
  * OptiPNG program information.
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
  */
 
-#define PROGRAM_NAME      "OptiPNG"
-#define PROGRAM_SUMMARY   "Portable Network Graphics optimizer"
-#define PROGRAM_VERSION   "0.7"
-#define PROGRAM_COPYRIGHT "Copyright (C) 2001-2011 Cosmin Truta"
-#define PROGRAM_URI       "http://optipng.sourceforge.net/"
+#ifndef PROGINFO_H
+#define PROGINFO_H
+
+#define PRODUCT_NAME \
+    "OptiPNG"
+
+#define PRODUCT_SUMMARY \
+    "Portable Network Graphics optimizer"
+
+#define PRODUCT_VERSION \
+    "\"Hg\""
+
+#define PRODUCT_COPYRIGHT \
+    "Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors"
+
+#define PRODUCT_URI \
+    "http://optipng.sourceforge.net/"
+
+#define PROGRAM_NAME \
+    "optipng"
+
+#endif  /* PROGINFO_H */

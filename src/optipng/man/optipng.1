@@ -1,8 +1,8 @@
-.TH OPTIPNG 1 "2011-Dec-19" "OptiPNG version 0.7"
+.TH OPTIPNG 1 "@DATE@" "OptiPNG version Hg"
 
 .SH NAME
-.B OptiPNG
-\- Optimize Portable Network Graphics files
+.B optipng
+\- optimize Portable Network Graphics files
 
 .SH SYNOPSIS
 .B optipng
@@ -12,12 +12,11 @@
 [\fIoptions...\fP] \fIfiles...\fP
 
 .SH DESCRIPTION
-The
 .B OptiPNG
-program shall attempt to \fIoptimize\fP PNG files, i.e. reduce their size to
-a minimum, without losing semantic information. In addition, this program shall
-perform a suite of auxiliary functions like integrity checks, metadata recovery
-and pixmap-to-PNG conversion.
+shall attempt to \fIoptimize\fP PNG files, i.e. reduce their size to a minimum,
+without losing semantic information. In addition, this program shall perform a
+suite of auxiliary functions like integrity checks, metadata recovery and
+pixmap-to-PNG conversion.
 .P
 The optimization attempts are not guaranteed to succeed. Valid PNG files that
 cannot be optimized by this program are normally left intact; their size will
@@ -35,16 +34,12 @@ processes each image file given in the command line as follows:
 .IP
 Attempts to optimize the given file in-place. If optimization is successful, or
 if the option \fB\-force\fP is enabled, replaces the original file with its
-optimized version. The original file is backed up if the option \fB\-keep\fP
-is enabled.
+optimized version.
 .P
 \- If the image is in an external format:
 .IP
 Creates an optimized PNG version of the given file. The output file name is
 composed from the original file name and the \fC.png\fP extension.
-.P
-Existing files are \fInot\fP overwritten, unless the option \fB\-clobber\fP is
-enabled.
 
 .SH OPTIONS
 .SS "General options"
@@ -52,14 +47,17 @@ enabled.
 \fB-?\fP, \fB\-h\fP, \fB\-help\fP
 Show a complete summary of options.
 .TP
-\fB\-backup\fP, \fB\-keep\fP
-Keep a backup of the modified files.
+\fB\-backup\fP
+Back up the modified files.
+.br
+The backup file name is composed from the original file name and a backup
+suffix. The backup suffix is \fC.bak\fP.
 .TP
 \fB\-clobber\fP
-Overwrite the existing output and backup files.
+This option, which has no effect, is deprecated and will be removed eventually.
 .br
-Under this option, if the option \fB\-backup\fP is not enabled, the old backups
-of the overwritten files are deleted.
+Starting with \fBOptiPNG\fP version 1.0, output files are clobbered by default.
+Use \fB\-no\-clobber\fP to revert this setting.
 .TP
 \fB\-dir\fP \fIdirectory\fP
 Write the output files to \fIdirectory\fP.
@@ -76,18 +74,26 @@ precedence over file size.
 When this option is not used, the invalid input files are left unprocessed.
 .TP
 \fB\-force\fP
-Enforce writing of a new output file.
+Enforce creation of a new output file.
 .br
-This option overrides the program's decision not to write such file, e.g. when
+This option overrides the program's decision not to create such file, e.g. when
 the PNG input is digitally signed (using dSIG), or when the PNG output becomes
 larger than the PNG input.
 .TP
+\fB\-keep\fP
+This option is deprecated and will be removed eventually. Use \fB\-backup\fP.
+.TP
 \fB\-log\fP \fIfile\fP
-Log messages to \fIfile\fP.
-For safety reasons, \fIfile\fP must have the extension \fC.log\fP.
-.br
-This option is deprecated and will be removed eventually. Use shell
-redirection.
+This option is no longer supported. Use standard shell redirection.
+.TP
+\fB\-no\-clobber\fP
+Do not overwrite existing output or backup files.
+.TP
+\fB\-no\-create\fP
+Perform the encoding trials, but do not create any files.
+.TP
+\fB\-stdout\fP
+Write output to the standard console output.
 .TP
 \fB\-out\fP \fIfile\fP
 Write output file to \fIfile\fP.
@@ -98,13 +104,11 @@ Preserve file attributes (time stamps, file access rights, etc.) where
 applicable.
 .TP
 \fB\-quiet\fP, \fB\-silent\fP
-Run in quiet mode.
-.br
-The messages are still written to the log file if the option \fB\-log\fP is
-enabled.
+Run in quiet mode: do not show the informational messages on the console.
 .TP
 \fB\-simulate\fP
-Run in simulation mode: perform the trials, but do not create output files.
+This option is deprecated and will be removed eventually. Use
+\fB\-no\-create\fP.
 .TP
 \fB\-v\fP
 Enable the options \fB\-verbose\fP and \fB\-version\fP.
@@ -122,19 +126,34 @@ Stop option switch parsing.
 \fB\-o\fP \fIlevel\fP
 Select the optimization level.
 .br
-The optimization level 0 enables a set of optimization operations that require
-minimal effort. There will be no changes to image attributes like bit depth
-or color type, and no recompression of existing IDAT datastreams.
-.br
-The optimization level 1 enables a single IDAT compression trial. The trial
-chosen is what \fBOptiPNG\fP \fIthinks\fP it's probably the most effective.
+The optimization level 1 is an alias to the option \fB\-fast\fP, which enables
+a single IDAT compression trial.
 .br
 The optimization levels 2 and higher enable multiple IDAT compression trials;
 the higher the level, the more trials.
 .br
 The behavior and the default value of this option may change across different
-program versions. Use the option \fB\-h\fP to see the details pertaining to
+program versions. Use the option \fB\-help\fP to see the details pertaining to
 your specific version.
+.TP
+\fB\-fast\fP
+Select the \fIfast\fP compression level.
+.br
+Only one IDAT compression trial is performed. The trial chosen is what
+\fBOptiPNG\fP thinks it's probably the most effective.
+.br
+At this level, \fBOptiPNG\fP is functionally similar to other common
+single-pass PNG encoders that run at their highest and \fIslowest\fP
+compression level (which, usually, is 9). Use the option \fB\-zc\fP to tailor
+this level.
+.TP
+\fB\-fastest\fP
+Select the \fIfastest\fP compression level.
+.br
+Only one IDAT compression trial is performed, except when encountering existing
+IDAT datastreams, which are not recompressed. The trial chosen is what
+\fBOptiPNG\fP thinks it's probably the fastest that can give a decent
+compression ratio.
 .TP
 \fB\-f\fP \fIfilters\fP
 Select the PNG delta filters.
@@ -149,8 +168,8 @@ and \fIPaeth\fP, respectively). The filter value 5 indicates adaptive filtering,
 whose effect is defined by the \fBlibpng\fP(3) library used by \fBOptiPNG\fP.
 .TP
 \fB\-full\fP
-Produce a full report on IDAT.
-This option might slow down the trials.
+This option is deprecated and will be removed eventually. Use
+\fB\-paranoid\fP.
 .TP
 \fB\-i\fP \fItype\fP
 Select the interlace type (0\-1).
@@ -180,7 +199,15 @@ Do not recode IDAT datastreams.
 The IDAT optimization operations that do not require recoding (e.g. IDAT
 chunk concatenation) are still performed.
 .br
-This option has effect on PNG input files only.
+This option has effect on PNG input files, as well as files that contain
+embedded PNG datastreams, like PNG-compressed BMP files. It is ignored
+otherwise.
+.TP
+\fB\-paranoid\fP
+Encode IDAT fully and show its size in the report.
+.br
+This option might slow down the encoding trials, but has no effect on the final
+output.
 .TP
 \fB\-zc\fP \fIlevels\fP
 Select the zlib compression levels used in IDAT compression.
@@ -224,20 +251,31 @@ The effect of this option is defined by the \fBzlib\fP(3) library used by
 \fBOptiPNG\fP.
 .SS "Editing options"
 .TP
+\fB\-set\fP \fIobject\fP=\fIvalue\fP
+Set an image data object in a PNG file.
+.br
+TODO: Explain \fB\-set image.alpha.precision=\fP\fInum\fP, etc.
+.TP
+\fB\-reset\fP \fIobjects\fP
+Reset image data objects in a PNG file.
+.br
+TODO: Explain \fB\-reset image.alpha\fP.
+.TP
+\fB\-strip\fP \fIobjects\fP
+Strip metadata objects from a PNG file.
+.br
+TODO: Explain \fB\-strip all\fP and \fB\-strip\fP \fIchunks\fP.
+.TP
+\fB\-protect\fP \fIobjects\fP
+Prevent metadata objects from being stripped.
+.br
+TODO: Explain \fB\-protect all\fP and \fB\-protect\fP \fIchunks\fP.
+.TP
 \fB\-snip\fP
 Cut one image out of multi-image, animation or video files.
 .br
 Depending on the input format, this may be either the first or the most
 relevant (e.g. the largest) image.
-.TP
-\fB\-strip\fP \fIobjects\fP
-Strip metadata objects from a PNG file.
-.br
-PNG metadata is the information stored in any ancillary chunk except
-\fCtRNS\fP. (\fCtRNS\fP represents the alpha channel, which, even if ignored
-in rendering, is still a proper image channel in the RGBA color space.)
-.br
-The only option currently supported is \fB-strip all\fP.
 .SS "Notes"
 Options may come in any order (except for \fB\-\-\fP), before, after, or
 alternating with file names. Option names are case-insensitive and may be
@@ -290,6 +328,55 @@ being created, and may be fine-tuned via the option \fB\-zw\fP.
 .P
 Extremely exhaustive searches are not generally expected to yield significant
 improvements in compression ratio, and are recommended to advanced users only.
+.P
+The \fB\-o1\fP heuristic consists of picking the compression parameters that
+are believed to produce the smallest IDAT. (Most other good PNG encoders use a
+similar heuristic.) This heuristic works as follows:
+.IP
+Select the zlib compression level 9 (i.e. the highest available).
+.br
+Select the filter value 0 (\fINone\fP) for images encoded in palette mode or
+with a bit depth less than 8; select the filter value 5 (\fIAll\fP) otherwise.
+.br
+Select the zlib memory level 8 and the zlib strategy 0
+(\fCZ_DEFAULT_STRATEGY\fP) if the filter value is 0; select the zlib memory
+level 9 and the zlib strategy 1 (\fCZ_FILTERED\fP) otherwise.
+
+.SH "EXIT STATUS"
+Upon program termination, the following exit codes shall be returned:
+.TP
+0
+The execution terminated normally. The input files (if any) were either
+successfully optimized or left intact.
+.TP
+1
+One or more input files had errors, all of which were successfully fixed.
+This can only happen if the \fB\-fix\fP option is enabled.
+.TP
+2
+One or more input files had errors that were not fixed.
+This can happen when the errors are too severe to recover, or the \fB\-fix\fP
+option is not enabled.
+.TP
+64 (\fCEX_USAGE\fP)
+The command line was incorrect.
+.TP
+66 (\fCEX_NOINPUT\fP)
+A file or directory did not exist or was not readable.
+.TP
+69 (\fCEX_UNAVAILABLE\fP)
+An unavailable or unimplemented program feature or service was requested.
+.TP
+70 (\fCEX_SOFTWARE\fP)
+An unrecoverable internal software error (i.e. a severe bug) was detected.
+.TP
+71 (\fCEX_OSERR\fP)
+A system error (e.g. a memory allocation failure) has occurred.
+.TP
+73 (\fCEX_CANTCREAT\fP)
+A file or directory could not be created.
+.P
+Other sysexits may be added in the future.
 
 .SH EXAMPLES
 \fCoptipng file.png\ \ \ \ \ \ \fP# default speed
@@ -298,7 +385,7 @@ improvements in compression ratio, and are recommended to advanced users only.
 .br
 \fCoptipng -o7 file.png\ \ \fP# very slow
 
-.SH BUGS
+.SH CAVEAT
 Lossless image reductions are not completely implemented.
 (This does \fInot\fP affect the integrity of the output files.)
 Here are the missing pieces:

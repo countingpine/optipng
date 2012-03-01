@@ -211,8 +211,8 @@ else
     test=conftest$$
 cat > $test.c <<EOM
 #include <png.h>
-#if PNG_LIBPNG_VER < 10209
-#error This program requires libpng version 1.2.9 or higher
+#if PNG_LIBPNG_VER < 10405
+#error This program requires libpng version 1.4.5 or higher
 #endif
 int dummy;
 EOM
@@ -222,7 +222,7 @@ EOM
     if test $status -ne 0
     then
         echo "error: missing libpng or incorrect libpng version"
-        echo "note: libpng version 1.2.9 or higher is required"
+        echo "note: libpng version 1.4.5 or higher is required"
         exit 1
     fi
 fi
@@ -294,6 +294,8 @@ for makefile in \
     src/Makefile \
     src/gifread/Makefile \
     src/minitiff/Makefile \
+    src/opnglib/Makefile \
+    src/opngreduc/Makefile \
     src/optipng/Makefile \
     src/optipng/man/Makefile \
     src/pngxtern/Makefile \

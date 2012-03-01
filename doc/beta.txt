@@ -1,0 +1,2 @@
+This software, in beta version, is made available as-is.
+Its design, development, testing and documentation are incomplete.
