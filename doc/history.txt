@@ -13,13 +13,19 @@ Legend
    (crash, data/metadata loss or security hazard).
  * Other modification (e.g. architectural improvement).
 
-Version DEV
------------
+Version Hg
+----------
 ++ Revamped the optimization levels, in the hope that the selection
    of iteration parameters is now smarter, and the delivered compression
    ratio is better.
-++ Added the option -fast, for the benefit of applications that need an
-   efficient PNG encoding backend.
+++ Added the possibility to strip individual chunks;
+   e.g. "-strip gAMA,cHRM".
+++ Added the option -protect, to protect chunks from stripping;
+   e.g. "-strip all -protect sRGB,iCCP".
+++ Added the options -set and -reset to manipulate image data;
+   e.g. "-reset image.alpha,image.chroma", "-set image.alpha.precision=1".
+++ Added the option -fast, for the benefit of applications that need a
+   fast and efficient PNG encoding backend.
 ++ Added the option -fastest, for the benefit of applications that need
    the fastest possible PNG encoding backend.
  + Allowed path names of unlimited length.
