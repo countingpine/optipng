@@ -97,7 +97,7 @@ Write output to the standard console output.
 .TP
 \fB\-out\fP \fIfile\fP
 Write output file to \fIfile\fP.
-The command line must contain exactly one input file.
+The command line must contain one input file.
 .TP
 \fB\-preserve\fP
 Preserve file attributes (time stamps, file access rights, etc.) where
@@ -297,17 +297,17 @@ Some options may have arguments that follow the option name, separated by
 whitespace or the equal sign ('\fB=\fP'). If the option argument is a number
 or a rangeset, the separator may be omitted. For example:
 .IP
-\fB\-out\fP \fCnewfile.png\fP\h'2'<=>\h'2'\fB\-out=\fP\fCnewfile.png\fP
+\fB\-out\fP \fCnewfile.png\fP \ <=> \ \fB\-out=\fP\fCnewfile.png\fP
 .br
-\fB\-o3\fP\h'2'<=>\h'2'\fB\-o\ 3\fP\h'2'<=>\h'2'\fB\-o=3\fP
+\fB\-o3\fP \ <=> \ \fB\-o 3\fP \ <=> \ \fB\-o=3\fP
 .br
-\fB\-f0,3\-5\fP\h'2'<=>\h'2'\fB\-f\ 0,3\-5\fP\h'2'<=>\h'2'\fB\-f=0,3\-5\fP
+\fB\-f0,3\-5\fP \ <=> \ \fB\-f 0,3\-5\fP \ <=> \ \fB\-f=0,3\-5\fP
 .P
 Rangeset arguments are cumulative; e.g.
 .IP
-\fB\-f0 \-f3\-5\fP\h'2'<=>\h'2'\fB\-f0,3\-5\fP
+\fB\-f0 \-f3\-5\fP \ <=> \ \fB\-f0,3\-5\fP
 .br
-\fB\-zs0 \-zs1 \-zs2\-3\fP\h'2'<=>\h'2'\fB\-zs0,1,2,3\fP\h'2'<=>\h'2'\fB\-zs0\-3\fP
+\fB\-zs0 \-zs1 \-zs2\-3\fP \ <=> \ \fB\-zs0,1,2,3\fP \ <=> \ \fB\-zs0\-3\fP
 
 .SH "EXTENDED DESCRIPTION"
 The PNG optimization algorithm consists of the following steps:
@@ -391,11 +391,11 @@ A file or directory could not be created.
 Other sysexits may be added in the future.
 
 .SH EXAMPLES
-\fCoptipng file.png\ \ \ \ \ \ \fP# default speed
+\fCoptipng file.png \ \ \ \ \ \fP# default speed
 .br
-\fCoptipng \-o5 file.png\ \ \fP# slow
+\fCoptipng \-o5 file.png \ \fP# slow
 .br
-\fCoptipng \-o7 file.png\ \ \fP# very slow
+\fCoptipng \-o7 file.png \ \fP# very slow
 
 .SH CAVEAT
 Lossless image reductions are not completely implemented.
