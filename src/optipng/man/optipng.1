@@ -44,7 +44,7 @@ composed from the original file name and the \fC.png\fP extension.
 .SH OPTIONS
 .SS "General options"
 .TP
-\fB-?\fP, \fB\-h\fP, \fB\-help\fP
+\fB\-?\fP, \fB\-h\fP, \fB\-help\fP
 Show a complete summary of options.
 .TP
 \fB\-backup\fP
@@ -222,7 +222,7 @@ The effect of this option is defined by the \fBzlib\fP(3) library used by
 \fB\-zm\fP \fIlevels\fP
 Select the zlib memory levels used in IDAT compression.
 .br
-The \fIlevels\fP argument is specified as a rangeset (e.g. \fB-zm8\-9\fP),
+The \fIlevels\fP argument is specified as a rangeset (e.g. \fB\-zm8\-9\fP),
 and the default \fIlevels\fP value depends on the optimization level set by
 the option \fB\-o\fP.
 .br
@@ -232,7 +232,7 @@ The effect of this option is defined by the \fBzlib\fP(3) library used by
 \fB\-zs\fP \fIstrategies\fP
 Select the zlib compression strategies used in IDAT compression.
 .br
-The \fIstrategies\fP argument is specified as a rangeset (e.g. \fB-zs0\-3\fP),
+The \fIstrategies\fP argument is specified as a rangeset (e.g. \fB\-zs0\-3\fP),
 and the default \fIstrategies\fP value depends on the optimization level set by
 the option \fB\-o\fP.
 .br
@@ -264,12 +264,24 @@ TODO: Explain \fB\-reset image.alpha\fP.
 \fB\-strip\fP \fIobjects\fP
 Strip metadata objects from a PNG file.
 .br
-TODO: Explain \fB\-strip all\fP and \fB\-strip\fP \fIchunks\fP.
+PNG metadata is the information stored in any ancillary chunk except
+\fCtRNS\fP. (\fCtRNS\fP represents the alpha channel, which, even if ignored
+in rendering, is still a proper image channel in the RGBA color space.)
+.br
+The accepted \fIobjects\fP are the chunk names or the \fBall\fP object.
+Multiple \fIobjects\fP can be comma-separated within a single \fB\-strip\fP
+option, or split across multiple \fB\-strip\fP options.
 .TP
 \fB\-protect\fP \fIobjects\fP
 Prevent metadata objects from being stripped.
 .br
-TODO: Explain \fB\-protect all\fP and \fB\-protect\fP \fIchunks\fP.
+This option has priority over \fB\-strip\fP. For example, under
+\fB\-strip\ all \-protect\ sRGB\fP, everything except \fCsRGB\fP is stripped;
+under \fB\-strip\ all \-protect\ all\fP, nothing is stripped.
+.br
+The accepted \fIobjects\fP are the chunk names or the \fBall\fP object.
+Multiple \fIobjects\fP can be comma-separated within a single \fB\-protect\fP
+option, or split across multiple \fB\-protect\fP options.
 .TP
 \fB\-snip\fP
 Cut one image out of multi-image, animation or video files.
@@ -381,9 +393,9 @@ Other sysexits may be added in the future.
 .SH EXAMPLES
 \fCoptipng file.png\ \ \ \ \ \ \fP# default speed
 .br
-\fCoptipng -o5 file.png\ \ \fP# slow
+\fCoptipng \-o5 file.png\ \ \fP# slow
 .br
-\fCoptipng -o7 file.png\ \ \fP# very slow
+\fCoptipng \-o7 file.png\ \ \fP# very slow
 
 .SH CAVEAT
 Lossless image reductions are not completely implemented.
