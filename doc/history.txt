@@ -40,6 +40,12 @@ Version Hg
  * Moved the PNG reduction code (opngreduc) to a separate sub-project.
  * Required libpng version 1.4.5 as a minimum.
 
+Version 0.7.1   19-mar-2012
+-------------
+!! Fixed a regression in the reduction of palette-encoded grayscale
+   images.  This regression was introduced in version 0.7.
+   (Thanks to Adam Ciarcinski for the fix.)
+
 Version 0.7     29-feb-2012
 -----------
  * Upgraded libpng to version 1.4.9.

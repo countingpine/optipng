@@ -1207,7 +1207,11 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    }
 
    if (reductions & OPNG_REDUCE_8_TO_4_2_1)
+   {
       result |= opng_reduce_palette_bits(png_ptr, info_ptr, reductions);
+      /* Refresh the image information. */
+      bit_depth = png_get_bit_depth(png_ptr, info_ptr);
+   }
    if ((bit_depth < 8) || !is_gray)
       return result;
 
