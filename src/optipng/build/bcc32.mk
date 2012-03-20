@@ -196,7 +196,7 @@ distclean: \
   distclean-pngxtern-gif-pnm-tiff \
   distclean-libpng \
   distclean-zlib
-	-$(RM_F) Makefile
+	-$(RM_F) Makefile man\Makefile
 
 distclean-pngxtern-gif-pnm-tiff:
 	cd $(PNGXTERN_DIR)

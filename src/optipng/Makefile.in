@@ -215,7 +215,7 @@ distclean: \
   distclean-pngxtern-gif-pnm-tiff \
   distclean-libpng \
   distclean-zlib
-	-$(RM_F) Makefile
+	-$(RM_F) Makefile man/Makefile
 
 .PHONY: distclean-pngxtern-gif-pnm-tiff
 distclean-pngxtern-gif-pnm-tiff:

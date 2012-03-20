@@ -13,6 +13,12 @@ Legend
    (crash, data/metadata loss or security hazard).
  * Other modification (e.g. architectural improvement).
 
+Version 0.7.1   19-mar-2012
+-------------
+!! Fixed a regression in the reduction of palette-encoded grayscale
+   images.  This regression was introduced in version 0.7.
+   (Thanks to Adam Ciarcinski for the fix.)
+
 Version 0.7     29-feb-2012
 -----------
  * Upgraded libpng to version 1.4.9.

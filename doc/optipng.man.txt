@@ -293,4 +293,4 @@ AUTHOR
        the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.7               2011-Dec-19                       OPTIPNG(1)
+OptiPNG version 0.7.1             2012-Mar-19                       OPTIPNG(1)

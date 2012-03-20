@@ -1,4 +1,4 @@
-.TH OPTIPNG 1 "2011-Dec-19" "OptiPNG version 0.7"
+.TH OPTIPNG 1 "2012-Mar-19" "OptiPNG version 0.7.1"
 
 .SH NAME
 .B OptiPNG
@@ -49,7 +49,7 @@ enabled.
 .SH OPTIONS
 .SS "General options"
 .TP
-\fB-?\fP, \fB\-h\fP, \fB\-help\fP
+\fB\-?\fP, \fB\-h\fP, \fB\-help\fP
 Show a complete summary of options.
 .TP
 \fB\-backup\fP, \fB\-keep\fP
@@ -195,7 +195,7 @@ The effect of this option is defined by the \fBzlib\fP(3) library used by
 \fB\-zm\fP \fIlevels\fP
 Select the zlib memory levels used in IDAT compression.
 .br
-The \fIlevels\fP argument is specified as a rangeset (e.g. \fB-zm8\-9\fP),
+The \fIlevels\fP argument is specified as a rangeset (e.g. \fB\-zm8\-9\fP),
 and the default \fIlevels\fP value depends on the optimization level set by
 the option \fB\-o\fP.
 .br
@@ -205,7 +205,7 @@ The effect of this option is defined by the \fBzlib\fP(3) library used by
 \fB\-zs\fP \fIstrategies\fP
 Select the zlib compression strategies used in IDAT compression.
 .br
-The \fIstrategies\fP argument is specified as a rangeset (e.g. \fB-zs0\-3\fP),
+The \fIstrategies\fP argument is specified as a rangeset (e.g. \fB\-zs0\-3\fP),
 and the default \fIstrategies\fP value depends on the optimization level set by
 the option \fB\-o\fP.
 .br
@@ -237,7 +237,7 @@ PNG metadata is the information stored in any ancillary chunk except
 \fCtRNS\fP. (\fCtRNS\fP represents the alpha channel, which, even if ignored
 in rendering, is still a proper image channel in the RGBA color space.)
 .br
-The only option currently supported is \fB-strip all\fP.
+The only option currently supported is \fB\-strip all\fP.
 .SS "Notes"
 Options may come in any order (except for \fB\-\-\fP), before, after, or
 alternating with file names. Option names are case-insensitive and may be
@@ -247,17 +247,17 @@ Some options may have arguments that follow the option name, separated by
 whitespace or the equal sign ('\fB=\fP'). If the option argument is a number
 or a rangeset, the separator may be omitted. For example:
 .IP
-\fB\-out\fP \fCnewfile.png\fP\h'2'<=>\h'2'\fB\-out=\fP\fCnewfile.png\fP
+\fB\-out\fP \fCnewfile.png\fP \ <=> \ \fB\-out=\fP\fCnewfile.png\fP
 .br
-\fB\-o3\fP\h'2'<=>\h'2'\fB\-o\ 3\fP\h'2'<=>\h'2'\fB\-o=3\fP
+\fB\-o3\fP \ <=> \ \fB\-o 3\fP \ <=> \ \fB\-o=3\fP
 .br
-\fB\-f0,3\-5\fP\h'2'<=>\h'2'\fB\-f\ 0,3\-5\fP\h'2'<=>\h'2'\fB\-f=0,3\-5\fP
+\fB\-f0,3\-5\fP \ <=> \ \fB\-f 0,3\-5\fP \ <=> \ \fB\-f=0,3\-5\fP
 .P
 Rangeset arguments are cumulative; e.g.
 .IP
-\fB\-f0 \-f3\-5\fP\h'2'<=>\h'2'\fB\-f0,3\-5\fP
+\fB\-f0 \-f3\-5\fP \ <=> \ \fB\-f0,3\-5\fP
 .br
-\fB\-zs0 \-zs1 \-zs2\-3\fP\h'2'<=>\h'2'\fB\-zs0,1,2,3\fP\h'2'<=>\h'2'\fB\-zs0\-3\fP
+\fB\-zs0 \-zs1 \-zs2\-3\fP \ <=> \ \fB\-zs0,1,2,3\fP \ <=> \ \fB\-zs0\-3\fP
 
 .SH "EXTENDED DESCRIPTION"
 The PNG optimization algorithm consists of the following steps:
@@ -292,11 +292,11 @@ Extremely exhaustive searches are not generally expected to yield significant
 improvements in compression ratio, and are recommended to advanced users only.
 
 .SH EXAMPLES
-\fCoptipng file.png\ \ \ \ \ \ \fP# default speed
+\fCoptipng file.png \ \ \ \ \ \fP# default speed
 .br
-\fCoptipng -o5 file.png\ \ \fP# slow
+\fCoptipng -o5 file.png \ \fP# slow
 .br
-\fCoptipng -o7 file.png\ \ \fP# very slow
+\fCoptipng -o7 file.png \ \fP# very slow
 
 .SH BUGS
 Lossless image reductions are not completely implemented.

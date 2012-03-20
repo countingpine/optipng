@@ -1,6 +1,6 @@
 
-OptiPNG 0.7: Advanced PNG optimizer.
-Copyright (C) 2001-2011 Cosmin Truta.
+OptiPNG 0.7.1: Advanced PNG optimizer.
+Copyright (C) 2001-2012 Cosmin Truta.
 =====================================
 
 License
@@ -23,12 +23,12 @@ Resources
 Build instructions
 ------------------
   On Unix, or under a Bourne-compatible shell, run ./configure and make:
-        cd optipng-0.7/
+        cd optipng-0.7.1/
         ./configure && make
 
   Alternatively, use a pre-configured makefile that matches your compiler;
   e.g.:
-        cd optipng-0.7/
+        cd optipng-0.7.1/
         nmake -f build/visualc.mk
 
 Installation instructions

@@ -1,5 +1,5 @@
 <!-- Creator     : groff version 1.20.1 -->
-<!-- CreationDate: Wed Feb 29 12:06:38 2012 -->
+<!-- CreationDate: Mon Mar 19 20:19:00 2012 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
 "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -102,7 +102,7 @@ are <i>not</i> overwritten, unless the option
 
 <p style="margin-left:11%; margin-top: 1em"><b>General
 options <br>
--?</b>, <b>&minus;h</b>, <b>&minus;help</b></p>
+&minus;?</b>, <b>&minus;h</b>, <b>&minus;help</b></p>
 
 <p style="margin-left:22%;">Show a complete summary of
 options.</p>
@@ -401,8 +401,8 @@ library used by <b>OptiPNG</b>.</p>
 <p style="margin-left:22%;">Select the zlib memory levels
 used in IDAT compression. <br>
 The <i>levels</i> argument is specified as a rangeset (e.g.
-<b>-zm8&minus;9</b>), and the default <i>levels</i> value
-depends on the optimization level set by the option
+<b>&minus;zm8&minus;9</b>), and the default <i>levels</i>
+value depends on the optimization level set by the option
 <b>&minus;o</b>. <br>
 The effect of this option is defined by the <b>zlib</b>(3)
 library used by <b>OptiPNG</b>.</p>
@@ -413,7 +413,7 @@ library used by <b>OptiPNG</b>.</p>
 <p style="margin-left:22%;">Select the zlib compression
 strategies used in IDAT compression. <br>
 The <i>strategies</i> argument is specified as a rangeset
-(e.g. <b>-zs0&minus;3</b>), and the default
+(e.g. <b>&minus;zs0&minus;3</b>), and the default
 <i>strategies</i> value depends on the optimization level
 set by the option <b>&minus;o</b>. <br>
 The effect of this option is defined by the <b>zlib</b>(3)
@@ -464,7 +464,7 @@ PNG metadata is the information stored in any ancillary
 chunk except <tt>tRNS</tt>. (<tt>tRNS</tt> represents the
 alpha channel, which, even if ignored in rendering, is still
 a proper image channel in the RGBA color space.) <br>
-The only option currently supported is <b>-strip
+The only option currently supported is <b>&minus;strip
 all</b>.</p>
 
 <p style="margin-left:11%; margin-top: 1em"><b>Notes</b>
@@ -482,22 +482,23 @@ may be omitted. For example:</p>
 
 
 <p style="margin-left:22%; margin-top: 1em"><b>&minus;out</b>
-<tt>newfile.png</tt> &lt;=&gt;
-<b>&minus;out=</b><tt>newfile.png</tt> <b><br>
-&minus;o3</b> &lt;=&gt; <b>&minus;o&nbsp;3</b> &lt;=&gt;
-<b>&minus;o=3 <br>
-&minus;f0,3&minus;5</b> &lt;=&gt;
-<b>&minus;f&nbsp;0,3&minus;5</b> &lt;=&gt;
-<b>&minus;f=0,3&minus;5</b></p>
+<tt>newfile.png &nbsp;</tt>&lt;=&gt;
+&nbsp;<b>&minus;out=</b><tt>newfile.png</tt> <b><br>
+&minus;o3 &nbsp;</b>&lt;=&gt; &nbsp;<b>&minus;o 3
+&nbsp;</b>&lt;=&gt; &nbsp;<b>&minus;o=3 <br>
+&minus;f0,3&minus;5 &nbsp;</b>&lt;=&gt; &nbsp;<b>&minus;f
+0,3&minus;5 &nbsp;</b>&lt;=&gt;
+&nbsp;<b>&minus;f=0,3&minus;5</b></p>
 
 <p style="margin-left:11%; margin-top: 1em">Rangeset
 arguments are cumulative; e.g.</p>
 
 <p style="margin-left:22%; margin-top: 1em"><b>&minus;f0
-&minus;f3&minus;5</b> &lt;=&gt; <b>&minus;f0,3&minus;5 <br>
-&minus;zs0 &minus;zs1 &minus;zs2&minus;3</b> &lt;=&gt;
-<b>&minus;zs0,1,2,3</b> &lt;=&gt;
-<b>&minus;zs0&minus;3</b></p>
+&minus;f3&minus;5 &nbsp;</b>&lt;=&gt;
+&nbsp;<b>&minus;f0,3&minus;5 <br>
+&minus;zs0 &minus;zs1 &minus;zs2&minus;3 &nbsp;</b>&lt;=&gt;
+&nbsp;<b>&minus;zs0,1,2,3 &nbsp;</b>&lt;=&gt;
+&nbsp;<b>&minus;zs0&minus;3</b></p>
 
 <h2>EXTENDED DESCRIPTION
 <a name="EXTENDED DESCRIPTION"></a>
@@ -589,10 +590,10 @@ recommended to advanced users only.</p>
 
 
 <p style="margin-left:11%; margin-top: 1em"><tt>optipng
-file.png&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt># default
-speed <tt><br>
-optipng -o5 file.png&nbsp;&nbsp;</tt># slow <tt><br>
-optipng -o7 file.png&nbsp;&nbsp;</tt># very slow</p>
+file.png &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</tt># default speed
+<tt><br>
+optipng -o5 file.png &nbsp;</tt># slow <tt><br>
+optipng -o7 file.png &nbsp;</tt># very slow</p>
 
 <h2>BUGS
 <a name="BUGS"></a>
