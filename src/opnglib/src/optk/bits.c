@@ -2,7 +2,7 @@
  * optk/bits.c
  * Plain old bitset data type.
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -224,4 +224,4 @@ optk_rangeset_string_to_bits(const char *str, size_t *end_idx)
  */
 size_t
 optk_bits_to_rangeset_string(char *sbuf, size_t sbuf_size, optk_bits_t set);
-/* not implemented */
+/* TODO */

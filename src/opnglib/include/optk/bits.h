@@ -2,14 +2,14 @@
  * optk/bits.h
  * Plain old bitset data type.
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
  */
 
-#ifndef OPTK_BITS_H
-#define OPTK_BITS_H
+#ifndef OPTK_BITS_H_
+#define OPTK_BITS_H_
 
 #include <limits.h>
 #include <stddef.h>
@@ -243,7 +243,7 @@ size_t
 optk_bits_to_rangeset_string(char *sbuf, size_t sbuf_size, optk_bits_t set);
 
 /*
- * TO DO:
+ * TODO:
  * optk_rangeset_wstring_to_bits
  * optk_bits_to_rangeset_wstring
  */
@@ -254,4 +254,4 @@ optk_bits_to_rangeset_string(char *sbuf, size_t sbuf_size, optk_bits_t set);
 #endif
 
 
-#endif  /* OPTK_BITS_H */
+#endif  /* OPTK_BITS_H_ */
