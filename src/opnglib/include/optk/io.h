@@ -2,14 +2,14 @@
  * optk/io.h
  * I/O utilities.
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
  */
 
-#ifndef OPTK_IO_H
-#define OPTK_IO_H
+#ifndef OPTK_IO_H_
+#define OPTK_IO_H_
 
 #include <stdio.h>
 
@@ -23,12 +23,12 @@ extern "C" {
  * File translation modes.
  * These symbols are used by optk_fsetmode().
  */
-#define OPTK_FMODE_BINARY      0x0000
-#define OPTK_FMODE_TEXT        0x0001
-#define OPTK_FMODE_WTEXT       0x0002
-#define OPTK_FMODE_U8TEXT      0x0008
-#define OPTK_FMODE_U16TEXT     0x0010
-#define OPTK_FMODE_U32TEXT     0x0020
+#define OPTK_FMODE_BINARY  0x0000
+#define OPTK_FMODE_TEXT    0x0001
+#define OPTK_FMODE_WTEXT   0x0002
+#define OPTK_FMODE_U8TEXT  0x0008
+#define OPTK_FMODE_U16TEXT 0x0010
+#define OPTK_FMODE_U32TEXT 0x0020
 
 /*
  * Reads a block of data from the specified file offset.
@@ -237,4 +237,4 @@ optk_unlink(const char *path);
 #endif
 
 
-#endif  /* OPTK_IO_H */
+#endif  /* OPTK_IO_H_ */

@@ -2,7 +2,7 @@
  * optk/io.c
  * I/O utilities.
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -127,7 +127,7 @@
 #endif
 #define OPTK_PATH_EXTSEP '.'
 #define OPTK_PATH_EXTSEP_STR "."
-/* TODO: Support more systems (e.g. OSYS_RISCOS). */
+/* TODO: Support more systems (e.g. OPTK_OS_RISCOS). */
 
 #if defined OPTK_OS_WINDOWS || defined OPTK_OS_DOSISH || defined OPTK_OS_UNIXISH
 #  define OPTK_PATH_DOS
@@ -165,7 +165,11 @@
 #endif
 
 #ifdef OPTK_OS_WINDOWS
-#  define OPTK_WINDOWS_IS_WINNT() (GetVersion() < 0x80000000U)
+#  if !defined OPTK_OS_WIN64
+#    define OPTK_OS_WINDOWS_IS_WIN9X() (GetVersion() >= 0x80000000U)
+#  else
+#    define OPTK_OS_WINDOWS_IS_WIN9X() 0
+#  endif
 #endif
 
 
@@ -560,12 +564,8 @@ optk_rename(const char *src_path, const char *dest_path, int clobber)
 
     DWORD dwFlags;
 
-    if (OPTK_WINDOWS_IS_WINNT())
-    {
-        dwFlags = clobber ? MOVEFILE_REPLACE_EXISTING : 0;
-        return MoveFileExA(src_path, dest_path, dwFlags) ? 0 : -1;
-    }
-    else
+#if !defined OPTK_OS_WIN64
+    if (OPTK_OS_WINDOWS_IS_WIN9X())
     {
         /* MoveFileEx is not available under Win9X; use MoveFile. */
         if (MoveFileA(src_path, dest_path))
@@ -575,6 +575,10 @@ optk_rename(const char *src_path, const char *dest_path, int clobber)
         DeleteFileA(dest_path);
         return MoveFileA(src_path, dest_path) ? 0 : -1;
     }
+#endif
+
+    dwFlags = clobber ? MOVEFILE_REPLACE_EXISTING : 0;
+    return MoveFileExA(src_path, dest_path, dwFlags) ? 0 : -1;
 
 #elif defined OPTK_OS_UNIX
 
@@ -622,7 +626,7 @@ optk_copy_attr(const char *src_path, const char *dest_path)
         return -1;
 
     dwFlagsAndAttributes =
-        (OPTK_WINDOWS_IS_WINNT() ? FILE_FLAG_BACKUP_SEMANTICS : 0);
+        (OPTK_OS_WINDOWS_IS_WIN9X() ? 0 : FILE_FLAG_BACKUP_SEMANTICS);
     hFile = CreateFileA(dest_path, GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
                         dwFlagsAndAttributes, 0);
     if (hFile == INVALID_HANDLE_VALUE)
@@ -950,11 +954,11 @@ optk_test_eq(const char *path1, const char *path2)
 int
 optk_unlink(const char *path)
 {
-#if defined OSYS_WINDOWS
+#if defined OPTK_OS_WINDOWS
 
     return DeleteFileA(path) ? 0 : -1;
 
-#elif defined OSYS_OS_UNIX || defined OSYS_OS_DOSISH
+#elif defined OPTK_OS_UNIX || defined OPTK_OS_DOSISH
 
     return unlink(path);
 

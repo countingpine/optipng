@@ -2,13 +2,14 @@
  * io_test.c
  * Test for optk/io.h
  *
- * Copyright (C) 2010-2011 Cosmin Truta.
+ * Copyright (C) 2010-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
  */
 
 #include "optk/io.h"
+
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
