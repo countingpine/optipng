@@ -1153,9 +1153,15 @@ opng_optimize_file(opng_optimizer_t *optimizer,
     if (options->preserve)
         ioenv_flags |= OPNG_IOENV_PRESERVE;
     if (options->use_stdin)
+    {
         ioenv_flags |= OPNG_IOENV_USE_STDIN;
+        optk_fsetmode(stdin, OPTK_FMODE_BINARY);
+    }
     if (options->use_stdout)
+    {
         ioenv_flags |= OPNG_IOENV_USE_STDOUT;
+        optk_fsetmode(stdout, OPTK_FMODE_BINARY);
+    }
     ioenv = opng_ioenv_create(in_fname, out_fname, out_dirname, ioenv_flags);
 
     memset(&session, 0, sizeof(session));
