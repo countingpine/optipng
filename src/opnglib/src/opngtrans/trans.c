@@ -2,7 +2,7 @@
  * opngtrans/trans.c
  * Image transformations.
  *
- * Copyright (C) 2011 Cosmin Truta.
+ * Copyright (C) 2011-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -18,6 +18,7 @@
 #include "trans.h"
 #include "parser.h"
 #include "../opngcore/codec.h"
+#include "../opngcore/util.h"
 
 
 /*
@@ -38,6 +39,32 @@ opng_create_transformer(void)
 }
 
 /*
+ * Adjusts the error message if err_info->id is one of the common erroneous
+ * id values.
+ */
+static void
+opng_transform_adjust_err_messsage(const char **err_message_ptr,
+                                   const struct opng_parse_err_info *err_info_ptr)
+{
+    switch (err_info_ptr->id)
+    {
+    case OPNG_ID__UNKNOWN:
+        *err_message_ptr = "The object is unknown";
+        break;
+    case OPNG_ID__NONE:
+        /* Can't give any further specifics. The input string may be
+         * ill-formed for any reason, and the object name may be missing.
+         */
+        *err_message_ptr = NULL;
+        break;
+    default:
+        OPNG_WEAK_ASSERT(err_info_ptr->objname_length > 0,
+                         "Missing object name");
+        /* Leave the old error message intact. */
+    }
+}
+
+/*
  * This is a helper used by opng_transform_set_object.
  */
 static void
@@ -49,7 +76,7 @@ opng_transform_set_precision(int *precision_ptr, const char *value_str,
     precision = opng_string_to_smallint(value_str);
     if (precision <= 0)
     {
-        *err_message_ptr = "Incorrect precision";
+        *err_message_ptr = "Incorrect precision value";
         return;
     }
     if (*precision_ptr == 0)
@@ -83,7 +110,7 @@ opng_transform_set_object(opng_transformer_t *transformer,
     result = opng_parse_object_value(&id,
                                      &value_offset,
                                      object_name_eq_value,
-                                     OPNG_CAN_SET_IDS,
+                                     OPNG_IDSET_CAN_SET,
                                      &err_info);
     *err_objname_offset_ptr = err_info.objname_offset;
     *err_objname_length_ptr = err_info.objname_length;
@@ -97,23 +124,41 @@ opng_transform_set_object(opng_transformer_t *transformer,
             *err_message_ptr = "Setting metadata is not implemented";
             break;
         default:
-            *err_message_ptr = opng_id_to_strerr(err_info.id);
-            if (*err_message_ptr == NULL && *err_objname_length_ptr != 0)
-                *err_message_ptr = "Can't set this object";
+            *err_message_ptr = "Can't set this object";
         }
+        opng_transform_adjust_err_messsage(err_message_ptr, &err_info);
         return -1;
     }
 
-    /* Get the precision value. */
     value = object_name_eq_value + value_offset;
+    if (*value == 0)
+    {
+        *err_message_ptr = "Missing value";
+        return -1;
+    }
+
     switch (id)
     {
-    case OPNG_ID_IMAGE_GRAY_PRECISION:
-        *err_message_ptr =
-            "Set image.rgb.precision to control grayscale samples";
-        return -1;
     case OPNG_ID_IMAGE_PRECISION:
-        opng_transform_set_precision(&transformer->precision,
+        opng_transform_set_precision(&transformer->alpha_precision,
+                                     value, err_message_ptr);
+        opng_transform_set_precision(&transformer->red_precision,
+                                     value, err_message_ptr);
+        opng_transform_set_precision(&transformer->green_precision,
+                                     value, err_message_ptr);
+        opng_transform_set_precision(&transformer->blue_precision,
+                                     value, err_message_ptr);
+        break;
+    case OPNG_ID_IMAGE_ALPHA_PRECISION:
+        opng_transform_set_precision(&transformer->alpha_precision,
+                                     value, err_message_ptr);
+        break;
+    case OPNG_ID_IMAGE_RGB_PRECISION:
+        opng_transform_set_precision(&transformer->red_precision,
+                                     value, err_message_ptr);
+        opng_transform_set_precision(&transformer->green_precision,
+                                     value, err_message_ptr);
+        opng_transform_set_precision(&transformer->blue_precision,
                                      value, err_message_ptr);
         break;
     case OPNG_ID_IMAGE_RED_PRECISION:
@@ -128,17 +173,14 @@ opng_transform_set_object(opng_transformer_t *transformer,
         opng_transform_set_precision(&transformer->blue_precision,
                                      value, err_message_ptr);
         break;
-    case OPNG_ID_IMAGE_RGB_PRECISION:
-        opng_transform_set_precision(&transformer->red_precision,
-                                     value, err_message_ptr);
-        opng_transform_set_precision(&transformer->green_precision,
-                                     value, err_message_ptr);
-        opng_transform_set_precision(&transformer->blue_precision,
-                                     value, err_message_ptr);
-        break;
-    case OPNG_ID_IMAGE_ALPHA_PRECISION:
-        opng_transform_set_precision(&transformer->alpha_precision,
-                                     value, err_message_ptr);
+    case OPNG_ID_IMAGE_GRAY_PRECISION:
+        /* As a general rule, set the properties of the "gray" object
+         * exclusively through "rgb", to handle easily the images that
+         * lack the explicit gray channel (e.g. palette-encoded images).
+         * The grayscale space is just a subset of the RGB space.
+         */
+        *err_message_ptr =
+            "Set image.rgb.precision to manipulate grayscale samples";
         break;
     default:
         return -1;
@@ -163,7 +205,7 @@ opng_transform_reset_objects(opng_transformer_t *transformer,
     result = opng_parse_objects(&transformer->reset_ids,
                                 NULL,
                                 object_names,
-                                OPNG_CAN_RESET_IDS,
+                                OPNG_IDSET_CAN_RESET,
                                 &err_info);
     *err_objname_offset_ptr = err_info.objname_offset;
     *err_objname_length_ptr = err_info.objname_length;
@@ -181,21 +223,21 @@ opng_transform_reset_objects(opng_transformer_t *transformer,
             *err_message_ptr = "Can't reset this object; can only strip it";
             break;
         case OPNG_ID_CHUNK_IMAGE:
+        case OPNG_ID_CHUNK_ANIMATION:
         case OPNG_ID_CHUNK_META:
             *err_message_ptr = "Can't reset individual chunks";
             break;
         default:
-            *err_message_ptr = opng_id_to_strerr(err_info.id);
-            if (*err_message_ptr == NULL && *err_objname_length_ptr != 0)
-                *err_message_ptr = "Can't reset this object";
+            *err_message_ptr = "Can't reset this object";
         }
+        opng_transform_adjust_err_messsage(err_message_ptr, &err_info);
         return -1;
     }
 
     /* Check the mutually-exclusive colorspaces. */
     reset_chroma_ids =
         transformer->reset_ids &
-            (OPNG_ID_IMAGE_CHROMA_BT601 | OPNG_ID_IMAGE_CHROMA_BT709);
+        (OPNG_ID_IMAGE_CHROMA_BT601 | OPNG_ID_IMAGE_CHROMA_BT709);
     /* Use Wegner's formula. */
     if ((reset_chroma_ids & (reset_chroma_ids - 1)) != 0)
     {
@@ -224,7 +266,7 @@ opng_transform_strip_objects(opng_transformer_t *transformer,
     result = opng_parse_objects(&transformer->strip_ids,
                                 &transformer->strip_sigs,
                                 object_names,
-                                OPNG_CAN_STRIP_IDS,
+                                OPNG_IDSET_CAN_STRIP,
                                 &err_info);
     *err_objname_offset_ptr = err_info.objname_offset;
     *err_objname_length_ptr = err_info.objname_length;
@@ -238,24 +280,29 @@ opng_transform_strip_objects(opng_transformer_t *transformer,
          */
         if (err_info.id == OPNG_ID_CHUNK_IMAGE)
         {
-            /* Tried to (but shouldn't) strip image data? */
+            /* Tried to (but shouldn't) strip image data. */
             chunk_name = object_names + *err_objname_offset_ptr;
             if (strncmp(chunk_name, "tRNS", 4) == 0)
                 *err_message_ptr = "Can't strip tRNS; can only reset image.alpha";
             else
                 *err_message_ptr = "Can't strip critical chunks";
         }
-        else if ((err_info.id & OPNG_CAN_RESET_IDS) != 0)
+        else if (err_info.id == OPNG_ID_CHUNK_ANIMATION)
         {
-            /* The option -strip was used instead of -reset? */
+            /* Tried to (but shouldn't) strip animation data. */
+            *err_message_ptr =
+                "Can't strip APNG chunks; can only snip APNG entirely";
+        }
+        else if ((err_info.id & OPNG_IDSET_CAN_RESET) != 0)
+        {
+            /* The option -strip was used instead of -reset. */
             *err_message_ptr = "Can't strip this object; can only reset it";
         }
         else
         {
-            *err_message_ptr = opng_id_to_strerr(err_info.id);
-            if (*err_message_ptr == NULL && *err_objname_length_ptr != 0)
-                *err_message_ptr = "Can't strip this object";
+            *err_message_ptr = "Can't strip this object";
         }
+        opng_transform_adjust_err_messsage(err_message_ptr, &err_info);
         return -1;
     }
     return 0;
@@ -278,7 +325,7 @@ opng_transform_protect_objects(opng_transformer_t *transformer,
     result = opng_parse_objects(&transformer->protect_ids,
                                 &transformer->protect_sigs,
                                 object_names,
-                                OPNG_CAN_PROTECT_IDS,
+                                OPNG_IDSET_CAN_PROTECT,
                                 &err_info);
     *err_objname_offset_ptr = err_info.objname_offset;
     *err_objname_length_ptr = err_info.objname_length;
@@ -286,9 +333,8 @@ opng_transform_protect_objects(opng_transformer_t *transformer,
 
     if (result < 0)
     {
-        *err_message_ptr = opng_id_to_strerr(err_info.id);
-        if (*err_message_ptr == NULL && *err_objname_length_ptr != 0)
-            *err_message_ptr = "Can't protect this object";
+        *err_message_ptr = "Can't protect this object";
+        opng_transform_adjust_err_messsage(err_message_ptr, &err_info);
         return -1;
     }
     return 0;
@@ -307,14 +353,19 @@ opng_transform_query_strip_chunk(const opng_transformer_t *transformer,
     strip_ids = transformer->strip_ids;
     protect_ids = transformer->protect_ids;
 
-    /* APNG falls outside of the PNG rules. Handle it first. */
-    if ((reset_ids & OPNG_ID_ANIMATION) != 0)
+    if (opng_is_image_chunk(chunk_sig))
     {
-        if (opng_is_apng_chunk(chunk_sig))
-            return 1;
+        /* Image chunks (i.e. critical chunks and tRNS) are never stripped. */
+        return 0;
     }
-
-    /* Rule out the conditions when the chunk is not stripped. */
+    if (opng_is_apng_chunk(chunk_sig))
+    {
+        /* Although APNG chunks are encoded as ancillary chunks,
+         * they are not metadata, and the regular strip/protect policies
+         * do not apply to them.
+         */
+        return ((reset_ids & OPNG_ID_ANIMATION) != 0);
+    }
     if ((strip_ids & (OPNG_ID_ALL | OPNG_ID_CHUNK_META)) == 0)
     {
         /* Nothing is stripped. */
@@ -323,11 +374,6 @@ opng_transform_query_strip_chunk(const opng_transformer_t *transformer,
     if ((protect_ids & OPNG_ID_ALL) != 0)
     {
         /* Everything is protected. */
-        return 0;
-    }
-    if (opng_is_image_chunk(chunk_sig))
-    {
-        /* Image chunks (i.e. critical chunks and tRNS) are not stripped. */
         return 0;
     }
     if ((strip_ids & OPNG_ID_ALL) == 0 &&
@@ -347,63 +393,40 @@ opng_transform_query_strip_chunk(const opng_transformer_t *transformer,
 }
 
 /*
- * Retrieves the precision values to be set for each of the RGBA channels.
+ * Retrieves the precision values to be set for each channel.
  */
 void
 opng_transform_query_set_precision(const opng_transformer_t *transformer,
-                                   int *gray_precision_ptr,
+                                   int *alpha_precision_ptr,
                                    int *red_precision_ptr,
                                    int *green_precision_ptr,
-                                   int *blue_precision_ptr,
-                                   int *alpha_precision_ptr)
+                                   int *blue_precision_ptr)
 {
-    int precision, default_precision;
+    const int default_precision = 16;
 
-    default_precision = transformer->precision;
-    if (gray_precision_ptr != NULL)
-    {
-        /* image.gray.precision = max(image.red.precision,
-         *                            image.green.precision,
-         *                            image.blue.precision)
-         */
-        precision = transformer->red_precision;
-        if (precision < transformer->green_precision)
-            precision = transformer->green_precision;
-        if (precision < transformer->blue_precision)
-            precision = transformer->blue_precision;
-        if (precision > 0)
-            *gray_precision_ptr = precision;
-        else
-            *gray_precision_ptr = default_precision;
-    }
-    if (red_precision_ptr != NULL)
-    {
-        if (transformer->red_precision > 0)
-            *red_precision_ptr = transformer->red_precision;
-        else
-            *red_precision_ptr = default_precision;
-    }
-    if (green_precision_ptr != NULL)
-    {
-        if (transformer->green_precision > 0)
-            *green_precision_ptr = transformer->green_precision;
-        else
-            *green_precision_ptr = default_precision;
-    }
-    if (blue_precision_ptr != NULL)
-    {
-        if (transformer->blue_precision > 0)
-            *blue_precision_ptr = transformer->blue_precision;
-        else
-            *blue_precision_ptr = default_precision;
-    }
-    if (alpha_precision_ptr != NULL)
-    {
-        if (transformer->alpha_precision > 0)
-            *alpha_precision_ptr = transformer->alpha_precision;
-        else
-            *alpha_precision_ptr = default_precision;
-    }
+    /* Query the precision of the alpha channel. */
+    if (transformer->alpha_precision > 0)
+        *alpha_precision_ptr = transformer->alpha_precision;
+    else
+        *alpha_precision_ptr = default_precision;
+
+    /* Query the precision of the red channel. */
+    if (transformer->red_precision > 0)
+        *red_precision_ptr = transformer->red_precision;
+    else
+        *red_precision_ptr = default_precision;
+
+    /* Query the precision of the green channel. */
+    if (transformer->green_precision > 0)
+        *green_precision_ptr = transformer->green_precision;
+    else
+        *green_precision_ptr = default_precision;
+
+    /* Query the precision of the blue channel. */
+    if (transformer->blue_precision > 0)
+        *blue_precision_ptr = transformer->blue_precision;
+    else
+        *blue_precision_ptr = default_precision;
 }
 
 /*

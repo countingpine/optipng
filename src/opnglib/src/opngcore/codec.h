@@ -2,7 +2,7 @@
  * opngcore/codec.h
  * PNG encoding and decoding.
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -135,10 +135,11 @@ opng_decode_reduce_image(struct opng_codec_context *context,
 
 /*
  * Attempts to set and/or reset image data objects within the imported image.
- * The function returns a mask of the objects that have been altered.
+ * The function returns 1 if at least one transformation has been applied,
+ * or 0 otherwise.
  */
-opng_id_t
-opng_decode_set_reset_data(struct opng_codec_context *context);
+int
+opng_decode_transform_image(struct opng_codec_context *context);
 
 /*
  * Stops the decoder.

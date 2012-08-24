@@ -2,7 +2,7 @@
  * opngtrans/trans.h
  * Image transformations.
  *
- * Copyright (C) 2011 Cosmin Truta.
+ * Copyright (C) 2011-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -32,66 +32,65 @@ extern "C" {
 /*
  * Object IDs.
  *
- * OPNG_ID_FOO_BAR represents "foo.bar", unless otherwise noted.
- * OPNG_ID_CHUNK_IMAGE represents a chunk that stores image data.
- * OPNG_ID_CHUNK_META represents a chunk that stores metadata.
+ * OPNG_ID_FOO represents "foo", and OPNG_ID_FOO_BAR represents "foo.bar",
+ * unless otherwise noted. See object_id_map[] in parser.c.
  *
  * The underlying bitset representation is highly efficient, although
- * it restricts the number of recognized IDs. This is an acceptable
- * restriction for the time being, because only a few IDs are currently
- * in use.
+ * it restricts the number of recognized IDs. This restriction is
+ * acceptable at this time, because only a few IDs are currently in use.
  */
 typedef enum
 {
-    OPNG_ID_ALL                   = 0x0001,  /* "all" */
-    OPNG_ID_CHUNK_IMAGE           = 0x0002,  /* critical chunk or tRNS */
-    OPNG_ID_CHUNK_META            = 0x0004,  /* ancillary chunk except tRNS */
-    OPNG_ID_IMAGE                 = 0x0008,  /* "image" or inaccessible obj */
-    OPNG_ID_IMAGE_GRAY            = 0x0010,  /* "image.gray" */
-    OPNG_ID_IMAGE_RED             = 0x0020,  /* "image.red" */
-    OPNG_ID_IMAGE_GREEN           = 0x0040,  /* "image.green" */
-    OPNG_ID_IMAGE_BLUE            = 0x0080,  /* "image.blue" */
-    OPNG_ID_IMAGE_ALPHA           = 0x0100,  /* "image.alpha" */
-    OPNG_ID_IMAGE_PRECISION       = 0x0200,  /* "image.precision" */
-    OPNG_ID_IMAGE_GRAY_PRECISION  = 0x0400,  /* "image.gray.precision" */
-    OPNG_ID_IMAGE_RED_PRECISION   = 0x0800,  /* "image.red.precision" */
-    OPNG_ID_IMAGE_GREEN_PRECISION = 0x1000,  /* "image.green.precision" */
-    OPNG_ID_IMAGE_BLUE_PRECISION  = 0x2000,  /* "image.blue.precision" */
-    OPNG_ID_IMAGE_RGB_PRECISION   = 0x4000,  /* "image.rgb.precision" */
-    OPNG_ID_IMAGE_ALPHA_PRECISION = 0x8000,  /* "image.alpha.precision" */
-    OPNG_ID_IMAGE_CHROMA_BT601   = 0x10000,  /* "image.chroma.bt601" */
-    OPNG_ID_IMAGE_CHROMA_BT709   = 0x20000,  /* "image.chroma.bt709" */
+    OPNG_ID__NONE           = 0x0000,  /* no object */
+    OPNG_ID__UNKNOWN        = 0x0001,  /* unknown object */
+    OPNG_ID__RESERVED       = 0x0002,  /* reserved object */
 
-    OPNG_ID_ANIMATION           = 0x100000,  /* "animation" */
+    OPNG_ID_CHUNK_IMAGE     = 0x0010,  /* critical chunk or tRNS */
+    OPNG_ID_CHUNK_ANIMATION = 0x0020,  /* APNG chunk: acTL, fcTL or fdAT */
+    OPNG_ID_CHUNK_META      = 0x0040,  /* any other ancillary chunk */
 
-    OPNG_ID_ERR               = 0x10000000,  /* generic error */
-    OPNG_ID_ERR_SYNTAX,       /* ERR + 1 */  /* syntax error */
-    OPNG_ID_ERR_UNKNOWN       /* ERR + 2 */  /* unrecognized object */
+    OPNG_ID_ALL                   = 0x00000100,  /* "all" */
+    OPNG_ID_IMAGE_ALPHA           = 0x00000200,  /* "image.alpha" */
+    OPNG_ID_IMAGE_CHROMA_BT601    = 0x00000400,  /* "image.chroma.bt601" */
+    OPNG_ID_IMAGE_CHROMA_BT709    = 0x00000800,  /* "image.chroma" or "image.chroma.bt709" */
+    OPNG_ID_ANIMATION             = 0x00001000,  /* "animation" */
+
+    OPNG_ID_IMAGE_PRECISION       = 0x00010000,  /* "image.precision" */
+    OPNG_ID_IMAGE_ALPHA_PRECISION = 0x00020000,  /* "image.alpha.precision" */
+    OPNG_ID_IMAGE_GRAY_PRECISION  = 0x00040000,  /* "image.gray.precision" */
+    OPNG_ID_IMAGE_RGB_PRECISION   = 0x00080000,  /* "image.rgb.precision" */
+    OPNG_ID_IMAGE_RED_PRECISION   = 0x00100000,  /* "image.red.precision" */
+    OPNG_ID_IMAGE_GREEN_PRECISION = 0x00200000,  /* "image.green.precision" */
+    OPNG_ID_IMAGE_BLUE_PRECISION  = 0x00400000   /* "image.blue.precision" */
 } opng_id_t;
 
 /*
- * Object ID properties: "can reset", "can set", "can strip".
+ * Object ID sets: "all chunks", "can reset", "can set", "can strip", etc.
  */
 enum
 {
-    OPNG_CAN_RESET_IDS =
+    OPNG_IDSET_CHUNK =
+        OPNG_ID_CHUNK_IMAGE |
+        OPNG_ID_CHUNK_ANIMATION |
+        OPNG_ID_CHUNK_META,
+    OPNG_IDSET_CAN_RESET =
         OPNG_ID_IMAGE_ALPHA |
         OPNG_ID_IMAGE_CHROMA_BT601 |
         OPNG_ID_IMAGE_CHROMA_BT709 |
         OPNG_ID_ANIMATION,
-    OPNG_CAN_SET_IDS =
+    OPNG_IDSET_CAN_SET =
         OPNG_ID_IMAGE_PRECISION |
+        OPNG_ID_IMAGE_ALPHA_PRECISION |
         OPNG_ID_IMAGE_GRAY_PRECISION |
+        OPNG_ID_IMAGE_RGB_PRECISION |
         OPNG_ID_IMAGE_RED_PRECISION |
         OPNG_ID_IMAGE_GREEN_PRECISION |
-        OPNG_ID_IMAGE_BLUE_PRECISION |
-        OPNG_ID_IMAGE_RGB_PRECISION |
-        OPNG_ID_IMAGE_ALPHA_PRECISION,
-    OPNG_CAN_STRIP_IDS =
+        OPNG_ID_IMAGE_BLUE_PRECISION,
+    OPNG_IDSET_CAN_STRIP =
         OPNG_ID_ALL |
         OPNG_ID_CHUNK_META,
-    OPNG_CAN_PROTECT_IDS =
-        OPNG_CAN_STRIP_IDS
+    OPNG_IDSET_CAN_PROTECT =
+        OPNG_IDSET_CAN_STRIP
 };
 
 /*
@@ -104,11 +103,10 @@ struct opng_transformer
     opng_id_t strip_ids;
     opng_id_t protect_ids;
     opng_id_t reset_ids;
-    int precision;
+    int alpha_precision;
     int red_precision;
     int green_precision;
     int blue_precision;
-    int alpha_precision;
 };
 
 /*
@@ -119,23 +117,22 @@ opng_transform_query_strip_chunk(const opng_transformer_t *transformer,
                                  png_byte *chunk_sig);
 
 /*
- * Retrieves the precision values to be set for each of the RGBA channels.
+ * Retrieves the precision values to be set for each channel.
  */
 void
 opng_transform_query_set_precision(const opng_transformer_t *transformer,
-                                   int *gray_precision_ptr,
+                                   int *alpha_precision_ptr,
                                    int *red_precision_ptr,
                                    int *green_precision_ptr,
-                                   int *blue_precision_ptr,
-                                   int *alpha_precision_ptr);
+                                   int *blue_precision_ptr);
 
 /*
  * Applies all set/reset transformations to the given libpng image structures.
- * Returns the ids of the objects that have been altered.
+ * Returns 1 if at least one transformation has been applied, or 0 otherwise.
  */
-opng_id_t
-opng_transform_libpng_image(const opng_transformer_t *transformer,
-                            png_structp libpng_ptr, png_infop info_ptr);
+int
+opng_transform_apply(const opng_transformer_t *transformer,
+                     png_structp libpng_ptr, png_infop info_ptr);
 
 
 #ifdef __cplusplus

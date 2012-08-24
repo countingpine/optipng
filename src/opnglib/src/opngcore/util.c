@@ -2,7 +2,7 @@
  * opngcore/util.c
  * Utilities.
  *
- * Copyright (C) 2010-2011 Cosmin Truta.
+ * Copyright (C) 2010-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -112,15 +112,16 @@ void
 opng_panic_assert(const char *message)
 {
     opng_print_message(OPNG_MSG_CRITICAL, NULL, message);
+    opng_flush_logging(OPNG_MSG_CRITICAL);
+
+#ifdef OPNG_DEBUG
+    abort();
+#else
     fprintf(stderr,
         "The execution of this program has been terminated abnormally.\n"
         "Please submit a defect report.\n");
-    fflush(stderr);
-
-    /* Do not use abort(), or raise SIGABRT, because that might yield
-     * huge core-dump files. Just exit with EX_SOFTWARE.
-     */
     exit(EX_SOFTWARE);
+#endif
 }
 
 /*
@@ -132,5 +133,10 @@ opng_panic_memory(void)
 {
     opng_print_message(OPNG_MSG_CRITICAL, NULL, "Out of memory");
     opng_flush_logging(OPNG_MSG_CRITICAL);
+
+#ifdef OPNG_DEBUG
+    abort();
+#else
     exit(EX_UNAVAILABLE);
+#endif
 }

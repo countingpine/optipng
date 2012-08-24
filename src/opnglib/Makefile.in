@@ -69,8 +69,14 @@ OPNGLIB_TESTS = \
   io_test$(EXEEXT) \
   print_ratio_test$(EXEEXT) \
   parser_test$(EXEEXT)
+OPNGLIB_TESTOBJS = \
+  test/bits_test.o \
+  test/io_test.o \
+  test/parser_test.o \
+  test/print_ratio_test.o \
+  test/sprint_ratio.generated.o
 OPNGLIB_TESTOUT = \
-  bits_test.out bits_test.diff \
+  bits_test.out bits_test.diff.out \
   io_test.out \
   print_ratio_test.out \
   parser_test.out
@@ -95,7 +101,7 @@ all: $(OPNGLIB_LIB)
 
 test: $(OPNGLIB_TESTS)
 	./bits_test$(EXEEXT) < test/bits_test.dat > bits_test.out
-	$(DIFF) test/bits_test.expect bits_test.out > bits_test.diff
+	$(DIFF) test/bits_test.expect bits_test.out > bits_test.diff.out
 	-@echo bits_test ... ok
 	./io_test$(EXEEXT) > io_test.out
 	-@echo io_test ... ok
@@ -169,12 +175,14 @@ src/opngcore/version.o: \
 src/opngtrans/apply.o: \
   src/opngtrans/apply.c \
   $(OPNGTRANS_IMPL_HEADERS) \
+  $(OPNGCORE_IMPL_HEADERS) \
   $(OPNGLIB_HEADERS)
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPNGLIB_INCLUDES) -o $@ $*.c
 
 src/opngtrans/chunksig.o: \
   src/opngtrans/chunksig.c \
   $(OPNGTRANS_IMPL_HEADERS) \
+  $(OPNGCORE_IMPL_HEADERS) \
   $(OPNGLIB_HEADERS)
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPNGLIB_INCLUDES) -o $@ $*.c
 
