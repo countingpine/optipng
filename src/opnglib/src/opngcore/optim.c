@@ -73,9 +73,9 @@ struct opng_session
     struct opng_encoding_stats out_stats;
     const char *in_fname;
     const char *out_fname;
+    optk_fsize_t best_idat_size;
+    optk_fsize_t max_idat_size;
     png_uint_32 flags;
-    png_uint_32 best_idat_size;
-    png_uint_32 max_idat_size;
     optk_bits_t filter_set;
     optk_bits_t zcompr_level_set;
     optk_bits_t zmem_level_set;
@@ -89,7 +89,7 @@ struct opng_session
  * Prints, in a compact form, the ratio between two numbers.
  */
 static void
-opng_print_ratio(unsigned long num, unsigned long denom, int force_percent)
+opng_print_fsize_ratio(optk_fsize_t num, optk_fsize_t denom, int force_percent)
 {
     /* (1) num/denom = 0/0                  ==> print "??%"
      * (2) num/denom = INFINITY             ==> print "INFTY%"
@@ -102,9 +102,9 @@ opng_print_ratio(unsigned long num, unsigned long denom, int force_percent)
      *     end if
      */
 
-    unsigned long integer_part, remainder;
+    optk_fsize_t integer_part, remainder;
     unsigned int fractional_part, scale;
-    double scaled_ratio;
+    long double scaled_ratio;
 
     /* (1,2): num/denom = 0/0 or num/denom = INFINITY */
     if (denom == 0)
@@ -118,7 +118,8 @@ opng_print_ratio(unsigned long num, unsigned long denom, int force_percent)
     if (num < denom && denom / (denom - num) < 20000)
     {
         scale = 10000;
-        scaled_ratio = ((double)num * (double)scale) / (double)denom;
+        scaled_ratio =
+            ((long double)num * (long double)scale) / (long double)denom;
         fractional_part = (unsigned int)(scaled_ratio + 0.5);
         /* Adjust the scaled result in the event of a roundoff error. */
         /* Such error may occur only if the numerator is extremely large. */
@@ -143,14 +144,14 @@ opng_print_ratio(unsigned long num, unsigned long denom, int force_percent)
     /* (4): 0.995 <= num/denom < INFINITY */
     if (force_percent)
     {
-        opng_printf("%lu%02u%%", integer_part, fractional_part);
+        opng_printf("%"OPTK_FSIZE_PRIu"%02u%%", integer_part, fractional_part);
         return;
     }
 
     /* (5): 0.995 <= num/denom < 99.995 */
     if (integer_part < 100)
     {
-        opng_printf("%lu.%02ux", integer_part, fractional_part);
+        opng_printf("%"OPTK_FSIZE_PRIu".%02ux", integer_part, fractional_part);
         return;
     }
 
@@ -160,17 +161,17 @@ opng_print_ratio(unsigned long num, unsigned long denom, int force_percent)
     integer_part = num / denom;
     if (remainder >= (denom + 1) / 2)
         ++integer_part;
-    opng_printf("%lux", integer_part);
+    opng_printf("%"OPTK_FSIZE_PRIu"x", integer_part);
 }
 
 /*
  * Prints, in a descriptive form, the difference between two sizes.
  */
 static void
-opng_print_size_difference(unsigned long init_size, unsigned long final_size,
-                           int show_ratio)
+opng_print_fsize_difference(optk_fsize_t init_size, optk_fsize_t final_size,
+                            int show_ratio)
 {
-    unsigned long difference;
+    optk_fsize_t difference;
     int sign;
 
     if (init_size <= final_size)
@@ -192,11 +193,11 @@ opng_print_size_difference(unsigned long init_size, unsigned long final_size,
     if (difference == 1)
         opng_printf("1 byte");
     else
-        opng_printf("%lu bytes", difference);
+        opng_printf("%"OPTK_FSIZE_PRIu" bytes", difference);
     if (show_ratio && init_size > 0)
     {
         opng_printf(" = ");
-        opng_print_ratio(difference, init_size, 0);
+        opng_print_fsize_ratio(difference, init_size, 0);
     }
     opng_printf(sign == 0 ? " increase" : " decrease");
 }
@@ -222,9 +223,9 @@ opng_print_image_format_line(const struct opng_image *image,
     }
     else
         format_add_str1 = format_add_str2 = "";
-    opng_printf("   %lux%lu pixels, %s format%s%s%s\n",
-                (unsigned long)image->width,
-                (unsigned long)image->height,
+    opng_printf("   %"OPTK_PRIu32"x%"OPTK_PRIu32" pixels, %s format%s%s%s\n",
+                (optk_uint32_t)image->width,
+                (optk_uint32_t)image->height,
                 format_name,
                 interlaced_add_str,
                 format_add_str1,
@@ -273,10 +274,10 @@ opng_print_image_info_line(const struct opng_image *image)
 }
 
 /*
- * Prints a line of information regarding the encoding parameters.
+ * Prints a partial line of information regarding the encoding parameters.
  */
 static void
-opng_print_encoding_begin_line(const struct opng_encoding_params *params)
+opng_print_encoding_line_begin(const struct opng_encoding_params *params)
 {
     /* Print a 32-char line. */
     opng_printf("   zc = %d  zm = %d  zs = %d  f = %d",
@@ -292,7 +293,7 @@ opng_print_encoding_begin_line(const struct opng_encoding_params *params)
  * Erases the line in which encoding parameters were printed.
  */
 static void
-opng_print_erase_encoding_begin_line()
+opng_print_erase_encoding_line_begin()
 {
     /* Erase a 32-char line. */
     opng_printf("\r%-32s\r", "");
@@ -300,35 +301,35 @@ opng_print_erase_encoding_begin_line()
 }
 
 /*
- * Prints the IDAT size.
+ * Prints the IDAT size line.
  */
 static void
-opng_print_idat_size_line(png_uint_32 idat_size)
+opng_print_idat_size_line(optk_fsize_t idat_size)
 {
-    opng_printf("   IDAT size = %lu bytes\n", (unsigned long)idat_size);
+    opng_printf("   IDAT size = %"OPTK_FSIZE_PRIu" bytes\n", idat_size);
 }
 
 /*
- * Prints the IDAT size.
+ * Prints the IDAT size line.
  */
 static void
-opng_print_idat_size_end_line(png_uint_32 idat_size)
+opng_print_idat_size_line_end(optk_fsize_t idat_size)
 {
-    opng_printf("\tIDAT size = %lu\n", (unsigned long)idat_size);
+    opng_printf("\tIDAT size = %"OPTK_FSIZE_PRIu"\n", idat_size);
 }
 
 /*
- * Prints the IDAT size difference.
+ * Prints the IDAT size difference line.
  */
 static void
-opng_print_idat_size_difference_line(png_uint_32 init_idat_size,
-                                     png_uint_32 final_idat_size)
+opng_print_idat_size_difference_line(optk_fsize_t init_idat_size,
+                                     optk_fsize_t final_idat_size)
 {
-    opng_printf("   IDAT size = %lu bytes", (unsigned long)final_idat_size);
+    opng_printf("   IDAT size = %"OPTK_FSIZE_PRIu" bytes", final_idat_size);
     if (init_idat_size > 0)
     {
         opng_printf(" (");
-        opng_print_size_difference(init_idat_size, final_idat_size, 0);
+        opng_print_fsize_difference(init_idat_size, final_idat_size, 0);
         opng_printf(")\n");
     }
     else
@@ -336,23 +337,23 @@ opng_print_idat_size_difference_line(png_uint_32 init_idat_size,
 }
 
 /*
- * Prints the file size.
+ * Prints the file size line.
  */
 static void
-opng_print_file_size_line(unsigned long file_size)
+opng_print_file_size_line(optk_fsize_t file_size)
 {
-    opng_printf("   file size = %lu bytes\n", file_size);
+    opng_printf("   file size = %"OPTK_FSIZE_PRIu" bytes\n", file_size);
 }
 
 /*
- * Prints the file size difference.
+ * Prints the file size difference line.
  */
 static void
-opng_print_file_size_difference_line(unsigned long init_file_size,
-                                     unsigned long final_file_size)
+opng_print_file_size_difference_line(optk_fsize_t init_file_size,
+                                     optk_fsize_t final_file_size)
 {
-    opng_printf("   file size = %lu bytes (", final_file_size);
-    opng_print_size_difference(init_file_size, final_file_size, 1);
+    opng_printf("   file size = %"OPTK_FSIZE_PRIu" bytes (", final_file_size);
+    opng_print_fsize_difference(init_file_size, final_file_size, 1);
     opng_printf(")\n");
 }
 
@@ -508,7 +509,7 @@ opng_write_file(struct opng_session *session,
 {
     struct opng_codec_context context;
     const char *fname;
-    png_uint_32 expected_idat_size;
+    optk_fsize_t expected_idat_size;
     int result;
 
     if (stream == NULL)
@@ -571,7 +572,7 @@ opng_init_iterations(struct opng_session *session)
      * This limit may further decrease as iterations go on.
      */
     if ((session->flags & OPNG_NEEDS_NEW_IDAT) || options->paranoid)
-       session->max_idat_size = PNG_UINT_31_MAX;
+       session->max_idat_size = OPNG_IDAT_SIZE_MAX;
     else
     {
         OPNG_ASSERT(session->in_stats.idat_size > 0, "No IDAT in input");
@@ -648,7 +649,7 @@ opng_iterate(struct opng_session *session)
     optk_bits_t saved_zcompr_level_set;
     struct opng_encoding_params params;
     int filter, zcompr_level, zmem_level, zstrategy;
-    png_uint_32 out_idat_size;
+    optk_fsize_t out_idat_size;
     int counter;
     int line_reused;
 
@@ -682,7 +683,7 @@ opng_iterate(struct opng_session *session)
     params.zstrategy = -1;
     params.zwindow_bits = options->zwindow_bits;
     session->best_params = params;
-    session->best_idat_size = PNG_UINT_31_MAX + 1;
+    session->best_idat_size = OPNG_IDAT_SIZE_MAX + 1;
 
     /* Iterate through the "hyper-rectangle" (zc, zm, zs, f). */
     if (session->num_iterations == 1)
@@ -731,9 +732,9 @@ opng_iterate(struct opng_session *session)
                             params.zmem_level = zmem_level;
                             params.zstrategy = zstrategy;
                             /* Leave params.zwindow_bits intact. */
-                            opng_print_encoding_begin_line(&params);
+                            opng_print_encoding_line_begin(&params);
                             opng_write_file(session, &params, NULL);
-                            if (session->out_stats.idat_size > PNG_UINT_31_MAX)
+                            if (session->out_stats.idat_size > OPNG_IDAT_SIZE_MAX)
                             {
                                if (options->verbose)
                                {
@@ -748,7 +749,7 @@ opng_iterate(struct opng_session *session)
                                continue;
                             }
                             out_idat_size = session->out_stats.idat_size;
-                            opng_print_idat_size_end_line(out_idat_size);
+                            opng_print_idat_size_line_end(out_idat_size);
                             line_reused = 0;
                             if (session->best_idat_size < out_idat_size)
                                continue;  /* it's bigger */
@@ -770,7 +771,7 @@ opng_iterate(struct opng_session *session)
     }
 
     if (line_reused)
-        opng_print_erase_encoding_begin_line();
+        opng_print_erase_encoding_line_begin();
     OPNG_ASSERT(counter == session->num_iterations,
                 "Inconsistent iteration counter");
 }
@@ -787,9 +788,9 @@ opng_finish_iterations(struct opng_session *session)
     if (session->flags & OPNG_NEEDS_NEW_IDAT)
     {
         opng_printf("Encoding:\n");
-        opng_print_encoding_begin_line(&session->best_params);
-        if (session->best_idat_size != 0)  /* trials have been run */
-            opng_print_idat_size_end_line(session->best_idat_size);
+        opng_print_encoding_line_begin(&session->best_params);
+        if (session->best_idat_size > 0)
+            opng_print_idat_size_line_end(session->best_idat_size);
         else
             opng_printf("\n");
     }
@@ -999,7 +1000,10 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
     else if (out_stream != NULL)
         fclose(out_stream);
     if (result < 0)
+    {
         opng_ioenv_unroll_output(ioenv);
+        return -1;
+    }
     if (opng_ioenv_end_output(ioenv) < 0)
         return -1;
 
@@ -1008,8 +1012,7 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
                                          session->out_stats.idat_size);
     opng_print_file_size_difference_line(session->in_stats.file_size,
                                          session->out_stats.file_size);
-
-    return result;
+    return 0;
 }
 
 /*

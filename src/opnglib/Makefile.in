@@ -66,17 +66,20 @@ OPNGLIB_HEADERS = \
 
 OPNGLIB_TESTS = \
   bits_test$(EXEEXT) \
+  integer_test$(EXEEXT) \
   io_test$(EXEEXT) \
   print_ratio_test$(EXEEXT) \
   parser_test$(EXEEXT)
 OPNGLIB_TESTOBJS = \
   test/bits_test.o \
+  test/integer_test.o \
   test/io_test.o \
   test/parser_test.o \
   test/print_ratio_test.o \
   test/sprint_ratio.generated.o
 OPNGLIB_TESTOUT = \
   bits_test.out bits_test.diff.out \
+  integer_test.out \
   io_test.out \
   print_ratio_test.out \
   parser_test.out
@@ -103,6 +106,8 @@ test: $(OPNGLIB_TESTS)
 	./bits_test$(EXEEXT) < test/bits_test.dat > bits_test.out
 	$(DIFF) test/bits_test.expect bits_test.out > bits_test.diff.out
 	-@echo bits_test ... ok
+	./integer_test$(EXEEXT) > integer_test.out
+	-@echo integer_test ... ok
 	./io_test$(EXEEXT) > io_test.out
 	-@echo io_test ... ok
 	./print_ratio_test$(EXEEXT) > print_ratio_test.out
@@ -112,6 +117,9 @@ test: $(OPNGLIB_TESTS)
 
 bits_test$(EXEEXT): test/bits_test.o libopng.a
 	$(LD) $(LDFLAGS) -o $@ test/bits_test.o libopng.a
+
+integer_test$(EXEEXT): test/integer_test.o libopng.a
+	$(LD) $(LDFLAGS) -o $@ test/integer_test.o libopng.a
 
 io_test$(EXEEXT): test/io_test.o libopng.a
 	$(LD) $(LDFLAGS) -o $@ test/io_test.o libopng.a
@@ -203,7 +211,7 @@ src/opngtrans/trans.o: \
 src/optk/bits.o: src/optk/bits.c include/optk/bits.h
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Iinclude -o $@ $*.c
 
-src/optk/io.o: src/optk/io.c include/optk/io.h
+src/optk/io.o: src/optk/io.c include/optk/io.h include/optk/integer.h
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Iinclude -o $@ $*.c
 
 src/optk/wildargs.o: src/optk/wildargs.c
@@ -212,17 +220,20 @@ src/optk/wildargs.o: src/optk/wildargs.c
 test/bits_test.o: test/bits_test.c include/optk/bits.h
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Iinclude -o $@ $*.c
 
-test/io_test.o: test/io_test.c include/optk/io.h
+test/integer_test.o: test/integer_test.c include/optk/integer.h
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Iinclude -o $@ $*.c
+
+test/io_test.o: test/io_test.c include/optk/io.h include/optk/integer.h
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Iinclude -o $@ $*.c
 
 test/parser_test.o: test/parser_test.c $(OPNGTRANS_IMPL_HEADERS)
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPNGLIB_INCLUDES) -Isrc/opngtrans -o $@ $*.c
 
 test/print_ratio_test.o: test/print_ratio_test.c test/print_ratio.h
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $*.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Iinclude -o $@ $*.c
 
 test/sprint_ratio.generated.o: test/sprint_ratio.generated.c test/print_ratio.h
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $*.c
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Iinclude -o $@ $*.c
 
 #test/sprint_ratio.generated.c: test/extract_print_ratio.sh src/opngcore/optim.c
 #	$(SHELL) test/extract_print_ratio.sh

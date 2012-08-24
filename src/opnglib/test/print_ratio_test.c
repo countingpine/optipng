@@ -2,7 +2,7 @@
  * print_ratio_test.c
  * Test for print_ratio.
  *
- * Copyright (C) 2008-2011 Cosmin Truta.
+ * Copyright (C) 2008-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the attached LICENSE for more information.
@@ -11,29 +11,32 @@
 #include "print_ratio.h"
 #include <stdio.h>
 #include <string.h>
+#include "optk/io.h"
 
 static int num_errors = 0;
 
 static int
-test(unsigned long num, unsigned long denom,
+test(optk_fsize_t num, optk_fsize_t denom,
      const char *expected_result,
      const char *expected_result_force_percent)
 {
     char buf1[64], buf2[64];
     int result = 1;
 
-    sprint_ratio(buf1, sizeof(buf1), num, denom, 0);
+    sprint_fsize_ratio(buf1, sizeof(buf1), num, denom, 0);
     if (strcmp(buf1, expected_result) != 0)
         result = 0;
 
-    sprint_ratio(buf2, sizeof(buf2), num, denom, 1);
+    sprint_fsize_ratio(buf2, sizeof(buf2), num, denom, 1);
     if (strcmp(buf2, expected_result_force_percent) != 0)
         result = 0;
 
     if (result)
-        printf("Passed: %lu / %lu\n", num, denom);
+        printf("Passed: %"OPTK_FSIZE_PRIu" / %"OPTK_FSIZE_PRIu"\n",
+               num, denom);
     else
-        printf("FAILED: %lu / %lu, result: (%s %s), expected: (%s %s)\n",
+        printf("FAILED: %"OPTK_FSIZE_PRIu" / %"OPTK_FSIZE_PRIu", "
+               "result: (%s %s), expected: (%s %s)\n",
                num, denom,
                buf1, buf2,
                expected_result, expected_result_force_percent);
@@ -46,17 +49,18 @@ test(unsigned long num, unsigned long denom,
 static void
 run_tests()
 {
-    const unsigned long MAX = ~0UL;
+    const optk_fsize_t MAX = OPTK_FSIZE_MAX;
 
     /*
      * (1) num/denom == 0/0
      */
-    test(0, 0, "??%", "??%");
+    test(     0,      0,    "??%",    "??%");
 
     /*
      * (2) num/denom == INFINITY
      */
-    test(1, 0, "INFTY%", "INFTY%");
+    test(     1,      0, "INFTY%", "INFTY%");
+    test(   MAX,      0, "INFTY%", "INFTY%");
 
     /*
      * (3) 0 <= num/denom < 99.995% ==> precision = 0.0001

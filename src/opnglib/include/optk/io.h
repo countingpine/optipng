@@ -12,6 +12,7 @@
 #define OPTK_IO_H_
 
 #include <stdio.h>
+#include "integer.h"
 
 
 #ifdef __cplusplus
@@ -29,6 +30,59 @@ extern "C" {
 #define OPTK_FMODE_U8TEXT  0x0008
 #define OPTK_FMODE_U16TEXT 0x0010
 #define OPTK_FMODE_U32TEXT 0x0020
+
+/*
+ * The file offset type.
+ * This is a signed integer type that is at least 64-bits wide.
+ */
+typedef optk_int64_t optk_foffset_t;
+#define OPTK_FOFFSET_MIN  OPTK_INT64_MIN
+#define OPTK_FOFFSET_MAX  OPTK_INT64_MAX
+#define OPTK_FOFFSET_SCNd OPTK_SCNd64
+#define OPTK_FOFFSET_SCNi OPTK_SCNi64
+#define OPTK_FOFFSET_SCNo OPTK_SCNo64
+#define OPTK_FOFFSET_SCNx OPTK_SCNx64
+#define OPTK_FOFFSET_PRId OPTK_PRId64
+#define OPTK_FOFFSET_PRIi OPTK_PRIi64
+#define OPTK_FOFFSET_PRIo OPTK_PRIo64
+#define OPTK_FOFFSET_PRIx OPTK_PRIx64
+#define OPTK_FOFFSET_PRIX OPTK_PRIX64
+
+/*
+ * The file size type.
+ * This is an unsigned integer type that is at least 64-bits wide.
+ */
+typedef optk_uint64_t optk_fsize_t;
+#define OPTK_FSIZE_MAX  OPTK_UINT64_MAX
+#define OPTK_FSIZE_SCNu OPTK_SCNu64
+#define OPTK_FSIZE_SCNo OPTK_SCNo64
+#define OPTK_FSIZE_SCNx OPTK_SCNx64
+#define OPTK_FSIZE_PRIu OPTK_PRIu64
+#define OPTK_FSIZE_PRIo OPTK_PRIo64
+#define OPTK_FSIZE_PRIx OPTK_PRIx64
+#define OPTK_FSIZE_PRIX OPTK_PRIX64
+
+/*
+ * Returns the current value of the file position indicator.
+ * On error, the function returns (osys_foffset_t)(-1).
+ */
+optk_foffset_t
+optk_ftello(FILE *stream);
+
+/*
+ * Sets the file position indicator at the specified file offset.
+ * On success, the function returns 0. On error, it returns -1.
+ */
+int
+optk_fseeko(FILE *stream, optk_foffset_t offset, int whence);
+
+/*
+ * Gets the size of the specified file stream.
+ * This function may change the file position indicator.
+ * On success, the function returns 0. On error, it returns -1.
+ */
+int
+optk_fgetsize(FILE *stream, optk_fsize_t *size);
 
 /*
  * Reads a block of data from the specified file offset.

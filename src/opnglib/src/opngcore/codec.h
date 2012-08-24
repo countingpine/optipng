@@ -16,6 +16,8 @@
 #endif
 
 #include "opnglib/opngtrans.h"
+#include "optk/integer.h"
+#include "optk/io.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -51,13 +53,33 @@ struct opng_encoding_params
 struct opng_encoding_stats
 {
     png_uint_32 flags;
-    png_uint_32 idat_size;
     png_uint_32 plte_trns_size;
-#if LONG_MAX > 0x7fffffffL
-    png_uint_32 reserved;  /* align on 64-bit machines */
-#endif
-    unsigned long file_size;
-    long datastream_offset;
+    optk_fsize_t idat_size;
+    optk_fsize_t file_size;
+    optk_foffset_t datastream_offset;
+};
+
+/*
+ * The codec context structure.
+ * Everything that libpng and its callbacks use is found in here.
+ * Although this structure is exposed so that it can be placed on
+ * the stack, the caller must pretend not to know what's inside.
+ */
+struct opng_codec_context
+{
+    struct opng_image *image;
+    struct opng_encoding_stats *stats;
+    FILE *stream;
+    const char *fname;
+    png_structp libpng_ptr;
+    png_infop info_ptr;
+    const opng_transformer_t *transformer;
+    optk_foffset_t crt_idat_offset;
+    optk_fsize_t crt_idat_size;
+    optk_fsize_t expected_idat_size;
+    png_uint_32 crt_idat_crc;
+    int crt_chunk_is_allowed;
+    int crt_chunk_is_idat;
 };
 
 /*
@@ -79,26 +101,25 @@ enum
 };
 
 /*
- * The codec context structure.
- * Everything that libpng and its callbacks use is found in here.
- * Although this structure is exposed so that it can be placed on
- * the stack, the caller must pretend not to know what's inside.
+ * Chunk-level IDAT constants.
+ * The max IDAT chunk size is as in the PNG spec.
+ * IDAT chunks up to the "large size" need not be split.
+ * IDAT chunks larger than the "max size" must be split.
  */
-struct opng_codec_context
+enum
 {
-    struct opng_image *image;
-    struct opng_encoding_stats *stats;
-    FILE *stream;
-    const char *fname;
-    png_structp libpng_ptr;
-    png_infop info_ptr;
-    const opng_transformer_t *transformer;
-    long crt_idat_offset;
-    png_uint_32 crt_idat_size;
-    png_uint_32 crt_idat_crc;
-    png_uint_32 expected_idat_size;
-    int crt_chunk_is_allowed;
-    int crt_chunk_is_idat;
+    OPNG_IDAT_CHUNK_SIZE_LARGE = (png_uint_32)0x40000000UL,  /* soft limit */
+    OPNG_IDAT_CHUNK_SIZE_MAX   = (png_uint_32)0x7fffffffUL   /* hard limit */
+};
+
+/*
+ * File-level IDAT constants.
+ * The (global) IDAT size is the sum of all IDAT chunk sizes.
+ */
+enum
+{
+    /* This is a gigantic and yet practical soft limit. */
+    OPNG_IDAT_SIZE_MAX = (optk_fsize_t)OPTK_INT64_MAX
 };
 
 /*
@@ -108,7 +129,7 @@ void
 opng_init_codec_context(struct opng_codec_context *context,
                         struct opng_image *image,
                         struct opng_encoding_stats *stats,
-                        png_uint_32 expected_idat_size,
+                        optk_fsize_t expected_idat_size,
                         const opng_transformer_t *transformer);
 
 /*

@@ -2,7 +2,7 @@
  * *print_ratio.generated.c
  * Generated from opngcore/optim.c
  *
- * Copyright (C) 2008-2011 Cosmin Truta.
+ * Copyright (C) 2008-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the attached LICENSE for more information.
@@ -10,9 +10,9 @@
 
 #include "print_ratio.h"
 #include <stdio.h>
-
+#include "optk/io.h"
 int
-fprint_ratio(FILE *stream, unsigned long num, unsigned long denom, int force_percent)
+fprint_fsize_ratio(FILE *stream, optk_fsize_t num, optk_fsize_t denom, int force_percent)
 {
     /* (1) num/denom = 0/0                  ==> print "??%"
      * (2) num/denom = INFINITY             ==> print "INFTY%"
@@ -25,9 +25,9 @@ fprint_ratio(FILE *stream, unsigned long num, unsigned long denom, int force_per
      *     end if
      */
 
-    unsigned long integer_part, remainder;
+    optk_fsize_t integer_part, remainder;
     unsigned int fractional_part, scale;
-    double scaled_ratio;
+    long double scaled_ratio;
 
     /* (1,2): num/denom = 0/0 or num/denom = INFINITY */
     if (denom == 0)
@@ -40,7 +40,8 @@ fprint_ratio(FILE *stream, unsigned long num, unsigned long denom, int force_per
     if (num < denom && denom / (denom - num) < 20000)
     {
         scale = 10000;
-        scaled_ratio = ((double)num * (double)scale) / (double)denom;
+        scaled_ratio =
+            ((long double)num * (long double)scale) / (long double)denom;
         fractional_part = (unsigned int)(scaled_ratio + 0.5);
         /* Adjust the scaled result in the event of a roundoff error. */
         /* Such error may occur only if the numerator is extremely large. */
@@ -64,13 +65,13 @@ fprint_ratio(FILE *stream, unsigned long num, unsigned long denom, int force_per
     /* (4): 0.995 <= num/denom < INFINITY */
     if (force_percent)
     {
-        return fprintf(stream, "%lu%02u%%", integer_part, fractional_part);
+        return fprintf(stream, "%"OPTK_FSIZE_PRIu"%02u%%", integer_part, fractional_part);
     }
 
     /* (5): 0.995 <= num/denom < 99.995 */
     if (integer_part < 100)
     {
-        return fprintf(stream, "%lu.%02ux", integer_part, fractional_part);
+        return fprintf(stream, "%"OPTK_FSIZE_PRIu".%02ux", integer_part, fractional_part);
     }
 
     /* (6): 99.5 <= num/denom < INFINITY */
@@ -79,5 +80,5 @@ fprint_ratio(FILE *stream, unsigned long num, unsigned long denom, int force_per
     integer_part = num / denom;
     if (remainder >= (denom + 1) / 2)
         ++integer_part;
-    return fprintf(stream, "%lux", integer_part);
+    return fprintf(stream, "%"OPTK_FSIZE_PRIu"x", integer_part);
 }
