@@ -2,7 +2,7 @@
  * opngtrans/parser.c
  * Object parser.
  *
- * Copyright (C) 2011 Cosmin Truta.
+ * Copyright (C) 2011-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -23,35 +23,32 @@ static const struct
     opng_id_t id;
 } object_id_map[] =
 {
-    { "all",                    OPNG_ID_ALL                   },
-    { "image",                  OPNG_ID_IMAGE /* no access */ },
-    { "image.gray",             OPNG_ID_IMAGE /* no access */ },
-    { "image.grey",             OPNG_ID_IMAGE /* no access */ },
-    { "image.red",              OPNG_ID_IMAGE /* no access */ },
-    { "image.green",            OPNG_ID_IMAGE /* no access */ },
-    { "image.blue",             OPNG_ID_IMAGE /* no access */ },
-    { "image.alpha",            OPNG_ID_IMAGE_ALPHA           },
-    { "alpha",                  OPNG_ID_IMAGE_ALPHA           },
-    { "image.precision",        OPNG_ID_IMAGE_PRECISION       },
-    { "image.gray.precision",   OPNG_ID_IMAGE_GRAY_PRECISION  },
-    { "image.grey.precision",   OPNG_ID_IMAGE_GRAY_PRECISION  },
-    { "image.red.precision",    OPNG_ID_IMAGE_RED_PRECISION   },
-    { "image.green.precision",  OPNG_ID_IMAGE_GREEN_PRECISION },
-    { "image.blue.precision",   OPNG_ID_IMAGE_BLUE_PRECISION  },
-    { "image.rgb.precision",    OPNG_ID_IMAGE_RGB_PRECISION   },
-    { "image.alpha.precision",  OPNG_ID_IMAGE_ALPHA_PRECISION },
-    { "alpha.precision",        OPNG_ID_IMAGE_ALPHA_PRECISION },
-    { "image.luma.bt601",       OPNG_ID_IMAGE /* no access */ },
-    { "image.luma.bt709",       OPNG_ID_IMAGE /* no access */ },
-    { "image.luma",             OPNG_ID_IMAGE /* no access */ },
-    { "image.chroma.bt601",     OPNG_ID_IMAGE_CHROMA_BT601    },
-    { "chroma.bt601",           OPNG_ID_IMAGE_CHROMA_BT601    },
-    { "image.chroma.bt709",     OPNG_ID_IMAGE_CHROMA_BT709    },
-    { "chroma.bt709",           OPNG_ID_IMAGE_CHROMA_BT709    },
-    { "image.chroma",           OPNG_ID_IMAGE_CHROMA_BT709    },
-    { "chroma",                 OPNG_ID_IMAGE_CHROMA_BT709    },
-    { "animation",              OPNG_ID_ANIMATION             },
-    { NULL,                     0                             }
+    /* Custom identifiers must not be groups of 4 letters. */
+    { "all",                   OPNG_ID_ALL                   },
+    { "image",                 OPNG_ID__RESERVED             },
+    { "image.gray",            OPNG_ID__RESERVED             },
+    { "image.grey",            OPNG_ID__RESERVED             },
+    { "image.red",             OPNG_ID__RESERVED             },
+    { "image.green",           OPNG_ID__RESERVED             },
+    { "image.blue",            OPNG_ID__RESERVED             },
+    { "image.rgb",             OPNG_ID__RESERVED             },
+    { "image.alpha",           OPNG_ID_IMAGE_ALPHA           },
+    { "image.precision",       OPNG_ID_IMAGE_PRECISION       },
+    { "image.gray.precision",  OPNG_ID_IMAGE_GRAY_PRECISION  },
+    { "image.grey.precision",  OPNG_ID_IMAGE_GRAY_PRECISION  },
+    { "image.red.precision",   OPNG_ID_IMAGE_RED_PRECISION   },
+    { "image.green.precision", OPNG_ID_IMAGE_GREEN_PRECISION },
+    { "image.blue.precision",  OPNG_ID_IMAGE_BLUE_PRECISION  },
+    { "image.rgb.precision",   OPNG_ID_IMAGE_RGB_PRECISION   },
+    { "image.alpha.precision", OPNG_ID_IMAGE_ALPHA_PRECISION },
+    { "image.luma.bt601",      OPNG_ID__RESERVED             },
+    { "image.luma.bt709",      OPNG_ID__RESERVED             },
+    { "image.luma",            OPNG_ID__RESERVED             },
+    { "image.chroma.bt601",    OPNG_ID_IMAGE_CHROMA_BT601    },
+    { "image.chroma.bt709",    OPNG_ID_IMAGE_CHROMA_BT709    },
+    { "image.chroma",          OPNG_ID_IMAGE_CHROMA_BT709    },
+    { "animation",             OPNG_ID_ANIMATION             },
+    { NULL,                    0                             }
 };
 
 
@@ -123,20 +120,23 @@ opng_object_id(const char *objname, size_t objname_length)
             object_id_map[i].objname[objname_length] == 0)
             return object_id_map[i].id;
     }
-    return OPNG_ID_ERR_UNKNOWN;
+    return OPNG_ID__UNKNOWN;
 }
 
 /*
  * Converts a string representing an object to an object id.
  */
 opng_id_t
-opng_string_to_id(const char *str, size_t *objname_offset_ptr, size_t *objname_length_ptr)
+opng_string_to_id(const char *str,
+                  size_t *objname_offset_ptr,
+                  size_t *objname_length_ptr)
 {
     const char *objname;
     int is_chunk_name;
 
-    if (opng_sscan_object(str, objname_offset_ptr, objname_length_ptr, &is_chunk_name) <= 0)
-        return OPNG_ID_ERR_SYNTAX;
+    if (opng_sscan_object(str, objname_offset_ptr, objname_length_ptr,
+                          &is_chunk_name) <= 0)
+        return OPNG_ID__NONE;
 
     objname = str + *objname_offset_ptr;
     if (!is_chunk_name)
@@ -149,64 +149,11 @@ opng_string_to_id(const char *str, size_t *objname_offset_ptr, size_t *objname_l
         return OPNG_ID_CHUNK_IMAGE;
     if (memcmp(objname, "tRNS", 4) == 0)
         return OPNG_ID_CHUNK_IMAGE;
+    if (memcmp(objname, "acTL", 4) == 0 ||
+        memcmp(objname, "fcTL", 4) == 0 ||
+        memcmp(objname, "fdAT", 4) == 0)
+        return OPNG_ID_CHUNK_ANIMATION;
     return OPNG_ID_CHUNK_META;
-}
-
-/*
- * Returns an error string associated with the error code stored in the id.
- */
-const char *
-opng_id_to_strerr(opng_id_t id)
-{
-    switch (id)
-    {
-    case OPNG_ID_ERR_SYNTAX:
-        /* The default error message is sufficient. */
-        return NULL;
-    case OPNG_ID_ERR_UNKNOWN:
-        return "The object is unknown";
-    default:
-        return (id & OPNG_ID_ERR) ? "[BUG] Bad object id" : NULL;
-    }
-}
-
-/*
- * Parses an input string in the form "object=value" and retrieves
- * the object id and value string.
- */
-int
-opng_parse_object_value(opng_id_t *id,
-                        size_t *value_offset_ptr,
-                        const char *objname_eq_value,
-                        opng_id_t accept_mask,
-                        struct opng_parse_err_info *err_info_ptr)
-{
-    const char *ptr;
-    size_t objname_offset, objname_length;
-
-    memset(err_info_ptr, 0, sizeof(*err_info_ptr));
-
-    *id = opng_string_to_id(objname_eq_value, &objname_offset, &objname_length);
-    ptr = objname_eq_value + objname_offset + objname_length;
-    while (isspace(*ptr))
-        ++ptr;
-    if (*ptr != '=')
-    {
-        err_info_ptr->id = OPNG_ID_ERR_SYNTAX;
-        return -1;
-    }
-    if ((*id & accept_mask) != *id)
-    {
-        err_info_ptr->id = *id;
-        if (objname_length > 0)
-        {
-            err_info_ptr->objname_offset = objname_offset;
-            err_info_ptr->objname_length = objname_length;
-        }
-        return -1;
-    }
-    *value_offset_ptr = ptr + 1 - objname_eq_value;
-    return 0;
 }
 
 /*
@@ -214,7 +161,7 @@ opng_parse_object_value(opng_id_t *id,
  * the results to the given id set and (if given) chunk signature set.
  */
 int
-opng_parse_objects(opng_id_t *ids,
+opng_parse_objects(opng_id_t *ids_ptr,
                    struct opng_sigs *sigs,
                    const char *objnames,
                    opng_id_t accept_mask,
@@ -222,46 +169,89 @@ opng_parse_objects(opng_id_t *ids,
 {
     const char *ptr;
     opng_id_t id;
-    size_t objname_offset, objname_length;
+    size_t objname_rel_offset, objname_offset, objname_length;
 
     memset(err_info_ptr, 0, sizeof(*err_info_ptr));
 
     ptr = objnames;
-    for ( ; ; )
+    do
     {
-        /* Extract the first remaining object name and store the
-         * resulting id and (if applicable) chunk signature.
-         */
-        id = opng_string_to_id(ptr, &objname_offset, &objname_length);
-        ptr += objname_offset;
-        if ((id & accept_mask) != id)
-        {
-            err_info_ptr->id = id;
-            if (objname_length != 0)
-            {
-                err_info_ptr->objname_offset = ptr - objnames;
-                err_info_ptr->objname_length = objname_length;
-            }
-            return -1;
-        }
-        *ids |= id;
-        if (id & (OPNG_ID_CHUNK_IMAGE | OPNG_ID_CHUNK_META))
+        id = opng_string_to_id(ptr, &objname_rel_offset, &objname_length);
+        *ids_ptr |= id;
+        if ((id & OPNG_IDSET_CHUNK) != 0 && sigs != NULL)
             opng_sigs_add(sigs, ptr);
-
-        /* Advance. */
+        ptr += objname_rel_offset;
+        objname_offset = ptr - objnames;
         ptr += objname_length;
         while (isspace(*ptr))
             ++ptr;
         if (*ptr == ',' || *ptr == ';')
-        {
             ++ptr;
-            continue;
+        else if (*ptr == 0)
+            ptr = NULL;
+        else
+        {
+            /* Syntax error. */
+            err_info_ptr->id = OPNG_ID__NONE;
+            return -1;
         }
-        if (*ptr == 0)
-            break;
-        err_info_ptr->id = OPNG_ID_ERR_SYNTAX;
+        if ((id & accept_mask) == 0)
+        {
+            /* Missing or incorrect id. */
+            err_info_ptr->id = id;
+            if (objname_length > 0)
+            {
+                err_info_ptr->objname_offset = objname_offset;
+                err_info_ptr->objname_length = objname_length;
+            }
+            return -1;
+        }
+    } while (ptr != NULL);
+    return 0;
+}
+
+/*
+ * Parses an input string in the form "object=value" and retrieves
+ * the object id and value string.
+ */
+int
+opng_parse_object_value(opng_id_t *id_ptr,
+                        size_t *value_offset_ptr,
+                        const char *objname_eq_value,
+                        opng_id_t accept_mask,
+                        struct opng_parse_err_info *err_info_ptr)
+{
+    const char *ptr;
+    opng_id_t id;
+    size_t objname_offset, objname_length;
+
+    memset(err_info_ptr, 0, sizeof(*err_info_ptr));
+
+    id = opng_string_to_id(objname_eq_value, &objname_offset, &objname_length);
+    *id_ptr = id;
+    ptr = objname_eq_value + objname_offset + objname_length;
+    while (isspace(*ptr))
+        ++ptr;
+    if (*ptr == '=')
+        ++ptr;
+    else if (*ptr != 0)
+    {
+        /* Syntax error. */
+        err_info_ptr->id = OPNG_ID__NONE;
         return -1;
     }
+    if ((id & accept_mask) == 0)
+    {
+        /* Missing or incorrect id. */
+        err_info_ptr->id = id;
+        if (objname_length > 0)
+        {
+            err_info_ptr->objname_offset = objname_offset;
+            err_info_ptr->objname_length = objname_length;
+        }
+        return -1;
+    }
+    *value_offset_ptr = ptr - objname_eq_value;
     return 0;
 }
 

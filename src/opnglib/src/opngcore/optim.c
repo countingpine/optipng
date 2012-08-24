@@ -389,7 +389,6 @@ opng_read_file(struct opng_session *session, FILE *stream)
     const char *format_name;
     const char *format_xdesc;
     int reductions;
-    opng_id_t trans_ids;
 
     options = session->options;
     image = &session->image;
@@ -433,19 +432,11 @@ opng_read_file(struct opng_session *session, FILE *stream)
     /* Set/reset image data objects, if applicable.
      * This operation must be done before reductions.
      */
-    trans_ids = opng_decode_set_reset_data(&context);
-    if (trans_ids != 0)
+    if (opng_decode_transform_image(&context))
     {
-        opng_printf("Transforming:");
-        if (trans_ids & OPNG_ID_IMAGE_ALPHA)
-            opng_printf(" image.alpha");
-        if (trans_ids & OPNG_ID_IMAGE_CHROMA_BT601)
-            opng_printf(" image.chroma.bt601");
-        if (trans_ids & OPNG_ID_IMAGE_CHROMA_BT709)
-            opng_printf(" image.chroma.bt709");
-        opng_printf("\n");
-        /* A successful -set or -reset implies -force. */
-        session->flags |= OPNG_NEEDS_NEW_FILE | OPNG_NEEDS_NEW_IDAT;
+        opng_printf("Transforming:\n");
+        /* Recompression is mandatory after a successful transformation. */
+        stats->flags |= OPNG_NEEDS_NEW_IDAT;
     }
 
     /* Choose the applicable image reductions. */

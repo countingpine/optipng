@@ -4,7 +4,7 @@
  * @brief
  * OPNGCORE is a PNG Compression Optimization and Recovery Engine.
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file, or visit
@@ -82,14 +82,6 @@ struct opng_options
     optk_bits_t zmem_level_set;
     optk_bits_t zstrategy_set;
     int zwindow_bits;
-
-    /* editing options */
-    const char **properties;
-    unsigned int num_properties;
-    const char **protected;
-    unsigned int num_protected;
-    const char **stripped;
-    unsigned int num_stripped;
 };
 
 

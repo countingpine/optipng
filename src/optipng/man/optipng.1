@@ -264,11 +264,11 @@ TODO: Explain \fB\-reset image.alpha\fP.
 \fB\-strip\fP \fIobjects\fP
 Strip metadata objects from a PNG file.
 .br
-PNG metadata is the information stored in any ancillary chunk except
-\fCtRNS\fP. (\fCtRNS\fP represents the alpha channel, which, even if ignored
-in rendering, is still a proper image channel in the RGBA color space.)
+PNG metadata is the information stored in any ancillary chunk except tRNS.
+(tRNS represents the alpha channel, which, even if ignored in rendering, is
+still a proper image channel in the RGBA color space.)
 .br
-The accepted \fIobjects\fP are the chunk names or the \fBall\fP object.
+The accepted \fIobjects\fP are either chunk names or the \fBall\fP object.
 Multiple \fIobjects\fP can be comma-separated within a single \fB\-strip\fP
 option, or split across multiple \fB\-strip\fP options.
 .TP
@@ -279,7 +279,7 @@ This option has priority over \fB\-strip\fP. For example, under
 \fB\-strip\ all \-protect\ sRGB\fP, everything except \fCsRGB\fP is stripped;
 under \fB\-strip\ all \-protect\ all\fP, nothing is stripped.
 .br
-The accepted \fIobjects\fP are the chunk names or the \fBall\fP object.
+The accepted \fIobjects\fP are either chunk names or the \fBall\fP object.
 Multiple \fIobjects\fP can be comma-separated within a single \fB\-protect\fP
 option, or split across multiple \fB\-protect\fP options.
 .TP

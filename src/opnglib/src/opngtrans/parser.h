@@ -2,7 +2,7 @@
  * opngtrans/parser.h
  * Object parser.
  *
- * Copyright (C) 2011 Cosmin Truta.
+ * Copyright (C) 2011-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -42,19 +42,9 @@ struct opng_parse_err_info
  * Returns the object id, or an appropriate error id in case of error.
  */
 opng_id_t
-opng_string_to_id(const char *str, size_t *objname_offset, size_t *objname_length);
-
-/*
- * Parses an input string in the form "object=value" and retrieves
- * the object id and value string.
- * Returns 0 on success or -1 on error.
- */
-int
-opng_parse_object_value(opng_id_t *id,
-                        size_t *value_offset_ptr,
-                        const char *name_eq_value,
-                        opng_id_t accept_mask,
-                        struct opng_parse_err_info *err_info_ptr);
+opng_string_to_id(const char *str,
+                  size_t *objname_offset_ptr,
+                  size_t *objname_length_ptr);
 
 /*
  * Parses an input string in the form "object[,object...]" and adds
@@ -62,17 +52,23 @@ opng_parse_object_value(opng_id_t *id,
  * Returns 0 on success or -1 on error.
  */
 int
-opng_parse_objects(opng_id_t *ids,
+opng_parse_objects(opng_id_t *ids_ptr,
                    struct opng_sigs *sigs,
                    const char *names,
                    opng_id_t accept_mask,
                    struct opng_parse_err_info *err_info_ptr);
 
 /*
- * Returns an error string associated with the error code stored in the id.
+ * Parses an input string in the form "object=value" and retrieves
+ * the object id and value string.
+ * Returns 0 on success or -1 on error.
  */
-const char *
-opng_id_to_strerr(opng_id_t id);
+int
+opng_parse_object_value(opng_id_t *id_ptr,
+                        size_t *value_offset_ptr,
+                        const char *name_eq_value,
+                        opng_id_t accept_mask,
+                        struct opng_parse_err_info *err_info_ptr);
 
 /*
  * The smallint limits.

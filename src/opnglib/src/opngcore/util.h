@@ -2,7 +2,7 @@
  * opngcore/util.h
  * Utilities.
  *
- * Copyright (C) 2010-2011 Cosmin Truta.
+ * Copyright (C) 2010-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -35,10 +35,27 @@ extern "C" {
 /*
  * Weak assertion.
  * Displays an eye-catching error message on failure,
- * but allows program execution to continue.
+ * but allows the non-debug program execution to continue.
  */
+#ifdef OPNG_DEBUG
+#define OPNG_WEAK_ASSERT(condition, message) \
+    OPNG_ASSERT(condition, message)
+#else
 #define OPNG_WEAK_ASSERT(condition, message) \
     ((void)((condition) ? 0 : (opng_error(NULL, "[BUG?] " message, NULL), 0)))
+#endif
+
+/*
+ * Expensive assertion.
+ * This is enabled only in the debug-enabled build, and disabled by default.
+ */
+#ifdef OPNG_DEBUG
+#define OPNG_EXPENSIVE_ASSERT(condition, message) \
+    OPNG_ASSERT(condition, message)
+#else
+#define OPNG_EXPENSIVE_ASSERT(condition, message) \
+    ((void)0)
+#endif
 
 
 /*** Character type utilities ***/
