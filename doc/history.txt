@@ -16,8 +16,8 @@ Legend
 Version Hg
 ----------
 ++ Revamped the optimization levels, in the hope that the selection
-   of iteration parameters is now smarter, and the delivered compression
-   ratio is better.
+   of iteration parameters is smarter, and the delivered compression
+   ratio is better. The new range of optimization levels is 1-6.
 ++ Added the possibility to strip individual chunks;
    e.g. "-strip gAMA,cHRM".
 ++ Added the option -protect, to protect chunks from stripping;
