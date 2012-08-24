@@ -2,7 +2,7 @@
  * OptiPNG: Advanced PNG optimization program.
  * http://optipng.sourceforge.net/
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -53,12 +53,12 @@ static const char *msg_help_synopsis =
 static const char *msg_help_basic_options =
    "Basic options:\n"
    "    -?, -h, -help\tshow the extended help\n"
-   "    -o <level>\t\toptimization level (0-7)\t\t[default 2]\n";
+   "    -o <level>\t\toptimization level (1-6)\t\t[default 2]\n";
 
 static const char *msg_help_options =
    "Basic options:\n"
    "    -?, -h, -help\tshow this help\n"
-   "    -o <level>\t\toptimization level (0-7)\t\t[default 2]\n"
+   "    -o <level>\t\toptimization level (1-6)\t\t[default 2]\n"
    "General options:\n"
    "    -backup\t\tback up modified files\n"
    "    -dir <directory>\twrite output file(s) to <directory>\n"
@@ -118,8 +118,8 @@ static const char *msg_help_options =
 static const char *msg_help_examples =
    "Examples:\n"
    "    optipng file.png\t\t\t\t\t\t(default speed)\n"
-   "    optipng -o5 file.png\t\t\t\t\t(slow)\n"
-   "    optipng -o7 file.png\t\t\t\t\t(very slow)\n";
+   "    optipng -o4 file.png\t\t\t\t\t(slow)\n"
+   "    optipng -o6 file.png\t\t\t\t\t(very slow)\n";
 
 static const char *msg_help_more =
    "Type \"optipng -h\" for extended help.\n";
@@ -246,15 +246,6 @@ static void
 error_option_arg(const char *opt, const char *opt_arg)
 {
     error_option_arg_xinfo(opt, opt_arg, NULL);
-}
-
-/*
- * Error handling
- */
-static void
-error_out_of_memory(void)
-{
-    error(EX_UNAVAILABLE, "Out of memory");
 }
 
 /*
@@ -871,7 +862,8 @@ process_files(int argc, char *argv[])
 
     if (opng_set_options(the_optimizer, &options) < 0)
     {
-        /* Ideally, this should not happen. Did we check all the options? */
+        /* This should not happen. Have we checked all the options? */
+        warning("[BUG] Failed to detect a usage error");
         return EX_USAGE;
     }
     opng_set_transformer(the_optimizer, the_transformer);
@@ -911,7 +903,7 @@ main(int argc, char *argv[])
 
     /* Initialize the program. */
     if (initialize() < 0)
-        error_out_of_memory();
+        error(EX_UNAVAILABLE, "Can't start");
     result = 0;
 
     /* Parse the user options. */

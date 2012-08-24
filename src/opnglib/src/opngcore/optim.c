@@ -2,7 +2,7 @@
  * opngcore/optim.c
  * The main PNG optimization engine.
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -33,43 +33,20 @@
 
 
 /*
- * Direct or indirect inclusion of <setjmp.h> must follow <pngconf.h>
- * if the libpng version is earlier than 1.5.0.
- */
-#include "cexcept.h"
-
-#if ZLIB_VERNUM < 0x1210
-#error This module requires zlib version 1.2.1 or higher.
-#endif
-
-#if PNG_LIBPNG_VER < 10405
-#error This module requires libpng version 1.4.5 or higher.
-#endif
-
-
-/*
- * User exception setup.
- * See cexcept.h for more info
- */
-define_exception_type(const char *);
-struct exception_context the_exception_context[1];
-
-
-/*
  * Optimization presets
  */
 static const char *
 filter_presets[OPNG_OPTIM_LEVEL_MAX - OPNG_OPTIM_LEVEL_MIN + 1] =
-    { "", "", "", "", "0,5", "0,5", "0-5", "0-5", "0-5" };
+    { "", "", NULL, "", "0,5", "0,5", "0-5", "0-5", "0-5" };
 static const char *
 zcompr_level_presets[OPNG_OPTIM_LEVEL_MAX - OPNG_OPTIM_LEVEL_MIN + 1] =
-    { "3", "9", "", "9", "9", "9", "9", "3-9", "1-9" };
+    { "3", "9", NULL, "9", "9", "9", "9", "3-9", "1-9" };
 static const char *
 zmem_level_presets[OPNG_OPTIM_LEVEL_MAX - OPNG_OPTIM_LEVEL_MIN + 1] =
-    { "", "", "", "", "", "8-9", "8-9", "8-9", "7-9" };
+    { "", "", NULL, "", "", "8-9", "8-9", "8-9", "7-9" };
 static const char *
 zstrategy_presets[OPNG_OPTIM_LEVEL_MAX - OPNG_OPTIM_LEVEL_MIN + 1] =
-    { "", "", "", "", "0-3", "0-3", "0-3", "0-3", "0-3" };
+    { "", "", NULL, "", "0-3", "0-3", "0-3", "0-3", "0-3" };
 
 
 /*
@@ -78,7 +55,7 @@ zstrategy_presets[OPNG_OPTIM_LEVEL_MAX - OPNG_OPTIM_LEVEL_MIN + 1] =
 struct opng_optimizer
 {
     const opng_transformer_t *transformer;
-    int started;
+    struct opng_options options;
     unsigned int file_count;
     unsigned int err_count;
     unsigned int fix_count;
@@ -89,15 +66,14 @@ struct opng_optimizer
  */
 struct opng_session
 {
-    png_uint_32 flags;
-#if 0  /* TODO: Move the options here. */
     const struct opng_options *options;
-#endif
+    const opng_transformer_t *transformer;
+    struct opng_image image;
     struct opng_encoding_stats in_stats;
     struct opng_encoding_stats out_stats;
-    struct opng_image image;
     const char *in_fname;
     const char *out_fname;
+    png_uint_32 flags;
     png_uint_32 best_idat_size;
     png_uint_32 max_idat_size;
     optk_bits_t filter_set;
@@ -107,12 +83,6 @@ struct opng_session
     struct opng_encoding_params best_params;
     int num_iterations;
 };
-
-/*
- * Global variables
- */
-static struct opng_optimizer the_optimizer;
-static struct opng_options options;
 
 
 /*
@@ -413,6 +383,7 @@ static int
 opng_read_file(struct opng_session *session, FILE *stream)
 {
     struct opng_codec_context context;
+    const struct opng_options *options;
     struct opng_image *image;
     struct opng_encoding_stats *stats;
     const char *format_name;
@@ -420,9 +391,14 @@ opng_read_file(struct opng_session *session, FILE *stream)
     int reductions;
     opng_id_t trans_ids;
 
+    options = session->options;
     image = &session->image;
     stats = &session->in_stats;
-    opng_init_codec_context(&context, image, stats, 0, the_optimizer.transformer);
+    opng_init_codec_context(&context,
+                            image,
+                            stats,
+                            0,
+                            session->transformer);
     if (opng_decode_image(&context, stream, session->in_fname,
                           &format_name, &format_xdesc) < 0)
     {
@@ -474,13 +450,13 @@ opng_read_file(struct opng_session *session, FILE *stream)
 
     /* Choose the applicable image reductions. */
     reductions = OPNG_REDUCE_ALL;
-    if (options.nb)
+    if (options->nb)
         reductions &= ~OPNG_REDUCE_BIT_DEPTH;
-    if (options.nc)
+    if (options->nc)
         reductions &= ~OPNG_REDUCE_COLOR_TYPE;
-    if (options.np)
+    if (options->np)
         reductions &= ~OPNG_REDUCE_PALETTE;
-    if (options.nz && (stats->flags & OPNG_HAS_PNG_DATASTREAM))
+    if (options->nz && (stats->flags & OPNG_HAS_PNG_DATASTREAM))
     {
         /* Do not reduce files with PNG datastreams under -nz. */
         reductions = OPNG_REDUCE_NONE;
@@ -519,9 +495,9 @@ opng_read_file(struct opng_session *session, FILE *stream)
     /* Change the interlace type if requested.
      * Such a change enforces IDAT recoding.
      */
-    if (options.interlace >= 0 && image->interlace_type != options.interlace)
+    if (options->interlace >= 0 && image->interlace_type != options->interlace)
     {
-        image->interlace_type = options.interlace;
+        image->interlace_type = options->interlace;
         stats->flags |= OPNG_NEEDS_NEW_IDAT;
     }
 
@@ -562,7 +538,7 @@ opng_write_file(struct opng_session *session,
                             &session->image,
                             &session->out_stats,
                             expected_idat_size,
-                            the_optimizer.transformer);
+                            session->transformer);
     result = opng_encode_image(&context, params, stream, fname);
     opng_encode_finish(&context);
     return result;
@@ -580,7 +556,7 @@ opng_copy_file(struct opng_session *session, FILE *in_stream, FILE *out_stream)
                             NULL,
                             &session->out_stats,
                             session->best_idat_size,
-                            the_optimizer.transformer);
+                            session->transformer);
     return opng_copy_png(&context,
                          in_stream, session->in_fname,
                          out_stream, session->out_fname);
@@ -590,39 +566,20 @@ opng_copy_file(struct opng_session *session, FILE *in_stream, FILE *out_stream)
  * Iteration initialization
  */
 static void
-opng_init_iteration(optk_bits_t cmdline_set, optk_bits_t mask_set,
-                    const char *preset, optk_bits_t *output_set)
-{
-    optk_bits_t preset_set;
-    size_t end_idx;
-
-    *output_set = cmdline_set & mask_set;
-    if (*output_set == 0 && cmdline_set != 0)
-        Throw "Iteration parameter(s) out of range";
-    if (*output_set == 0 || options.optim_level >= 0)
-    {
-        preset_set = optk_rangeset_string_to_bits(preset, &end_idx);
-        OPNG_ASSERT(preset[end_idx] == 0, "Invalid iteration preset");
-        *output_set |= (optk_bits_t)preset_set & mask_set;
-    }
-}
-
-/*
- * Iteration initialization
- */
-static void
 opng_init_iterations(struct opng_session *session)
 {
+    const struct opng_options *options;
     optk_bits_t filter_set, zcompr_level_set, zmem_level_set, zstrategy_set;
-    int preset_index;
     int filtering_recommended;
     int t1, t2;
+
+    options = session->options;
 
     /* Set the IDAT size limit. The trials that pass this limit will be
      * abandoned, as there will be no need to wait until their completion.
      * This limit may further decrease as iterations go on.
      */
-    if ((session->flags & OPNG_NEEDS_NEW_IDAT) || options.paranoid)
+    if ((session->flags & OPNG_NEEDS_NEW_IDAT) || options->paranoid)
        session->max_idat_size = PNG_UINT_31_MAX;
     else
     {
@@ -637,29 +594,11 @@ opng_init_iterations(struct opng_session *session)
             session->in_stats.idat_size + session->in_stats.plte_trns_size;
     }
 
-    /* Get preset_index from options.optim_level, but leave the latter intact,
-     * because the effect of "optipng -o2 -z... -f..." is slightly different
-     * than the effect of "optipng -z... -f..." (without "-o").
-     */
-    preset_index = options.optim_level;
-    if (preset_index == 0)
-        preset_index = OPNG_OPTIM_LEVEL_DEFAULT;
-    else if (preset_index > OPNG_OPTIM_LEVEL_MAX)
-        preset_index = OPNG_OPTIM_LEVEL_MAX;
-
-    /* Merge the user-defined iteration sets with the optimization presets. */
-    opng_init_iteration(options.filter_set, OPNG_FILTER_SET_MASK,
-        filter_presets[preset_index - OPNG_OPTIM_LEVEL_MIN],
-        &filter_set);
-    opng_init_iteration(options.zcompr_level_set, OPNG_ZCOMPR_LEVEL_SET_MASK,
-        zcompr_level_presets[preset_index - OPNG_OPTIM_LEVEL_MIN],
-        &zcompr_level_set);
-    opng_init_iteration(options.zmem_level_set, OPNG_ZMEM_LEVEL_SET_MASK,
-        zmem_level_presets[preset_index - OPNG_OPTIM_LEVEL_MIN],
-        &zmem_level_set);
-    opng_init_iteration(options.zstrategy_set, OPNG_ZSTRATEGY_SET_MASK,
-        zstrategy_presets[preset_index - OPNG_OPTIM_LEVEL_MIN],
-        &zstrategy_set);
+    /* Initialize the iteration sets. */
+    filter_set = options->filter_set;
+    zcompr_level_set = options->zcompr_level_set;
+    zmem_level_set = options->zmem_level_set;
+    zstrategy_set = options->zstrategy_set;
 
     /* Replace the empty sets with the libpng's "best guess" heuristics. */
     filtering_recommended =
@@ -713,6 +652,7 @@ opng_init_iterations(struct opng_session *session)
 static void
 opng_iterate(struct opng_session *session)
 {
+    const struct opng_options *options;
     optk_bits_t filter_set, zcompr_level_set, zmem_level_set, zstrategy_set;
     optk_bits_t saved_zcompr_level_set;
     struct opng_encoding_params params;
@@ -720,6 +660,8 @@ opng_iterate(struct opng_session *session)
     png_uint_32 out_idat_size;
     int counter;
     int line_reused;
+
+    options = session->options;
 
     OPNG_ASSERT(session->num_iterations > 0, "Iterations not initialized");
     if ((session->num_iterations == 1) &&
@@ -732,7 +674,7 @@ opng_iterate(struct opng_session *session)
         params.zcompr_level = optk_bits_find_first(session->zcompr_level_set);
         params.zmem_level = optk_bits_find_first(session->zmem_level_set);
         params.zstrategy = optk_bits_find_first(session->zstrategy_set);
-        params.zwindow_bits = options.zwindow_bits;
+        params.zwindow_bits = options->zwindow_bits;
         session->best_params = params;
         session->best_idat_size = 0;
         return;
@@ -747,7 +689,7 @@ opng_iterate(struct opng_session *session)
     params.zcompr_level = -1;
     params.zmem_level = -1;
     params.zstrategy = -1;
-    params.zwindow_bits = options.zwindow_bits;
+    params.zwindow_bits = options->zwindow_bits;
     session->best_params = params;
     session->best_idat_size = PNG_UINT_31_MAX + 1;
 
@@ -802,7 +744,7 @@ opng_iterate(struct opng_session *session)
                             opng_write_file(session, &params, NULL);
                             if (session->out_stats.idat_size > PNG_UINT_31_MAX)
                             {
-                               if (options.verbose)
+                               if (options->verbose)
                                {
                                   opng_printf("\tIDAT too big\n");
                                   line_reused = 0;
@@ -824,7 +766,7 @@ opng_iterate(struct opng_session *session)
                                continue;  /* it's neither smaller nor faster */
                             session->best_params = params;
                             session->best_idat_size = out_idat_size;
-                            if (!options.paranoid)
+                            if (!options->paranoid)
                                session->max_idat_size = out_idat_size;
                          }
                       }
@@ -868,6 +810,7 @@ opng_finish_iterations(struct opng_session *session)
 static int
 opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
 {
+    const struct opng_options *options;
     FILE *in_stream;
     FILE *out_stream;
     int result;
@@ -886,14 +829,15 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
     if (result < 0)
         return result;
 
+    options = session->options;
     session->flags = session->in_stats.flags;
-    if (options.force)
+    if (options->force)
         session->flags |= OPNG_NEEDS_NEW_IDAT;
 
     /* Check the error flag. This must be the first check. */
     if (session->flags & OPNG_HAS_ERRORS)
     {
-        if (options.fix)
+        if (options->fix)
         {
             opng_printf("Recoverable errors found in input. "
                         "Fixing...\n");
@@ -917,7 +861,7 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
         session->flags |= OPNG_NEEDS_NEW_FILE;
     if (session->flags & OPNG_HAS_PNG_DATASTREAM)
     {
-        if (options.nz && (session->flags & OPNG_NEEDS_NEW_IDAT))
+        if (options->nz && (session->flags & OPNG_NEEDS_NEW_IDAT))
         {
             opng_error(session->in_fname,
                        "Can't process file without recoding IDAT",
@@ -932,11 +876,9 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
     /* Check the digital signature flag. */
     if (session->flags & OPNG_HAS_DIGITAL_SIGNATURE)
     {
-        if (options.force)
+        if (options->force)
         {
-#if 0
-            opng_printf("Digital signature found. Erasing...\n");
-#endif
+            opng_printf("Stripping digital signature:\n");
             session->flags |= OPNG_NEEDS_NEW_FILE;
         }
         else
@@ -955,7 +897,7 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
     if ((session->flags & OPNG_HAS_SNIPPED_IMAGES) &&
         !(session->flags & OPNG_IS_PNG_FILE))
     {
-        if (!options.snip)
+        if (!options->snip)
         {
             opng_error(session->in_fname,
                        "The multi-image file could not be converted "
@@ -966,17 +908,17 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
     }
 
     /* Init and check the I/O environment before engaging in lengthy trials. */
-    if (!options.no_create)
+    if (!options->no_create)
     {
         const char *png_extname =
-            ((session->flags & OPNG_IS_PNG_FILE) || options.out) ?
+            ((session->flags & OPNG_IS_PNG_FILE) || options->out) ?
                NULL : "png";
         if (opng_ioenv_init(ioenv, png_extname) == -1)
             return -1;  /* an error message has already been issued */
     }
 
     /* Find the best parameters and see if it's worth recompressing. */
-    if (!options.nz || (session->flags & OPNG_NEEDS_NEW_IDAT))
+    if (!options->nz || (session->flags & OPNG_NEEDS_NEW_IDAT))
     {
         opng_init_iterations(session);
         opng_iterate(session);
@@ -992,7 +934,7 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
         opng_printf("No output: no update needed.\n");
         return 0;
     }
-    if (options.no_create)
+    if (options->no_create)
     {
         opng_printf("No output: simulation mode.\n");
         return 0;
@@ -1007,7 +949,7 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
         opng_printf("Output:\n");  /* no need to show the file name here */
     else
         opng_printf("Output: %s\n", session->out_fname);
-    if (options.use_stdout)
+    if (options->use_stdout)
     {
         /* Don't set stdout mode to binary here.
          * Some systems allow this operation to be done only once,
@@ -1086,31 +1028,84 @@ opng_optimize_impl(struct opng_session *session, opng_ioenv_t *ioenv)
 opng_optimizer_t *
 opng_create_optimizer(void)
 {
-    /* This is a sanity check that looks like a race condition.
-     * The engine is not yet ready for multi-threaded programming.
-     */
-    if (the_optimizer.started)
-        return NULL;
+    opng_optimizer_t *result;
 
-    memset(&the_optimizer, 0, sizeof(the_optimizer));
-    the_optimizer.started = 1;
-    return &the_optimizer;
+    result = (opng_optimizer_t *)calloc(1, sizeof(struct opng_optimizer));
+    return result;
 }
 
 /*
- * Updates the user options in an optimizer object.
+ * Adjusts an iteration option.
+ */
+static int
+opng_set_iteration_option(optk_bits_t *result_set,
+                          optk_bits_t option_set,
+                          optk_bits_t set_mask,
+                          const char *preset)
+{
+    size_t end_idx;
+
+    /* Constrain the result to the valid range. */
+    *result_set = option_set & set_mask;
+    if (*result_set == 0)
+    {
+        /* The result set is 0 because the input set is either
+         * uninitialized or out of range.
+         * Use the default preset only in the former case.
+         */
+        if (option_set != 0)
+            return -1;
+        *result_set = optk_rangeset_string_to_bits(preset, &end_idx);
+        OPNG_ASSERT(preset[end_idx] == 0, "Invalid iteration preset");
+    }
+    return 0;
+}
+
+/*
+ * Sets the user options in an optimizer object.
  */
 int
 opng_set_options(opng_optimizer_t *optimizer,
                  const struct opng_options *user_options)
 {
-    (void)optimizer;
+    struct opng_options *options;
+    int preset_index;
 
-    options = *user_options;
-    if (options.optim_level == OPNG_OPTIM_LEVEL_FASTEST)
-        options.nz = 1;
+    optimizer->options = *user_options;
+    options = &optimizer->options;
 
-    /* TODO: Validate the options. */
+    if (options->optim_level == 0)
+        options->optim_level = OPNG_OPTIM_LEVEL_DEFAULT;
+    else if (options->optim_level == OPNG_OPTIM_LEVEL_FASTEST)
+        options->nz = 1;
+    else if (options->optim_level > OPNG_OPTIM_LEVEL_MAX)
+        options->optim_level = OPNG_OPTIM_LEVEL_MAX;
+    else if (options->optim_level < OPNG_OPTIM_LEVEL_MIN)
+        return -1;
+
+    preset_index = options->optim_level - OPNG_OPTIM_LEVEL_MIN;
+    if (opng_set_iteration_option(&options->filter_set,
+                                  user_options->filter_set,
+                                  OPNG_FILTER_SET_MASK,
+                                  filter_presets[preset_index]) < 0)
+        return -1;
+    if (opng_set_iteration_option(&options->zcompr_level_set,
+                                  user_options->zcompr_level_set,
+                                  OPNG_ZCOMPR_LEVEL_SET_MASK,
+                                  zcompr_level_presets[preset_index]) < 0)
+        return -1;
+    if (opng_set_iteration_option(&options->zmem_level_set,
+                                  user_options->zmem_level_set,
+                                  OPNG_ZMEM_LEVEL_SET_MASK,
+                                  zmem_level_presets[preset_index]) < 0)
+        return -1;
+    if (opng_set_iteration_option(&options->zstrategy_set,
+                                  user_options->zstrategy_set,
+                                  OPNG_ZSTRATEGY_SET_MASK,
+                                  zstrategy_presets[preset_index]) < 0)
+        return -1;
+
+    /* TODO: Validate the remaining options. */
     return 0;
 }
 
@@ -1125,7 +1120,7 @@ opng_set_transformer(opng_optimizer_t *optimizer,
     size_t err_objname_offset, err_objname_length;
     const char *err_msg;
 
-    if (options.snip)
+    if (optimizer->options.snip)
     {
         check = opng_transform_reset_objects(transformer, "animation",
                     &err_objname_offset, &err_objname_length, &err_msg);
@@ -1144,31 +1139,32 @@ opng_optimize_file(opng_optimizer_t *optimizer,
                    const char *out_dirname)
 {
     struct opng_session session;
+    const struct opng_options *options;
     opng_ioenv_t *ioenv;
     unsigned int ioenv_flags;
     int result;
 
-    OPNG_ASSERT(optimizer->started,
-                "opng_optimize_file: Invalid optimizer object");
-
-    ++optimizer->file_count;
-
+    options = &optimizer->options;
     ioenv_flags = 0;
-    if (options.backup)
+    if (options->backup)
         ioenv_flags |= OPNG_IOENV_BACKUP;
-    if (!options.no_clobber)
+    if (!options->no_clobber)
         ioenv_flags |= OPNG_IOENV_OVERWRITE;
-    if (options.preserve)
+    if (options->preserve)
         ioenv_flags |= OPNG_IOENV_PRESERVE;
-    if (options.use_stdin)
+    if (options->use_stdin)
         ioenv_flags |= OPNG_IOENV_USE_STDIN;
-    if (options.use_stdout)
+    if (options->use_stdout)
         ioenv_flags |= OPNG_IOENV_USE_STDOUT;
     ioenv = opng_ioenv_create(in_fname, out_fname, out_dirname, ioenv_flags);
 
     memset(&session, 0, sizeof(session));
+    session.options = options;
+    session.transformer = optimizer->transformer;
     opng_init_image(&session.image);
     result = opng_optimize_impl(&session, ioenv);
+
+    ++optimizer->file_count;
     if (result == 0)
     {
         if (session.flags & OPNG_HAS_ERRORS)
@@ -1192,13 +1188,8 @@ opng_optimize_file(opng_optimizer_t *optimizer,
 void
 opng_destroy_optimizer(opng_optimizer_t *optimizer)
 {
-    OPNG_ASSERT(optimizer->started,
-                "opng_destroy_optimizer: Invalid optimizer object");
-
-    if (options.verbose ||
+    if (optimizer->options.verbose ||
         optimizer->err_count > 0)
         opng_print_status_report(optimizer);
-
-    /* Stop the engine. */
-    optimizer->started = 0;
+    free(optimizer);
 }
