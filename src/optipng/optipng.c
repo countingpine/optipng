@@ -38,91 +38,85 @@
 static const char *program_name = PROGRAM_NAME;
 
 static const char *msg_intro =
-   PRODUCT_NAME " version " PRODUCT_VERSION "\n"
-   PRODUCT_COPYRIGHT ".\n";
+    PRODUCT_NAME " version " PRODUCT_VERSION "\n"
+    PRODUCT_COPYRIGHT ".\n";
 
 static const char *msg_license =
-   "This program is open-source software, "
-   "distributed under the zlib license.\n"
-   "See LICENSE.txt for more details.\n";
+    "This program is open-source software, "
+    "distributed under the zlib license.\n"
+    "See LICENSE.txt for more details.\n";
 
 static const char *msg_help_synopsis =
-   "Synopsis:\n"
-   "    optipng [options] files ...\n";
+    "Synopsis:\n"
+    "    optipng [options] files ...\n";
 
 static const char *msg_help_basic_options =
-   "Basic options:\n"
-   "    -?, -h, -help\tshow the extended help\n"
-   "    -o <level>\t\toptimization level (1-6)\t\t[default 2]\n";
+    "Basic options:\n"
+    "    -?, -h, -help\tshow the extended help\n"
+    "    -o <level>\t\toptimization level (1-6)\t\t[default 2]\n";
 
 static const char *msg_help_options =
-   "Basic options:\n"
-   "    -?, -h, -help\tshow this help\n"
-   "    -o <level>\t\toptimization level (1-6)\t\t[default 2]\n"
-   "General options:\n"
-   "    -backup\t\tback up modified files\n"
-   "    -dir <directory>\twrite output file(s) to <directory>\n"
-   "    -fix\t\tenable error recovery\n"
-   "    -force\t\tenforce writing of a new output file\n"
-#if 0   /* TODO */
-   "    -jobs <number>\tallow parallel jobs\n"
+    "Basic options:\n"
+    "    -?, -h, -help\tshow this help\n"
+    "    -o <level>\t\toptimization level (1-6)\t\t[default 2]\n"
+    "General options:\n"
+    "    -backup\t\tback up modified files\n"
+#if 0  /* internal */
+    "    -debug\t\tenable debug features\n"
 #endif
-   "    -no-clobber\t\tdo not overwrite existing files\n"
-   "    -no-create\t\tdo not create any files\n"
-   "    -out <file>\t\twrite output file to <file>\n"
-   "    -preserve\t\tpreserve file attributes if possible\n"
-   "    -quiet, -silent\trun in quiet mode\n"
-   "    -stdout\t\twrite to the standard console output\n"
-   "    -verbose\t\trun in verbose mode\n"
-   "    -version\t\tshow copyright and version info\n"
-   "    --\t\t\tstop option switch parsing\n"
-   "Optimization options:\n"
-#if 0   /* TODO */
-   "    -b <depth>\t\tbit depth (1,2,4,8,16)\t\t\t[default GUESS]\n"
-   "    -c <type>\t\tcolor type (0,2,3,4,6)\t\t\t[default GUESS]\n"
-#endif
-   "    -f <filters>\tPNG delta filters (0-5)\t\t\t[default GUESS]\n"
-   "    -i <type>\t\tPNG interlace type (0-1)\n"
-   "    -zc <levels>\tzlib compression levels (1-9)\t\t[default 9]\n"
-   "    -zm <levels>\tzlib memory levels (1-9)\t\t[default GUESS]\n"
-   "    -zs <strategies>\tzlib compression strategies (0-3)\t[default GUESS]\n"
-   "    -zw <window size>\tzlib window size (256,512,1k,2k,4k,8k,16k,32k)\n"
-   "    -nb\t\t\tno bit depth reduction\n"
-   "    -nc\t\t\tno color type reduction\n"
-   "    -np\t\t\tno palette reduction\n"
-#if 0   /* TODO */
-   "    -nm\t\t\tno metadata optimization\n"
-#endif
-   "    -nx\t\t\tno reductions\n"
-   "    -nz\t\t\tno IDAT recoding\n"
-   "    -paranoid\t\tencode IDAT fully and show its size in report\n"
-   "Editing options:\n"
-   "    -set <object>=<val>\tset object (e.g. \"image.alpha.precision=1\")\n"
-   "    -reset <objects>\treset image data objects (e.g. \"image.alpha\")\n"
-   "    -strip <objects>\tstrip metadata objects (e.g. \"all\")\n"
-   "    -protect <objects>\tprotect metadata objects (e.g. \"sRGB,iCCP\")\n"
-   "    -snip\t\tcut one image out of multi-image or animation files\n"
-   "Optimization levels:\n"
-   "    -fastest\t<=>\t-zc3 -nz\t\t\t\t(0 or 1 trials)\n"
-   "    -o1, -fast\t<=>\t-zc9\t\t\t\t\t(1 trial)\n"
-   "    -o2\t\t<=>\t-zc9 -zs0-3 -f0,5\t\t\t(8 trials)\n"
-   "    -o3\t\t<=>\t-zc9 -zm8-9 -zs0-3 -f0,5\t\t(16 trials)\n"
-   "    -o4\t\t<=>\t-zc9 -zm8-9 -zs0-3 -f0-5\t\t(48 trials)\n"
-   "    -o5\t\t<=>\t-zc3-9 -zm8-9 -zs0-3 -f0-5\t\t(192 trials)\n"
-   "    -o6\t\t<=>\t-zc1-9 -zm7-9 -zs0-3 -f0-5\t\t(360 trials)\n"
-   "    -o6 -zm1-9\t<=>\t-zc1-9 -zm1-9 -zs0-3 -f0-5\t\t(1080 trials)\n"
-   "Notes:\n"
-   "    The default \"GUESS\" values for -f, -zm and -zs are chosen heuristically.\n"
-   "    Exhaustive combinations such as \"-o6 -zm1-9\" are not generally recommended.\n";
+    "    -dir <directory>\twrite output file(s) to <directory>\n"
+    "    -fix\t\tenable error recovery\n"
+    "    -force\t\tenforce writing of a new output file\n"
+    "    -no-clobber\t\tdo not overwrite existing files\n"
+    "    -no-create\t\tdo not create any files\n"
+    "    -out <file>\t\twrite output file to <file>\n"
+    "    -preserve\t\tpreserve file attributes if possible\n"
+    "    -quiet, -silent\trun in quiet mode\n"
+    "    -stdout\t\twrite to the standard console output\n"
+    "    -verbose\t\trun in verbose mode\n"
+    "    -version\t\tshow copyright and version info\n"
+    "    --\t\t\tstop option switch parsing\n"
+    "Optimization options:\n"
+    "    -f <filters>\tPNG delta filters (0-5)\t\t\t[default GUESS]\n"
+    "    -i <type>\t\tPNG interlace type (0-1)\n"
+    "    -zc <levels>\tzlib compression levels (1-9)\t\t[default 9]\n"
+    "    -zm <levels>\tzlib memory levels (1-9)\t\t[default GUESS]\n"
+    "    -zs <strategies>\tzlib compression strategies (0-3)\t[default GUESS]\n"
+    "    -zw <size>\t\tzlib window size (256,512,1k,2k,4k,8k,16k,32k)\n"
+    "    -nb\t\t\tno bit depth reduction\n"
+    "    -nc\t\t\tno color type reduction\n"
+    "    -np\t\t\tno palette reduction\n"
+    "    -nx\t\t\tno reductions\n"
+    "    -nz\t\t\tno IDAT recoding\n"
+    "    -paranoid\t\tencode IDAT fully and show its size in report\n"
+    "Editing options:\n"
+    "    -set <object>=<val>\tset object (e.g. \"image.alpha.precision=1\")\n"
+    "    -reset <objects>\treset image data objects (e.g. \"image.alpha\")\n"
+    "    -strip <objects>\tstrip metadata objects (e.g. \"all\")\n"
+    "    -protect <objects>\tprotect metadata objects (e.g. \"sRGB,iCCP\")\n"
+    "    -snip\t\tcut one image out of multi-image or animation files\n"
+    "Optimization levels:\n"
+    "    -fastest\t<=>\t-zc3 -nz\t\t\t\t(0 or 1 trials)\n"
+    "    -o1, -fast\t<=>\t-zc9\t\t\t\t\t(1 trial)\n"
+    "    -o2\t\t<=>\t-zc9 -zs0-3 -f0,5\t\t\t(8 trials)\n"
+    "    -o3\t\t<=>\t-zc9 -zm8-9 -zs0-3 -f0,5\t\t(16 trials)\n"
+    "    -o4\t\t<=>\t-zc9 -zm8-9 -zs0-3 -f0-5\t\t(48 trials)\n"
+    "    -o5\t\t<=>\t-zc3-9 -zm8-9 -zs0-3 -f0-5\t\t(192 trials)\n"
+    "    -o6\t\t<=>\t-zc1-9 -zm7-9 -zs0-3 -f0-5\t\t(360 trials)\n"
+    "    -o6 -zm1-9\t<=>\t-zc1-9 -zm1-9 -zs0-3 -f0-5\t\t(1080 trials)\n"
+    "    -o7, -o8...\t<=>\t-o6\n"
+    "Notes:\n"
+    "    The default \"GUESS\" values for -f, -zm and -zs are chosen heuristically.\n"
+    "    Exhaustive combinations such as \"-o6 -zm1-9\" are not generally recommended.\n";
 
 static const char *msg_help_examples =
-   "Examples:\n"
-   "    optipng file.png\t\t\t\t\t\t(default speed)\n"
-   "    optipng -o4 file.png\t\t\t\t\t(slow)\n"
-   "    optipng -o6 file.png\t\t\t\t\t(very slow)\n";
+    "Examples:\n"
+    "    optipng file.png\t\t\t\t\t\t(default speed)\n"
+    "    optipng -o4 file.png\t\t\t\t\t(slow)\n"
+    "    optipng -o6 file.png\t\t\t\t\t(very slow)\n";
 
 static const char *msg_help_more =
-   "Type \"optipng -h\" for extended help.\n";
+    "Type \"optipng -h\" for extended help.\n";
 
 
 /*
@@ -131,25 +125,27 @@ static const char *msg_help_more =
 struct opng_local_options
 {
     /* options handled outside of the opnglib engine */
-    unsigned int file_count;
     int debug;
     int fast;
     int help;
     int quiet;
     int version;
-    const char *out_name;
     const char *dir_name;
+    const char *out_name;
 };
 
 
 /*
  * Local variables
  */
+static char **fnames;
+static int fname_count;
 static struct opng_options options;
 static struct opng_local_options local_options;
 static opng_optimizer_t *the_optimizer;
 static opng_transformer_t *the_transformer;
 static int printed_to_stderr;
+
 
 /*
  * Initialization
@@ -463,56 +459,47 @@ parse_args(int argc, char *argv[])
 {
     char *arg, *opt, *xopt;
     size_t opt_len;
-    unsigned int out_file_count;
-    int stop_switch;
+    int simple_opt;
+    unsigned int out_name_count;
     optk_bits_t set;
     int val, i;
 
     memset(&options, 0, sizeof(options));
     options.interlace = -1;
-    out_file_count = 0;
-    stop_switch = 0;
+    out_name_count = 0;
 
     for (i = 1; i < argc; ++i)
     {
         arg = argv[i];
-        if (stop_switch || scan_option(arg, &opt, &opt_len, &xopt) < 1)
+        if (scan_option(arg, &opt, &opt_len, &xopt) < 1)
+            break;
+        if (strcmp("--", arg) == 0)
         {
-            ++local_options.file_count;
-            continue;  /* leave file names for process_files() */
+            ++i;
+            break;
         }
 
-        /* Prevent process_files() from seeing this arg. */
-        argv[i] = NULL;
-
-        /* "-f0-5" <=> "-f=0-5", "-i1" <=> "-i=1", etc. */
+        /* Normalize the options that allow juxtaposed arguments. */
         if (strchr("fio", opt[0]) != NULL && isdigit(opt[1]))
         {
+            /* -f0-5 <=> -f=0-5; -i1 <=> -i=1; -o3 <=> -o=3 */
             opt_len = 1;
             xopt = opt + 1;
         }
         else if (opt[0] == 'z' && isalpha(opt[1]) && isdigit(opt[2]))
         {
+            /* -zc3-9 <=> -zc=3-9; etc. */
             opt_len = 2;
             xopt = opt + 2;
         }
 
-        /* Check the simple options (without option arguments). */
-        if (strcmp("-", opt) == 0)
-        {
-            /* -- */
-            stop_switch = 1;
-        }
-        else if ((strncmp("?", opt, opt_len) == 0) ||
-                 (strncmp("help", opt, opt_len) == 0))
+        /* Check the simple options (i.e. without option arguments). */
+        simple_opt = 1;
+        if ((strncmp("?", opt, opt_len) == 0) ||
+            (strncmp("help", opt, opt_len) == 0))
         {
             /* -? | -h | ... | -help */
             local_options.help = 1;
-        }
-        else if (strcmp("debug", opt) == 0)
-        {
-            /* -debug */
-            local_options.debug = 1;
         }
         else if (strncmp("backup", opt, opt_len) == 0)
         {
@@ -523,6 +510,12 @@ parse_args(int argc, char *argv[])
         {
             /* -c | ... | -clobber */
             /* Clobbering is enabled by default; do nothing. */
+        }
+        else if (strcmp("debug", opt) == 0)
+        {
+            /* -debug */
+            /* Do not abbreviate this internal option. */
+            local_options.debug = 1;
         }
         else if (strncmp("fast", opt, opt_len) == 0 && opt_len >= 4)
         {
@@ -643,7 +636,7 @@ parse_args(int argc, char *argv[])
             {
                 options.use_stdout = 1;
                 local_options.out_name = "STDOUT";
-                ++out_file_count;
+                ++out_name_count;
             }
         }
         else if (strncmp("v", opt, opt_len) == 0)
@@ -664,35 +657,21 @@ parse_args(int argc, char *argv[])
         }
         else  /* possibly an option with an argument */
         {
+            simple_opt = 0;
             if (xopt == NULL)
             {
                 if (++i < argc)
-                {
                     xopt = argv[i];
-                    /* Prevent process_files() from seeing this xopt. */
-                    argv[i] = NULL;
-                }
                 else
                     xopt = "";
             }
         }
 
-        /* Check the options that have option arguments. */
-        if (xopt == NULL)
+        /* Check the options that require arguments. */
+        if (simple_opt)
         {
-            /* An option without argument has already been recognized. */
-        }
-        else if (strncmp("b", opt, opt_len) == 0)
-        {
-            /* -b NUM */
-            /* TODO: options.bit_depth = ... */
-            error(EX_UNAVAILABLE, "Selection of bit depth is not implemented");
-        }
-        else if (strncmp("c", opt, opt_len) == 0)
-        {
-            /* -c NUM */
-            /* TODO: options.color_type = ... */
-            error(EX_UNAVAILABLE, "Selection of color type is not implemented");
+            if (xopt != NULL)
+                error(EX_USAGE, "No argument allowed for option: %s", arg);
         }
         else if (strncmp("dir", opt, opt_len) == 0)
         {
@@ -719,12 +698,6 @@ parse_args(int argc, char *argv[])
             else if (options.interlace != val)
                 error(EX_USAGE, "Multiple interlace types are not permitted");
         }
-        else if (strncmp("jobs", opt, opt_len) == 0)
-        {
-            /* -j NUM | ... | -jobs NUM */
-            /* TODO: options.jobs = ... */
-            error(EX_UNAVAILABLE, "Parallel processing is not implemented");
-        }
         else if (strncmp("log", opt, opt_len) == 0 && opt_len >= 2)
         {
             /* -lo PATH | -log PATH */
@@ -748,7 +721,7 @@ parse_args(int argc, char *argv[])
             if (xopt[0] == 0)
                 error_option_arg("-out", NULL);
             local_options.out_name = xopt;
-            ++out_file_count;
+            ++out_name_count;
         }
         else if (strncmp("protect", opt, opt_len) == 0 && opt_len >= 3)
         {
@@ -803,12 +776,15 @@ parse_args(int argc, char *argv[])
         }
     }
 
+    fnames = argv + i;
+    fname_count = argc - i;
+
     if (local_options.out_name != NULL)
     {
-        if (local_options.file_count > 1)
+        if (fname_count > 1)
             error(EX_USAGE,
                   "The options -out and -stdout require one input file");
-        if (out_file_count > 1)
+        if (out_name_count > 1)
             error(EX_USAGE, "Multiple output files are not permitted");
         if (local_options.dir_name != NULL)
             error(EX_USAGE,
@@ -822,8 +798,7 @@ parse_args(int argc, char *argv[])
      * garbage if (!isatty(stdout)).
      * Unfortunately, this is not generally the case... [ct]
      */
-    if (local_options.file_count == 0 &&
-        !local_options.help && !local_options.version)
+    if (fname_count == 0 && !local_options.help && !local_options.version)
     {
         if (optk_ftty(stdin) != 0)
         {
@@ -834,7 +809,6 @@ parse_args(int argc, char *argv[])
         {
             /* stdin is not a terminal. */
             options.use_stdin = 1;
-            ++local_options.file_count;
         }
         /* optk_ftty(stdout) needs not be checked here.
          * Images can only be sent to stdout by explicit use of -stdout.
@@ -854,8 +828,9 @@ parse_args(int argc, char *argv[])
  * File processing
  */
 static int
-process_files(int argc, char *argv[])
+process_files(void)
 {
+    const char *fname;
     const char *out_name;
     int result;
     int i;
@@ -869,21 +844,13 @@ process_files(int argc, char *argv[])
     opng_set_transformer(the_optimizer, the_transformer);
 
     result = 0;
-    for (i = 1; i < argc; ++i)
+    for (i = 0; i < fname_count; ++i)
     {
-        if (argv[i] == NULL || argv[i][0] == 0)
-        {
-            /* This was either "", "-option", or "-option arg". */
-            continue;
-        }
-        out_name = (local_options.out_name != NULL) ?
-                   local_options.out_name : argv[i];
-        if (options.use_stdout)
-            optk_fsetmode(stdout, OPTK_FMODE_BINARY);
+        fname = fnames[i];
+        out_name =
+            (local_options.out_name != NULL) ? local_options.out_name : fname;
         if (opng_optimize_file(the_optimizer,
-                               argv[i],
-                               out_name,
-                               local_options.dir_name) != 0)
+                               fname, out_name, local_options.dir_name) != 0)
         {
             /* Error(s) found but not fixed. */
             result = 2;
@@ -935,7 +902,7 @@ main(int argc, char *argv[])
                    msg_help_examples);
         }
     }
-    else if (local_options.version && local_options.file_count == 0)
+    else if (local_options.version && fname_count == 0)
     {
         /* Print the licensing terms and the extended version info. */
         for (version_info_ptr = opng_get_version_info();
@@ -952,7 +919,7 @@ main(int argc, char *argv[])
     else
     {
         /* Execute the program. */
-        result = process_files(argc, argv);
+        result = process_files();
     }
 
     /* Finalize the program. */

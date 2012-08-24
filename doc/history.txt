@@ -34,7 +34,8 @@ Version Hg
  - Deprecated the options -keep and -simulate.
  + Added the option -stdout.
  * Displayed warnings and error messages even under the option -quiet.
- * Made the command-line options case-sensitive.
+ * Made the command-line options case-sensitive. Conventionally, now
+   they must precede file names.
  * Used exit codes compatible with the BSD sysexits.
  * Redesigned the API; created opnglib.
  * Moved the PNG reduction code (opngreduc) to a separate sub-project.
