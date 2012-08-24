@@ -138,17 +138,17 @@ void
 opng_init_codec_context(struct opng_codec_context *context,
                         struct opng_image *image,
                         struct opng_encoding_stats *stats,
-                        png_uint_32 expected_idat_size,
+                        optk_fsize_t expected_idat_size,
                         const opng_transformer_t *transformer)
 {
     memset(context, 0, sizeof(*context));
     context->image = image;
     context->stats = stats;
     context->transformer = transformer;
-    if (expected_idat_size > 0 && expected_idat_size <= PNG_UINT_31_MAX)
+    if (expected_idat_size > 0 && expected_idat_size <= OPNG_IDAT_SIZE_MAX)
         context->expected_idat_size = expected_idat_size;
     else
-        context->expected_idat_size = PNG_UINT_31_MAX + 1;
+        context->expected_idat_size = OPNG_IDAT_SIZE_MAX + 1;
 }
 
 /*
@@ -467,10 +467,17 @@ opng_write_data(png_structp png_ptr, png_bytep data, size_t length)
                 /* This is the header of the first IDAT. */
                 context->crt_idat_offset = ftell(stream);
                 /* Try guessing the size of the final (joined) IDAT. */
-                if (context->expected_idat_size <= PNG_UINT_31_MAX)
+                if (context->expected_idat_size <= OPNG_IDAT_SIZE_MAX)
                 {
                     /* The guess is expected to be right. */
                     context->crt_idat_size = context->expected_idat_size;
+                    /* TODO:
+                     * This algorithm can't handle IDAT sizes larger than
+                     * the maximum chunk size (2**31 - 1) correctly.
+                     */
+                    if (context->expected_idat_size > OPNG_IDAT_CHUNK_SIZE_MAX)
+                        png_error(png_ptr,
+                                  "[TO DO] Can't write IDAT if size >= 2GB");
                 }
                 else
                 {
@@ -479,7 +486,7 @@ opng_write_data(png_structp png_ptr, png_bytep data, size_t length)
                      */
                     context->crt_idat_size = length;
                 }
-                png_save_uint_32(data, context->crt_idat_size);
+                png_save_uint_32(data, (png_uint_32)context->crt_idat_size);
                 /* Start computing the CRC of the final IDAT. */
                 context->crt_idat_crc = crc32(0, opng_sig_IDAT, 4);
             }
@@ -506,13 +513,13 @@ opng_write_data(png_structp png_ptr, png_bytep data, size_t length)
                      * has not been guessed correctly.
                      * It must be updated in a non-streamable way.
                      */
-                    png_save_uint_32(buf, stats->idat_size);
+                    png_save_uint_32(buf, (png_uint_32)stats->idat_size);
                     if (optk_fwrite_at(stream, context->crt_idat_offset,
                                        SEEK_SET, buf, 4) != 4)
                         io_state = 0;  /* error */
                     /* Ensure that the IDAT size was indeed unknown. */
                     OPNG_WEAK_ASSERT(context->expected_idat_size >
-                                     PNG_UINT_31_MAX,
+                                     OPNG_IDAT_SIZE_MAX,
                         "Wrong guess of the output IDAT size");
                 }
                 if (io_state == 0)
@@ -794,9 +801,9 @@ opng_encode_image(struct opng_codec_context *context,
     Catch (err_msg)
     {
         /* err_msg can be NULL if this was an interrupted trial.
-         * Set IDAT size to anything beyond PNG_UINT_31_MAX.
+         * Set IDAT size to anything beyond OPNG_IDAT_SIZE_MAX.
          */
-        stats->idat_size = PNG_UINT_32_MAX;
+        stats->idat_size = OPNG_IDAT_SIZE_MAX + 1;
         if (err_msg != NULL)
         {
             opng_error(fname, err_msg, NULL);

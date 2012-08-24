@@ -9,7 +9,9 @@
  */
 
 #include "optk/io.h"
+#include "optk/integer.h"
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -170,8 +172,115 @@
 #  else
 #    define OPTK_OS_WINDOWS_IS_WIN9X() 0
 #  endif
+#  if (defined _MSC_VER && _MSC_VER-0 >= 1400) || \
+      (defined __MSVCRT_VERSION__ && __MSVCRT_VERSION__-0 >= 0x800)
+#    define OPTK_HAVE_STDIO__I64
+#  endif
 #endif
 
+
+/*
+ * Returns the current value of the file position indicator.
+ */
+optk_foffset_t
+optk_ftello(FILE *stream)
+{
+#if defined OPTK_OS_WINDOWS && defined OPTK_HAVE_STDIO__I64
+
+    return (optk_foffset_t)_ftelli64(stream);
+
+#elif defined OPTK_OS_UNIX && (OPTK_FOFFSET_MAX > LONG_MAX)
+
+    /* We don't know if off_t is sufficiently wide, we only know that
+     * long isn't. We are trying just a little harder, in the absence
+     * of an fopen64/ftell64 solution.
+     */
+    return (optk_foffset_t)ftello(stream);
+
+#else  /* generic */
+
+    return (optk_foffset_t)ftell(stream);
+
+#endif
+}
+
+/*
+ * Sets the file position indicator at the specified file offset.
+ */
+int
+optk_fseeko(FILE *stream, optk_foffset_t offset, int whence)
+{
+#if defined OPTK_OS_WINDOWS
+
+#if defined OPTK_HAVE_STDIO__I64
+    return _fseeki64(stream, (__int64)offset, whence);
+#else
+    return fseek(stream, (long)offset, whence);
+#endif
+
+#elif defined OPTK_OS_UNIX
+
+#if OPTK_FOFFSET_MAX > LONG_MAX
+    /* We don't know if off_t is sufficiently wide, we only know that
+     * long isn't. We are trying just a little harder, in the absence
+     * of an fopen64/fseek64 solution.
+     */
+    return fseeko(stream, (off_t)offset, whence);
+#else
+    return fseek(stream, (long)offset, whence);
+#endif
+
+#else  /* generic */
+
+    return (fseek(stream, (long)offset, whence) == 0) ? 0 : -1;
+
+#endif
+}
+
+/*
+ * Gets the size of the specified file stream.
+ */
+int
+optk_fgetsize(FILE *stream, optk_fsize_t *size)
+{
+#if defined OPTK_OS_WINDOWS
+
+    __int64 length;
+
+    length = _filelengthi64(_fileno(stream));
+    if (length == -1)
+        return -1;
+    *size = (optk_fsize_t)length;
+    return 0;
+
+#elif defined OPTK_OS_UNIX
+
+    struct stat sbuf;
+
+    if (fstat(fileno(stream), &sbuf) != 0)
+        return -1;
+    *size = (optk_fsize_t)sbuf.st_size;
+    return 0;
+
+#else  /* generic */
+
+    optk_foffset_t crt, end;
+
+    crt = optk_ftello(stream);
+    if (crt == -1)
+        return -1;
+    if (optk_fseeko(stream, 0, SEEK_END) != 0)
+        return -1;
+    end = optk_ftello(stream);
+    if (offset == -1)
+        return -1;
+    *size = (optk_fsize_t)end;
+    if (optk_fseeko(stream, crt, SEEK_SET) != 0)
+        return -1;
+    return 0;
+
+#endif
+}
 
 /*
  * Reads a block of data from the specified file offset.
