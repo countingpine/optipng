@@ -1,8 +1,8 @@
 /*
  * print_ratio_test.c
- * Test for print_ratio.
+ * Test for print_fsize_ratio.
  *
- * Copyright (C) 2008-2011 Cosmin Truta.
+ * Copyright (C) 2008-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the attached LICENSE for more information.
@@ -22,11 +22,11 @@ test(unsigned long num, unsigned long denom,
     char buf1[64], buf2[64];
     int result = 1;
 
-    sprint_ratio(buf1, sizeof(buf1), num, denom, 0);
+    sprint_fsize_ratio(buf1, sizeof(buf1), num, denom, 0);
     if (strcmp(buf1, expected_result) != 0)
         result = 0;
 
-    sprint_ratio(buf2, sizeof(buf2), num, denom, 1);
+    sprint_fsize_ratio(buf2, sizeof(buf2), num, denom, 1);
     if (strcmp(buf2, expected_result_force_percent) != 0)
         result = 0;
 

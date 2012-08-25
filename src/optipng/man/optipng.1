@@ -1,4 +1,4 @@
-.TH OPTIPNG 1 "2012-Mar-19" "OptiPNG version 0.7.1"
+.TH OPTIPNG 1 "2012-Aug-24" "OptiPNG version 0.7.2"
 
 .SH NAME
 .B OptiPNG
@@ -233,9 +233,9 @@ relevant (e.g. the largest) image.
 \fB\-strip\fP \fIobjects\fP
 Strip metadata objects from a PNG file.
 .br
-PNG metadata is the information stored in any ancillary chunk except
-\fCtRNS\fP. (\fCtRNS\fP represents the alpha channel, which, even if ignored
-in rendering, is still a proper image channel in the RGBA color space.)
+PNG metadata is the information stored in any ancillary chunk except tRNS.
+(tRNS represents the alpha channel, which, even if ignored in rendering, is
+still a proper image channel in the RGBA color space.)
 .br
 The only option currently supported is \fB\-strip all\fP.
 .SS "Notes"
@@ -307,6 +307,8 @@ Here are the missing pieces:
 .br
 \- The bit depth reductions below 8, for grayscale images, are not implemented
 yet.
+.P
+Encoding of images whose total IDAT size exceeds 2GB is not supported.
 .P
 TIFF support is limited to uncompressed, PNG-compatible (grayscale, RGB and
 RGBA) images.

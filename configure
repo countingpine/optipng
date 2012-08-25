@@ -13,6 +13,8 @@ cc="${CC-gcc}"
 #cc="${CC-c99}"
 cflags="$CFLAGS"
 
+enable_debug=0
+
 with_system_libpng=0
 with_system_zlib=0
 
@@ -53,6 +55,8 @@ do
         echo "                            [default: PREFIX]"
         echo "    -bindir=DIR             Install executable in DIR [default: EPREFIX/bin]"
         echo "    -mandir=DIR             Install manual in DIR [default: PREFIX/man]"
+        echo "Optional features:"
+        echo "    -enable-debug           Enable debug build flags and run-time checks"
         echo "Optional packages:"
         echo "    -with-system-libpng     Use the system-supplied libpng"
         echo "                            [default: false]"
@@ -101,13 +105,27 @@ do
     -mandir=* | -mandi=* | -mand=* | -man=* | -ma=* | -m=* )
         mandir="$optarg"
         ;;
+    -enable-debug )
+        enable_debug=1
+        ;;
+    -disable-debug )
+        enable_debug=0
+        ;;
     -with-system-libpng )
         with_system_libpng=1
+        # Must use the system-supplied zlib with the system-supplied libpng.
         with_system_zlib=1
-        # The system-supplied libpng requires the system-supplied zlib.
+        ;;
+    -without-system-libpng )
+        with_system_libpng=0
         ;;
     -with-system-zlib )
         with_system_zlib=1
+        ;;
+    -without-system-zlib )
+        with_system_zlib=0
+        # Can't use the system-supplied libpng without the system-supplied zlib.
+        with_system_libpng=0
         ;;
     * )
         echo "error: unknown option: $arg"
@@ -180,6 +198,13 @@ else
     CFLAGS="${CFLAGS--O}"
 fi
 
+if test $enable_debug -ne 0
+then
+    CPPFLAGS="$CPPFLAGS -DDEBUG -D_DEBUG"
+    CFLAGS="$CFLAGS -g"
+    LDFLAGS="$LDFLAGS -g"
+fi
+
 if test $with_system_libpng -eq 0
 then
     if test "$with_preconfigured_libpng" -ne 0
@@ -216,7 +241,7 @@ cat > $test.c <<EOM
 #endif
 int dummy;
 EOM
-    ($CC -c $CFLAGS $test.c) 2>/dev/null
+    ($CC -c $CPPFLAGS $CFLAGS $test.c) 2>/dev/null
     status=$?
     rm -f $test.c $test.o
     if test $status -ne 0
@@ -251,7 +276,7 @@ cat > $test.c <<EOM
 #endif
 int dummy;
 EOM
-    ($CC -c $CFLAGS $test.c) 2>/dev/null
+    ($CC -c $CPPFLAGS $CFLAGS $test.c) 2>/dev/null
     status=$?
     rm -f $test.c $test.o
     if test $status -ne 0
@@ -294,6 +319,7 @@ for makefile in \
     src/Makefile \
     src/gifread/Makefile \
     src/minitiff/Makefile \
+    src/opngreduc/Makefile \
     src/optipng/Makefile \
     src/optipng/man/Makefile \
     src/pngxtern/Makefile \

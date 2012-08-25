@@ -2,12 +2,11 @@
  * optipng.h
  * The OptiPNG programming interface.
  *
- * Copyright (C) 2001-2011 Cosmin Truta.
+ * Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
  * Please see the attached LICENSE for more information.
  */
-
 
 #ifndef OPTIPNG_H
 #define OPTIPNG_H
@@ -26,9 +25,9 @@ extern "C" {
 struct opng_options
 {
     /* general options */
-    int help;
     int backup;
     int clobber;
+    int debug;
     int fix;
     int force;
     int full;
@@ -36,10 +35,9 @@ struct opng_options
     int quiet;
     int simulate;
     int verbose;
-    int version;
-    char *out_name;
-    char *dir_name;
-    char *log_name;
+    const char *out_name;
+    const char *dir_name;
+    const char *log_name;
 
     /* optimization options */
     int interlace;

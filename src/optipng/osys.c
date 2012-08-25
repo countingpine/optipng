@@ -2,7 +2,7 @@
  * osys.c
  * System extensions.
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the attached LICENSE for more information.
@@ -33,7 +33,7 @@
 #  define OSYS_WIN64
 #endif
 
-#if defined WINDOWS || defined OSYS_WIN32 || defined OSYS_WIN64
+#if defined OSYS_WIN32 || defined OSYS_WIN64
 #  define OSYS_WINDOWS
 #endif
 
@@ -165,13 +165,22 @@
 #endif
 
 #ifdef OSYS_WINDOWS
-#  define OSYS_WINDOWS_IS_WINNT() (GetVersion() < 0x80000000U)
+#  if defined OSYS_WIN64
+#    define OSYS_HAVE_STDIO__I64
+#    define OSYS_WINDOWS_IS_WIN9X() 0
+#  else
+#    if (defined _MSC_VER && _MSC_VER >= 1400) || \
+        (defined __MSVCRT_VERSION__ && __MSVCRT_VERSION__ >= 0x800)
+#      define OSYS_HAVE_STDIO__I64
+#    endif
+#    define OSYS_WINDOWS_IS_WIN9X() (GetVersion() >= 0x80000000U)
+#  endif
 #endif
 
 
 /*
  * Creates a new path name by changing the directory component of
- * a given path name.
+ * a specified path name.
  */
 char *
 osys_path_chdir(char *buffer, size_t bufsize,
@@ -224,7 +233,7 @@ osys_path_chdir(char *buffer, size_t bufsize,
 
 /*
  * Creates a new path name by changing the extension component of
- * a given path name.
+ * a specified path name.
  */
 char *
 osys_path_chext(char *buffer, size_t bufsize,
@@ -277,31 +286,97 @@ osys_path_mkbak(char *buffer, size_t bufsize, const char *path)
 }
 
 /*
- * Opens a file and positions it at the specified file offset.
+ * Returns the current value of the file position indicator.
  */
-FILE *
-osys_fopen_at(const char *path, const char *mode,
-              long offset, int whence)
+osys_foffset_t
+osys_ftello(FILE *stream)
 {
-    FILE *stream;
+#if defined OSYS_HAVE_STDIO__I64
 
-    if ((stream = fopen(path, mode)) == NULL)
-        return NULL;
-    if (offset == 0 && (whence == SEEK_SET || whence == SEEK_CUR))
-        return stream;
-    if (fseek(stream, offset, whence) != 0)
-    {
-        fclose(stream);
-        return NULL;
-    }
-    return stream;
+    return (osys_foffset_t)_ftelli64(stream);
+
+#elif defined OSYS_UNIX && (OSYS_FOFFSET_MAX > LONG_MAX)
+
+    /* We don't know if off_t is sufficiently wide, we only know that
+     * long isn't. We are trying just a little harder, in the absence
+     * of an fopen64/ftell64 solution.
+     */
+    return (osys_foffset_t)ftello(stream);
+
+#else  /* generic */
+
+    return (osys_foffset_t)ftell(stream);
+
+#endif
+}
+
+/*
+ * Sets the file position indicator at the specified file offset.
+ */
+int
+osys_fseeko(FILE *stream, osys_foffset_t offset, int whence)
+{
+#if defined OSYS_HAVE_STDIO__I64
+
+    return _fseeki64(stream, (__int64)offset, whence);
+
+#elif defined OSYS_UNIX
+
+#if OSYS_FOFFSET_MAX > LONG_MAX
+    /* We don't know if off_t is sufficiently wide, we only know that
+     * long isn't. We are trying just a little harder, in the absence
+     * of an fopen64/fseek64 solution.
+     */
+    return fseeko(stream, (off_t)offset, whence);
+#else
+    return fseek(stream, (long)offset, whence);
+#endif
+
+#else  /* generic */
+
+    return (fseek(stream, (long)offset, whence) == 0) ? 0 : -1;
+
+#endif
+}
+
+/*
+ * Gets the size of the specified file stream.
+ */
+int
+osys_fgetsize(FILE *stream, osys_fsize_t *size)
+{
+#if defined OSYS_WINDOWS
+
+    HANDLE hFile;
+    DWORD dwSizeLow, dwSizeHigh;
+
+    hFile = (HANDLE)_get_osfhandle(_fileno(stream));
+    dwSizeLow = GetFileSize(hFile, &dwSizeHigh);
+    if (GetLastError() != NO_ERROR)
+        return -1;
+    *size = (osys_fsize_t)dwSizeLow + ((osys_fsize_t)dwSizeHigh << 32);
+    return 0;
+
+#else  /* generic */
+
+    osys_foffset_t offset;
+
+    if (osys_fseeko(stream, 0, SEEK_END) != 0)
+        return -1;
+    offset = osys_ftello(stream);
+    if (offset < 0)
+        return -1;
+    *size = (osys_fsize_t)offset;
+    return 0;
+
+#endif
 }
 
 /*
  * Reads a block of data from the specified file offset.
  */
 size_t
-osys_fread_at(FILE *stream, long offset, int whence,
+osys_fread_at(FILE *stream, osys_foffset_t offset, int whence,
               void *block, size_t blocksize)
 {
     fpos_t pos;
@@ -309,7 +384,7 @@ osys_fread_at(FILE *stream, long offset, int whence,
 
     if (fgetpos(stream, &pos) != 0)
         return 0;
-    if (fseek(stream, offset, whence) == 0)
+    if (osys_fseeko(stream, offset, whence) == 0)
         result = fread(block, 1, blocksize, stream);
     else
         result = 0;
@@ -322,7 +397,7 @@ osys_fread_at(FILE *stream, long offset, int whence,
  * Writes a block of data at the specified file offset.
  */
 size_t
-osys_fwrite_at(FILE *stream, long offset, int whence,
+osys_fwrite_at(FILE *stream, osys_foffset_t offset, int whence,
                const void *block, size_t blocksize)
 {
     fpos_t pos;
@@ -330,7 +405,7 @@ osys_fwrite_at(FILE *stream, long offset, int whence,
 
     if (fgetpos(stream, &pos) != 0 || fflush(stream) != 0)
         return 0;
-    if (fseek(stream, offset, whence) == 0)
+    if (osys_fseeko(stream, offset, whence) == 0)
         result = fwrite(block, 1, blocksize, stream);
     else
         result = 0;
@@ -351,12 +426,8 @@ osys_rename(const char *src_path, const char *dest_path, int clobber)
 
     DWORD dwFlags;
 
-    if (OSYS_WINDOWS_IS_WINNT())
-    {
-        dwFlags = clobber ? MOVEFILE_REPLACE_EXISTING : 0;
-        return MoveFileExA(src_path, dest_path, dwFlags) ? 0 : -1;
-    }
-    else
+#if !defined OSYS_WIN64
+    if (OSYS_WINDOWS_IS_WIN9X())
     {
         /* MoveFileEx is not available under Win9X; use MoveFile. */
         if (MoveFileA(src_path, dest_path))
@@ -366,6 +437,10 @@ osys_rename(const char *src_path, const char *dest_path, int clobber)
         DeleteFileA(dest_path);
         return MoveFileA(src_path, dest_path) ? 0 : -1;
     }
+#endif
+
+    dwFlags = clobber ? MOVEFILE_REPLACE_EXISTING : 0;
+    return MoveFileExA(src_path, dest_path, dwFlags) ? 0 : -1;
 
 #elif defined OSYS_UNIX
 
@@ -411,7 +486,7 @@ osys_copy_attr(const char *src_path, const char *dest_path)
         return -1;
 
     hFile = CreateFileA(dest_path, GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
-        (OSYS_WINDOWS_IS_WINNT() ? FILE_FLAG_BACKUP_SEMANTICS : 0), 0);
+        (OSYS_WINDOWS_IS_WIN9X() ? 0 : FILE_FLAG_BACKUP_SEMANTICS), 0);
     if (hFile == INVALID_HANDLE_VALUE)
         return -1;
     result = SetFileTime(hFile, NULL, NULL, &ftLastWrite);

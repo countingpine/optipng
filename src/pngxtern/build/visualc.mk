@@ -42,7 +42,7 @@ test:
 check: test
 
 .c.obj:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PNGXTERN_DEPINCLUDES) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PNGXTERN_DEPINCLUDES) -Fo$@ $<
 
 $(PNGXTERN_LIB): $(PNGXTERN_OBJS)
 	$(AR) $(ARFLAGS) -out:$@ $(PNGXTERN_OBJS)

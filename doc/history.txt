@@ -13,6 +13,18 @@ Legend
    (crash, data/metadata loss or security hazard).
  * Other modification (e.g. architectural improvement).
 
+Version 0.7.2   24-aug-2012
+-------------
+ * Upgraded libpng to version 1.4.12.
+ * Upgraded zlib to version 1.2.7-optipng.
+ ! Fixed the display of huge (4GB+) file/IDAT sizes on 32-bit platforms.
+ ! Issued a proper error message if the output IDAT can't fit in 2GB.
+   Acknowledged this limitation in the user manual.
+   (Thanks to John Sauter for the report.)
+ ! Fixed the output file cleanup that should occur after a write error.
+ * Added the option -debug and various undocumented debug features.
+ * Moved the PNG reduction module (opngreduc) to a separate sub-project.
+
 Version 0.7.1   19-mar-2012
 -------------
 !! Fixed a regression in the reduction of palette-encoded grayscale
@@ -48,8 +60,8 @@ Version 0.7     29-feb-2012
 
 Version 0.6.5   24-jan-2011
 -------------
- * Upgraded libpng to version 1.4.5-optipng [private]
- * Upgraded zlib to version 1.2.5-optipng [private]
+ * Upgraded libpng to version 1.4.5-optipng.
+ * Upgraded zlib to version 1.2.5-optipng.
 !! Fixed the I/O states (in libpng 1.4.5);
    they caused incorrect file reads in some rare cases.
    (Thanks to [M*A*S*H] and Dmitry Marakasov for the report.)
@@ -68,8 +80,8 @@ Version 0.6.5   24-jan-2011
 
 Version 0.6.4   14-mar-2010
 -------------
- * Upgraded libpng to version 1.4.1-optipng [private]
- * Upgraded zlib to version 1.2.4-optipng [private]
+ * Upgraded libpng to version 1.4.1-optipng.
+ * Upgraded zlib to version 1.2.4-optipng.
  + Added the option -nx.
  * Clarified the behavior of -nz and the relation between -nz and -o0.
  + Added a filesystem check (resolving normalized paths, symlinks, etc.)
@@ -80,7 +92,7 @@ Version 0.6.4   14-mar-2010
 
 Version 0.6.3   18-may-2009
 -------------
- * Upgraded libpng to version 1.2.36-optipng [private]
+ * Upgraded libpng to version 1.2.36-optipng.
 !! Fixed a use-after-free error in the GIF reader.
    (Thanks to Roy Tam for the report, and to Bryan McQuade for the fix.)
  ! Flushed the output log to display the current trial in real time.
@@ -95,7 +107,7 @@ Version 0.6.3   18-may-2009
 
 Version 0.6.2    9-nov-2008
 -------------
- * Upgraded libpng to version 1.2.33-optipng [private]
+ * Upgraded libpng to version 1.2.33-optipng.
 ++ Put back a speed optimization, accidentally removed in version 0.6,
    allowing singleton trials (-o1) to be bypassed in certain conditions.
 !! Fixed an array overflow in the BMP reader.
@@ -120,7 +132,7 @@ Version 0.6.1   20-jul-2008
 
 Version 0.6     15-jun-2008
 -----------
- * Upgraded libpng to version 1.2.29-optipng [private]
+ * Upgraded libpng to version 1.2.29-optipng.
 ++ Implemented grayscale(alpha)-to-palette reductions.
 ++ Improved conversion of bKGD info during RGB-to-palette reductions.
    (Thanks to Matthew Fearnley for the contribution.)
@@ -147,7 +159,7 @@ Version 0.6     15-jun-2008
 
 Version 0.5.5   28-jan-2007
 -------------
- * Upgraded libpng to version 1.2.15-optipng [private]
+ * Upgraded libpng to version 1.2.15-optipng.
 ++ Used a previously-missed RGB-to-palette reduction opportunity
    for images containing 256 distinct colors.
    (Thanks to Joachim Kluge for the report.)
@@ -172,7 +184,7 @@ Version 0.5.4   11-aug-2006
 
 Version 0.5.3   23-jul-2006
 -------------
- * Upgraded libpng to version 1.2.12-optipng [private]
+ * Upgraded libpng to version 1.2.12-optipng.
  + Implemented basic support for TIFF (grayscale, RGB and RGBA,
    uncompressed).
 ++ Avoided the redundant trial when the search space is singular
@@ -189,7 +201,7 @@ Version 0.5.2    7-may-2006
 Version 0.5.1   30-apr-2006
 -------------
 ++ Implemented bit depth reduction for palette images.
- * Upgraded libpng to version 1.2.10-optipng [private]
+ * Upgraded libpng to version 1.2.10-optipng.
  + Improved the BMP support.
  + Added a Unix man page.
    (Thanks to Nelson A. de Oliveira for the contribution.)
@@ -207,8 +219,8 @@ Version 0.5     14-jan-2006
    support: BMP (uncompressed), GIF, PNM.
    (This was incorporated from OptiPNG-Plus.)
 ++ Implemented RGB(A)-to-palette reductions.
- * Upgraded zlib to version 1.2.3-optipng [private]
- * Upgraded libpng to version 1.2.8-optipng [private]
+ * Upgraded zlib to version 1.2.3-optipng.
+ * Upgraded libpng to version 1.2.8-optipng.
  + If trials are ended prematurely, detailed progression is only
    reported under the user option -v.
  - Removed reporting of some IDAT sizes that exceeded the optimum.
@@ -221,7 +233,7 @@ Version 0.5     14-jan-2006
 
 Version 0.4.8   10-may-2005
 -------------
- * Upgraded libpng to version 1.0.18-optipng [private]
+ * Upgraded libpng to version 1.0.18-optipng.
 !! Fixed a palette-to-gray reduction problem that occurred when an
    RGB triple had both an alpha below max, and an alpha equal to max.
    (Thanks to Nicolas Le Gland for the report.)
@@ -242,8 +254,8 @@ Version 0.4.7   30-oct-2004
 
 Version 0.4.6   25-oct-2004
 -------------
- * Upgraded zlib to version 1.2.2-optipng [private]
- * Upgraded libpng to version 1.0.17-optipng [private]
+ * Upgraded zlib to version 1.2.2-optipng.
+ * Upgraded libpng to version 1.0.17-optipng.
    This provides safe handling of some ill-formed PNG images.
  + Rewrote makefiles.
  + Added project workspace to build under Visual C++ 6.0,
@@ -258,8 +270,8 @@ Version 0.4.6   25-oct-2004
 
 Version 0.4.5   31-may-2004
 -------------
- * Upgraded zlib to version 1.2.1.f-cos2 [private]
- * Upgraded libpng to version 1.0.15-cos2 [private]
+ * Upgraded zlib to version 1.2.1.f-cos2.
+ * Upgraded libpng to version 1.0.15-cos2.
  * Changed user option -nx to -nz.
  + Added user option to preserve file attributes (file mode,
    time stamp, etc.) when applicable.

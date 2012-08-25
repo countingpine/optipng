@@ -30,7 +30,7 @@ test:
 check: test
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o $@ $<
 
 $(PNMIO_LIB): $(PNMIO_OBJS)
 	$(AR) $(ARFLAGS) $@ $(PNMIO_OBJS)

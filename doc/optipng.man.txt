@@ -201,7 +201,7 @@ OPTIONS
        -strip objects
               Strip metadata objects from a PNG file.
               PNG  metadata  is  the information stored in any ancillary chunk
-              except tRNS. (tRNS represents the alpha channel, which, even  if
+              except tRNS.  (tRNS represents the alpha channel, which, even if
               ignored  in  rendering,  is  still a proper image channel in the
               RGBA color space.)
               The only option currently supported is -strip all.
@@ -269,6 +269,8 @@ BUGS
               - The bit depth reductions below 8, for  grayscale  images,  are
               not implemented yet.
 
+       Encoding of images whose total IDAT size exceeds 2GB is not supported.
+
        TIFF support is limited to uncompressed, PNG-compatible (grayscale, RGB
        and RGBA) images.
 
@@ -293,4 +295,4 @@ AUTHOR
        the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.7.1             2012-Mar-19                       OPTIPNG(1)
+OptiPNG version 0.7.2             2012-Aug-24                       OPTIPNG(1)

@@ -25,7 +25,7 @@ test:
 check: test
 
 .c.obj:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -Fo$@ $<
 
 $(PNMIO_LIB): $(PNMIO_OBJS)
 	$(AR) $(ARFLAGS) -out:$@ $(PNMIO_OBJS)

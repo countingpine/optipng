@@ -2,7 +2,7 @@
  * osys.h
  * System extensions.
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2012 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the attached LICENSE for more information.
@@ -14,6 +14,89 @@
 #include <stdio.h>
 
 
+/*
+ * File offset and size types:
+ *
+ * osys_foffset_t: the file offset type (a signed integer type)
+ * OSYS_FOFFSET_MIN: the minimum value (less than 0)
+ * OSYS_FOFFSET_MAX: the maximum value (greater than 0)
+ * OSYS_FOFFSET_SCNd: macro for scanf format specifier ("%d"-like)
+ * OSYS_FOFFSET_SCNx: macro for scanf format specifier ("%x"-like)
+ * OSYS_FOFFSET_PRId: macro for printf format specifier ("%d"-like)
+ * OSYS_FOFFSET_PRIx: macro for printf format specifier ("%x"-like)
+ * OSYS_FOFFSET_PRIX: macro for printf format specifier ("%X"-like)
+ *
+ * osys_fsize_t: the file size type (an unsigned integer type)
+ * OSYS_FSIZE_MAX: the maximum value
+ * OSYS_FSIZE_SCNu: macro for scanf format specifier ("%u"-like)
+ * OSYS_FSIZE_SCNx: macro for scanf format specifier ("%x"-like)
+ * OSYS_FSIZE_PRIu: macro for printf format specifier ("%u"-like)
+ * OSYS_FSIZE_PRIx: macro for printf format specifier ("%x"-like)
+ * OSYS_FSIZE_PRIX: macro for printf format specifier ("%X"-like)
+ */
+#include <limits.h>
+#if (LONG_MAX > 0x7fffffffL) || (LONG_MAX > INT_MAX)
+
+typedef long osys_foffset_t;
+#define OSYS_FOFFSET_MIN LONG_MIN
+#define OSYS_FOFFSET_MAX LONG_MAX
+#define OSYS_FOFFSET_SCNd "ld"
+#define OSYS_FOFFSET_SCNx "lx"
+#define OSYS_FOFFSET_PRId "ld"
+#define OSYS_FOFFSET_PRIx "lx"
+#define OSYS_FOFFSET_PRIX "lX"
+
+typedef unsigned long osys_fsize_t;
+#define OSYS_FSIZE_MAX ULONG_MAX
+#define OSYS_FSIZE_SCNu "lu"
+#define OSYS_FSIZE_SCNx "lx"
+#define OSYS_FSIZE_PRIu "lu"
+#define OSYS_FSIZE_PRIx "lx"
+#define OSYS_FSIZE_PRIX "lX"
+
+#elif defined _I64_MAX && (defined _WIN32 || defined __WIN32__)
+
+typedef __int64 osys_foffset_t;
+#define OSYS_FOFFSET_MIN _I64_MIN
+#define OSYS_FOFFSET_MAX _I64_MAX
+#define OSYS_FOFFSET_SCNd "I64d"
+#define OSYS_FOFFSET_SCNx "I64x"
+#define OSYS_FOFFSET_PRId "I64d"
+#define OSYS_FOFFSET_PRIx "I64x"
+#define OSYS_FOFFSET_PRIX "I64X"
+
+typedef unsigned __int64 osys_fsize_t;
+#define OSYS_FSIZE_MAX _UI64_MAX
+#define OSYS_FSIZE_SCNu "I64u"
+#define OSYS_FSIZE_SCNx "I64x"
+#define OSYS_FSIZE_PRIu "I64u"
+#define OSYS_FSIZE_PRIx "I64x"
+#define OSYS_FSIZE_PRIX "I64X"
+
+#else
+#include <stdint.h>
+#include <inttypes.h>
+
+typedef int_least64_t osys_foffset_t;
+#define OSYS_FOFFSET_MIN INT_LEAST64_MIN
+#define OSYS_FOFFSET_MAX INT_LEAST64_MAX
+#define OSYS_FOFFSET_SCNd SCNdLEAST64
+#define OSYS_FOFFSET_SCNx SCNxLEAST64
+#define OSYS_FOFFSET_PRId PRIdLEAST64
+#define OSYS_FOFFSET_PRIx PRIxLEAST64
+#define OSYS_FOFFSET_PRIX PRIXLEAST64
+
+typedef uint_least64_t osys_fsize_t;
+#define OSYS_FSIZE_MAX UINT_LEAST64_MAX
+#define OSYS_FSIZE_SCNu SCNuLEAST64
+#define OSYS_FSIZE_SCNx SCNxLEAST64
+#define OSYS_FSIZE_PRIu PRIuLEAST64
+#define OSYS_FSIZE_PRIx PRIxLEAST64
+#define OSYS_FSIZE_PRIX PRIXLEAST64
+
+#endif
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -21,9 +104,9 @@ extern "C" {
 
 /*
  * Creates a new path name by changing the directory component of
- * a given path name.
+ * a specified path name.
  * The new directory name can be the empty string, indicating that
- * the resulting path has no directory.  Otherwise, the directory
+ * the resulting path has no directory. Otherwise, the directory
  * name should follow the conventions specific to the host operating
  * system, and may optionally be ended with the directory separator
  * (e.g. "/" on Unix).
@@ -36,9 +119,9 @@ osys_path_chdir(char *buffer, size_t bufsize,
 
 /*
  * Creates a new path name by changing the extension component of
- * a given path name.
+ * a specified path name.
  * The new extension name can be the empty string, indicating that
- * the resulting path has no extension.  Otherwise, the extension
+ * the resulting path has no extension. Otherwise, the extension
  * name must begin with the extension separator (e.g. "." on Unix).
  * On success, the function returns buffer.
  * On error, it returns NULL.
@@ -56,13 +139,26 @@ char *
 osys_path_mkbak(char *buffer, size_t bufsize, const char *path);
 
 /*
- * Opens a file and positions it at the specified file offset.
- * On success, the function returns the pointer to the file stream.
- * On error, it returns NULL.
+ * Returns the current value of the file position indicator.
+ * On error, the function returns (osys_foffset_t)(-1).
  */
-FILE *
-osys_fopen_at(const char *path, const char *mode,
-              long offset, int whence);
+osys_foffset_t
+osys_ftello(FILE *stream);
+
+/*
+ * Sets the file position indicator at the specified file offset.
+ * On success, the function returns 0. On error, it returns -1.
+ */
+int
+osys_fseeko(FILE *stream, osys_foffset_t offset, int whence);
+
+/*
+ * Gets the size of the specified file stream.
+ * This function may change the file position indicator.
+ * On success, the function returns 0. On error, it returns -1.
+ */
+int
+osys_fgetsize(FILE *stream, osys_fsize_t *size);
 
 /*
  * Reads a block of data from the specified file offset.
@@ -72,7 +168,7 @@ osys_fopen_at(const char *path, const char *mode,
  * On error, it returns 0.
  */
 size_t
-osys_fread_at(FILE *stream, long offset, int whence,
+osys_fread_at(FILE *stream, osys_foffset_t offset, int whence,
               void *block, size_t blocksize);
 
 /*
@@ -83,7 +179,7 @@ osys_fread_at(FILE *stream, long offset, int whence,
  * On error, it returns 0.
  */
 size_t
-osys_fwrite_at(FILE *stream, long offset, int whence,
+osys_fwrite_at(FILE *stream, osys_foffset_t offset, int whence,
                const void *block, size_t blocksize);
 
 /*
@@ -114,7 +210,7 @@ osys_create_dir(const char *dirname);
 
 /*
  * Determines if the accessibility of the specified path satisfies
- * the specified access mode.  The access mode consists of one or more
+ * the specified access mode. The access mode consists of one or more
  * characters that indicate the checks to be performed, as follows:
  *   'e': the path exists; it needs not be a regular file.
  *   'f': the path exists and is a regular file.

@@ -25,12 +25,12 @@ TIFF2PNM_LIBOBJS = test\+tiff2pnm.obj
 all: $(MINITIFF_LIB) $(TIFF2PNM)
 
 test: $(TIFF2PNM)
-	# TODO: run $(TIFF2PNM)
+# TODO: run $(TIFF2PNM)
 
 check: test
 
 .c.obj:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o$@ $<
 
 $(MINITIFF_LIB): $(MINITIFF_OBJS)
 	$(AR) $(ARFLAGS) $@ $(MINITIFF_LIBOBJS)

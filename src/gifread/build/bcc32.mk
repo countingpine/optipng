@@ -32,7 +32,7 @@ test: $(GIFDUMP)
 check: test
 
 .c.obj:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o$@ $<
 
 $(GIFREAD_LIB): $(GIFREAD_OBJS)
 	$(AR) $(ARFLAGS) $@ $(GIFREAD_LIBOBJS)
