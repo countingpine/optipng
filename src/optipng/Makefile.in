@@ -87,7 +87,7 @@ optipng$(EXEEXT): $(OPTIPNG_OBJS) $(OPTIPNG_DEPLIBS)
 	$(LD) $(LDFLAGS) -o $@ $(OPTIPNG_OBJS) $(OPTIPNG_DEPLIBS) $(ALL_LIBS)
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPTIPNG_DEPINCLUDES) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPTIPNG_DEPINCLUDES) -o $@ $<
 
 optipng.o: optipng.c proginfo.h strconv.h
 strconv.c: strconv.h
@@ -137,7 +137,7 @@ $(TIFF_DIR)/$(TIFF_LIB):
 	$(MAKE) -f $(TIFF_MK) $(TIFF_LIB) && \
 	cd $(OPTIPNG_DIR)
 
-test: test-opnglib #test-libpng test-zlib
+test: test-opnglib test-libpng test-zlib test-gifread test-minitiff
 
 .PHONY: test-opnglib
 test-opnglib:
@@ -146,16 +146,30 @@ test-opnglib:
 	cd $(OPTIPNG_DIR)
 
 .PHONY: test-libpng
-test-libpng: #test-zlib
-	@USE_SYSTEM_LIBPNG_FALSE@cd $(LIBPNG_DIR) && \
-	@USE_SYSTEM_LIBPNG_FALSE@$(MAKE) -f $(LIBPNG_MK) test && \
-	@USE_SYSTEM_LIBPNG_FALSE@cd $(OPTIPNG_DIR)
+test-libpng: test-zlib
+@USE_SYSTEM_LIBPNG_FALSE@	cd $(LIBPNG_DIR) && \
+@USE_SYSTEM_LIBPNG_FALSE@	$(MAKE) -f $(LIBPNG_MK) test && \
+@USE_SYSTEM_LIBPNG_FALSE@	cd $(OPTIPNG_DIR)
 
+# FIXME:
+# Can't test zlib if NO_GZCOMPRES and NO_GZIP are enabled.
 .PHONY: test-zlib
 test-zlib:
-	@USE_SYSTEM_ZLIB_FALSE@cd $(ZLIB_DIR) && \
-	@USE_SYSTEM_ZLIB_FALSE@$(MAKE) -f $(ZLIB_MK) test && \
-	@USE_SYSTEM_ZLIB_FALSE@cd $(OPTIPNG_DIR)
+#@USE_SYSTEM_ZLIB_FALSE@	cd $(ZLIB_DIR) && \
+#@USE_SYSTEM_ZLIB_FALSE@	$(MAKE) -f $(ZLIB_MK) test && \
+#@USE_SYSTEM_ZLIB_FALSE@	cd $(OPTIPNG_DIR)
+
+.PHONY: test-gifread
+test-gifread:
+	cd $(GIF_DIR) && \
+	$(MAKE) -f $(GIF_MK) test && \
+	cd $(OPTIPNG_DIR)
+
+.PHONY: test-minitiff
+test-minitiff:
+	cd $(TIFF_DIR) && \
+	$(MAKE) -f $(TIFF_MK) test && \
+	cd $(OPTIPNG_DIR)
 
 check: test
 
@@ -196,15 +210,15 @@ clean-pngxtern-gif-pnm-tiff:
 
 .PHONY: clean-libpng
 clean-libpng:
-	@USE_SYSTEM_LIBPNG_FALSE@cd $(LIBPNG_DIR) && \
-	@USE_SYSTEM_LIBPNG_FALSE@$(MAKE) -f $(LIBPNG_MK) clean && \
-	@USE_SYSTEM_LIBPNG_FALSE@cd $(OPTIPNG_DIR)
+@USE_SYSTEM_LIBPNG_FALSE@	cd $(LIBPNG_DIR) && \
+@USE_SYSTEM_LIBPNG_FALSE@	$(MAKE) -f $(LIBPNG_MK) clean && \
+@USE_SYSTEM_LIBPNG_FALSE@	cd $(OPTIPNG_DIR)
 
 .PHONY: clean-zlib
 clean-zlib:
-	@USE_SYSTEM_ZLIB_FALSE@cd $(ZLIB_DIR) && \
-	@USE_SYSTEM_ZLIB_FALSE@$(MAKE) -f $(ZLIB_MK) clean && \
-	@USE_SYSTEM_ZLIB_FALSE@cd $(OPTIPNG_DIR)
+@USE_SYSTEM_ZLIB_FALSE@	cd $(ZLIB_DIR) && \
+@USE_SYSTEM_ZLIB_FALSE@	$(MAKE) -f $(ZLIB_MK) clean && \
+@USE_SYSTEM_ZLIB_FALSE@	cd $(OPTIPNG_DIR)
 
 distclean: \
   local-clean \
@@ -244,15 +258,15 @@ distclean-pngxtern-gif-pnm-tiff:
 
 .PHONY: distclean-libpng
 distclean-libpng:
-	@USE_SYSTEM_LIBPNG_FALSE@cd $(LIBPNG_DIR) && \
-	@USE_SYSTEM_LIBPNG_FALSE@$(MAKE) -f $(LIBPNG_MK) clean && \
-	@USE_SYSTEM_LIBPNG_FALSE@cd $(OPTIPNG_DIR)
+@USE_SYSTEM_LIBPNG_FALSE@	cd $(LIBPNG_DIR) && \
+@USE_SYSTEM_LIBPNG_FALSE@	$(MAKE) -f $(LIBPNG_MK) clean && \
+@USE_SYSTEM_LIBPNG_FALSE@	cd $(OPTIPNG_DIR)
 
 .PHONY: distclean-zlib
 distclean-zlib:
-	@USE_SYSTEM_ZLIB_FALSE@cd $(ZLIB_DIR) && \
-	@USE_SYSTEM_ZLIB_FALSE@$(MAKE) -f $(ZLIB_MK) distclean && \
-	@USE_SYSTEM_ZLIB_FALSE@cd $(OPTIPNG_DIR)
+@USE_SYSTEM_ZLIB_FALSE@	cd $(ZLIB_DIR) && \
+@USE_SYSTEM_ZLIB_FALSE@	$(MAKE) -f $(ZLIB_MK) distclean && \
+@USE_SYSTEM_ZLIB_FALSE@	cd $(OPTIPNG_DIR)
 
 .PHONY: local-clean
 local-clean:

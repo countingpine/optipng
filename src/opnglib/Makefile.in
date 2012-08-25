@@ -133,7 +133,7 @@ parser_test$(EXEEXT): test/parser_test.o libopng.a
 check: test
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPNGLIB_DEPINCLUDES) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPNGLIB_DEPINCLUDES) -c -o $@ $<
 
 $(OPNGLIB_LIB): $(OPNGLIB_OBJS)
 	$(AR) $(ARFLAGS) $@ $(OPNGLIB_OBJS)

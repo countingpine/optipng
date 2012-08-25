@@ -43,7 +43,7 @@ test:
 check: test
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PNGXTERN_DEPINCLUDES) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(PNGXTERN_DEPINCLUDES) -o $@ $<
 
 $(PNGXTERN_LIB): $(PNGXTERN_OBJS)
 	$(AR) $(ARFLAGS) $@ $(PNGXTERN_OBJS)

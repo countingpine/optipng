@@ -35,7 +35,7 @@ test:
 check: test
 
 .c.o:
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPNGREDUC_DEPINCLUDES) $<
+	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPNGREDUC_DEPINCLUDES) -o $@ $<
 
 $(OPNGREDUC_LIB): $(OPNGREDUC_OBJS)
 	$(AR) $(ARFLAGS) $@ $(OPNGREDUC_OBJS)
