@@ -1,12 +1,9 @@
 /*
  * opngreduc.h - libpng extension: lossless image reductions.
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2012 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
- *
- * This code is functional, although it is still work in progress.
- * Upon completion, it will be submitted for incorporation into libpng.
  */
 
 #ifndef OPNGREDUC_H

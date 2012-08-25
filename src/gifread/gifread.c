@@ -85,10 +85,10 @@ void GIFReadScreen(struct GIFScreen *screen, FILE *stream)
 
     GIF_TRACE(("Reading Header\n"));
     GIF_FREAD(buffer, 6, stream);
-    if (strncmp((char *)buffer, "GIF", 3) != 0)
+    if (memcmp(buffer, "GIF", 3) != 0)
         GIFError("Not a GIF file");
-    if ((strncmp((char *)buffer + 3, "87a", 3) != 0) &&
-            (strncmp((char *)buffer + 3, "89a", 3) != 0))
+    if ((memcmp(buffer + 3, "87a", 3) != 0) &&
+            (memcmp(buffer + 3, "89a", 3) != 0))
         GIFWarning("Invalid GIF version number, not \"87a\" or \"89a\"");
 
     GIF_TRACE(("Reading Logical Screen Descriptor\n"));

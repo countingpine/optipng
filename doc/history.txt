@@ -38,8 +38,19 @@ Version Hg
    they must precede file names.
  * Used exit codes compatible with the BSD sysexits.
  * Redesigned the API; created opnglib.
- * Moved the PNG reduction code (opngreduc) to a separate sub-project.
  * Required libpng version 1.4.5 as a minimum.
+
+Version 0.7.2   24-aug-2012
+-------------
+ * Upgraded libpng to version 1.4.12.
+ * Upgraded zlib to version 1.2.7-optipng.
+ ! Fixed the display of huge (4GB+) file/IDAT sizes on 32-bit platforms.
+ ! Issued a proper error message if the output IDAT can't fit in 2GB.
+   Acknowledged this limitation in the user manual.
+   (Thanks to John Sauter for the report.)
+ ! Fixed the output file cleanup that should occur after a write error.
+ * Added the option -debug and various undocumented debug features.
+ * Moved the PNG reduction module (opngreduc) to a separate sub-project.
 
 Version 0.7.1   19-mar-2012
 -------------
