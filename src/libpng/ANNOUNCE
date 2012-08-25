@@ -1,5 +1,5 @@
 
-Libpng 1.4.9 - February 18, 2012
+Libpng 1.4.12 - July 10, 2012
 
 This is a public release of libpng, intended for use in production codes.
 
@@ -8,30 +8,26 @@ Files available for download:
 Source files with LF line endings (for Unix/Linux) and with a
 "configure" script
 
-   libpng-1.4.9.tar.xz (LZMA-compressed, recommended)
-   libpng-1.4.9.tar.gz
-   libpng-1.4.9.tar.bz2
+   libpng-1.4.12.tar.xz (LZMA-compressed, recommended)
+   libpng-1.4.12.tar.gz
+   libpng-1.4.12.tar.bz2
 
 Source files with CRLF line endings (for Windows), without the
 "configure" script
 
-   lpng149.7z (LZMA-compressed, recommended)
-   lpng149.zip
+   lpng1412.7z (LZMA-compressed, recommended)
+   lpng1412.zip
 
 Other information:
 
-   libpng-1.4.9-README.txt
-   libpng-1.4.9-LICENSE.txt
+   libpng-1.4.12-README.txt
+   libpng-1.4.12-LICENSE.txt
 
-Changes since the last public release (1.4.8):
-
-  Added vstudio/* and CMakeLists to EXTRA_DIST in Makefile.in and Makefile.am
-  Updated contrib/pngminus/makefile.std (Samuli Souminen)
-  Added SunOS support to configure.ac and Makefile.am (but configure and
-    Makefile.in were not updated)
-  Fixed CVE-2011-3026 buffer overrun bug.  Deal more correctly with the test
-    on iCCP chunk length. Also removed spurious casts that may hide problems
-    on 16-bit systems.
+Changes since the last public release (1.4.11):
+  Added two images to contrib/pngsuite (1-bit and 2-bit transparent grayscale),
+    and renamed three whose names were inconsistent with those in
+    pngsuite/README.txt.
+  Changed "a+w" to "u+w" in Makefile.in to fix CVE-2012-3386.
 
 Send comments/corrections/commendations to glennrp at users.sourceforge.net
 or to png-mng-implement at lists.sf.net (subscription required; visit
