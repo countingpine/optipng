@@ -194,6 +194,57 @@ opng_insert_palette_entry(png_colorp palette, int *num_palette,
 }
 
 /*
+ * Change the size of the palette buffer.
+ * Changing info_ptr->num_palette directly, avoiding reallocation, should
+ * have been sufficient, but can't be done using the current libpng API.
+ */
+static void /* PRIVATE */
+opng_realloc_PLTE(png_structp png_ptr, png_infop info_ptr, int num_palette)
+{
+   png_color buffer[PNG_MAX_PALETTE_LENGTH];
+   png_colorp palette;
+   int src_num_palette;
+
+   opng_debug(1, "in opng_realloc_PLTE");
+
+   OPNG_ASSERT(num_palette > 0);
+   src_num_palette = 0;
+   png_get_PLTE(png_ptr, info_ptr, &palette, &src_num_palette);
+   if (num_palette == src_num_palette)
+      return;
+   memcpy(buffer, palette, num_palette * sizeof(png_color));
+   if (num_palette > src_num_palette)
+      memset(buffer + src_num_palette, 0,
+         (num_palette - src_num_palette) * sizeof(png_color));
+   png_set_PLTE(png_ptr, info_ptr, buffer, num_palette);
+}
+
+/*
+ * Change the size of the transparency buffer.
+ * Changing info_ptr->num_trans directly, avoiding reallocation, should
+ * have been sufficient, but can't be done using the current libpng API.
+ */
+static void /* PRIVATE */
+opng_realloc_tRNS(png_structp png_ptr, png_infop info_ptr, int num_trans)
+{
+   png_byte buffer[PNG_MAX_PALETTE_LENGTH];
+   png_bytep trans_alpha;
+   int src_num_trans;
+
+   opng_debug(1, "in opng_realloc_tRNS");
+
+   OPNG_ASSERT(num_trans > 0);  /* tRNS should be invalidated in this case */
+   src_num_trans = 0;
+   png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &src_num_trans, NULL);
+   if (num_trans == src_num_trans)
+      return;
+   memcpy(buffer, trans_alpha, (size_t)num_trans);
+   if (num_trans > src_num_trans)
+      memset(buffer + src_num_trans, 0, num_trans - src_num_trans);
+   png_set_tRNS(png_ptr, info_ptr, buffer, num_trans, NULL);
+}
+
+/*
  * Retrieve the alpha samples from the given image row.
  */
 static void /* PRIVATE */
@@ -1011,57 +1062,6 @@ opng_analyze_sample_usage(png_structp png_ptr, png_infop info_ptr,
 }
 
 /*
- * Set the number of PLTE entries to a new value.
- * Setting info_ptr->num_palette to num_palette, avoiding the temporary buffer,
- * should have been sufficient, but can't be done using the current libpng API.
- */
-static void /* PRIVATE */
-opng_set_num_palette(png_structp png_ptr, png_infop info_ptr, int num_palette)
-{
-   png_color buffer[PNG_MAX_PALETTE_LENGTH];
-   png_colorp palette;
-   int src_num_palette;
-
-   opng_debug(1, "in opng_set_num_palette");
-
-   OPNG_ASSERT(num_palette > 0);
-   src_num_palette = 0;
-   png_get_PLTE(png_ptr, info_ptr, &palette, &src_num_palette);
-   if (num_palette == src_num_palette)
-      return;
-   memcpy(buffer, palette, num_palette * sizeof(png_color));
-   if (num_palette > src_num_palette)
-      memset(buffer + src_num_palette, 0,
-         (num_palette - src_num_palette) * sizeof(png_color));
-   png_set_PLTE(png_ptr, info_ptr, buffer, num_palette);
-}
-
-/*
- * Set the number of tRNS entries to a new value.
- * Setting info_ptr->num_trans to num_trans, avoiding the temporary buffer,
- * should have been sufficient, but can't be done using the current libpng API.
- */
-static void /* PRIVATE */
-opng_set_num_trans(png_structp png_ptr, png_infop info_ptr, int num_trans)
-{
-   png_byte buffer[PNG_MAX_PALETTE_LENGTH];
-   png_bytep trans_alpha;
-   int src_num_trans;
-
-   opng_debug(1, "in opng_set_num_trans");
-
-   OPNG_ASSERT(num_trans > 0);  /* tRNS should be invalidated in this case */
-   src_num_trans = 0;
-   png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &src_num_trans, NULL);
-   if (num_trans == src_num_trans)
-      return;
-   memcpy(buffer, trans_alpha, (size_t)num_trans);
-   if (num_trans > src_num_trans)
-      memset(buffer + src_num_trans, 0, num_trans - src_num_trans);
-   png_set_tRNS(png_ptr, info_ptr, buffer, num_trans, NULL);
-}
-
-/*
  * Reduce the palette. (Only the fast method is implemented.)
  * The parameter reductions indicates the intended reductions.
  * The function returns the successful reductions.
@@ -1076,7 +1076,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    png_bytepp row_ptr;
    png_uint_32 width, height;
    int bit_depth, color_type, interlace_type, compression_type, filter_type;
-   int src_num_palette, src_num_trans;
+   int num_palette, num_trans;
    int last_color_index, last_trans_index;
    png_byte crt_trans_value, last_trans_value;
    png_byte is_used[256];
@@ -1099,18 +1099,18 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
       &color_type, &interlace_type, &compression_type, &filter_type);
    row_ptr = png_get_rows(png_ptr, info_ptr);
-   if (!png_get_PLTE(png_ptr, info_ptr, &palette, &src_num_palette))
+   if (!png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette))
    {
       palette = NULL;
-      src_num_palette = 0;
+      num_palette = 0;
    }
-   if (!png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &src_num_trans, NULL))
+   if (!png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, NULL))
    {
       trans_alpha = NULL;
-      src_num_trans = 0;
+      num_trans = 0;
    }
    else
-      OPNG_ASSERT(trans_alpha != NULL && src_num_trans > 0);
+      OPNG_ASSERT(trans_alpha != NULL && num_trans > 0);
 
    opng_analyze_sample_usage(png_ptr, info_ptr, is_used);
    /* Palette-to-gray does not work (yet) if the bit depth is below 8. */
@@ -1121,7 +1121,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
       if (!is_used[k])
          continue;
       last_color_index = k;
-      if (k < src_num_trans && trans_alpha[k] < 255)
+      if (k < num_trans && trans_alpha[k] < 255)
          last_trans_index = k;
       if (is_gray)
          if (palette[k].red != palette[k].green ||
@@ -1132,14 +1132,15 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    OPNG_ASSERT(last_color_index >= last_trans_index);
 
    /* Check the integrity of PLTE and tRNS. */
-   if (last_color_index >= src_num_palette)
+   if (last_color_index >= num_palette)
    {
-      png_warning(png_ptr, "Too few colors in palette");
+      png_warning(png_ptr, "Too few colors in PLTE");
       /* Fix the palette by adding blank entries at the end. */
-      src_num_palette = last_color_index + 1;
-      opng_set_num_palette(png_ptr, info_ptr, src_num_palette);
+      opng_realloc_PLTE(png_ptr, info_ptr, last_color_index + 1);
+      png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
+      OPNG_ASSERT(num_palette == last_color_index + 1);
    }
-   if (src_num_trans > src_num_palette)
+   if (num_trans > num_palette)
    {
       png_warning(png_ptr, "Too many alpha values in tRNS");
       /* Transparency will be fixed further below. */
@@ -1180,9 +1181,9 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    result = OPNG_REDUCE_NONE;
 
    /* Remove tRNS if it is entirely sterile. */
-   if (src_num_trans > 0 && last_trans_index < 0)
+   if (num_trans > 0 && last_trans_index < 0)
    {
-      src_num_trans = 0;
+      num_trans = 0;
       png_free_data(png_ptr, info_ptr, PNG_FREE_TRNS, -1);
       png_set_invalid(png_ptr, info_ptr, PNG_INFO_tRNS);
       result = OPNG_REDUCE_PALETTE_FAST;
@@ -1190,18 +1191,22 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
 
    if (reductions & OPNG_REDUCE_PALETTE_FAST)
    {
-      if (src_num_palette != last_color_index + 1)
+      if (num_palette != last_color_index + 1)
       {
          /* Reduce PLTE. */
          /* hIST is reduced automatically. */
-         opng_set_num_palette(png_ptr, info_ptr, last_color_index + 1);
+         opng_realloc_PLTE(png_ptr, info_ptr, last_color_index + 1);
+         png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
+         OPNG_ASSERT(num_palette == last_color_index + 1);
          result = OPNG_REDUCE_PALETTE_FAST;
       }
 
-      if (src_num_trans > 0 && src_num_trans != last_trans_index + 1)
+      if (num_trans > 0 && num_trans != last_trans_index + 1)
       {
          /* Reduce tRNS. */
-         opng_set_num_trans(png_ptr, info_ptr, last_trans_index + 1);
+         opng_realloc_tRNS(png_ptr, info_ptr, last_trans_index + 1);
+         png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, NULL);
+         OPNG_ASSERT(num_trans == last_trans_index + 1);
          result = OPNG_REDUCE_PALETTE_FAST;
       }
    }
@@ -1223,7 +1228,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
    }
 
    /* Update the ancillary information. */
-   if (src_num_trans > 0)
+   if (num_trans > 0)
       png_set_tRNS(png_ptr, info_ptr, NULL, 0, &gray_trans);
 #ifdef PNG_bKGD_SUPPORTED
    if (png_get_bKGD(png_ptr, info_ptr, &background))
@@ -1259,8 +1264,8 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
 /*
  * Reduce the image (bit depth + color type + palette) without
  * losing any information. The palette (if applicable) and the
- * image data must be present (e.g. by calling png_set_rows(),
- * or by loading IDAT).
+ * image data must be present, e.g., by calling png_set_rows(),
+ * or by loading IDAT.
  * The parameter reductions indicates the intended reductions.
  * The function returns the successful reductions.
  */

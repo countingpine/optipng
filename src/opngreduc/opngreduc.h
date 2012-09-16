@@ -20,8 +20,10 @@ extern "C" {
 #ifdef PNG_INFO_IMAGE_SUPPORTED
 
 /*
- * Indicate whether the image information is valid, i.e.
- * all the required critical information is present in the png structures.
+ * Check if the image information is valid.
+ * The image information is said to be valid if all the required
+ * critical chunk data is present in the png structures.
+ * The function returns 1 if this information is valid, and 0 otherwise.
  */
 int PNGAPI opng_validate_image(png_structp png_ptr, png_infop info_ptr);
 
@@ -44,8 +46,11 @@ int PNGAPI opng_validate_image(png_structp png_ptr, png_infop info_ptr);
 
 /*
  * Reduce the image (bit depth + color type + palette) without
- * losing any information.  The image data must be present
- * (e.g. after calling png_set_rows(), or after loading IDAT).
+ * losing any information. The palette (if applicable) and the
+ * image data must be present, e.g., by calling png_set_rows(),
+ * or by loading IDAT.
+ * The parameter reductions indicates the intended reductions.
+ * The function returns the successful reductions.
  */
 png_uint_32 PNGAPI opng_reduce_image(png_structp png_ptr, png_infop info_ptr,
    png_uint_32 reductions);
