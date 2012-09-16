@@ -13,6 +13,11 @@ Legend
    (crash, data/metadata loss or security hazard).
  * Other modification (e.g. architectural improvement).
 
+Version 0.7.3   16-sep-2012
+-------------
+!! Fixed a use-after-free vulnerability in the palette reduction code.
+   This vulnerability was accidentally introduced in version 0.7.
+
 Version 0.7.2   24-aug-2012
 -------------
  * Upgraded libpng to version 1.4.12.

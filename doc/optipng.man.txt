@@ -295,4 +295,4 @@ AUTHOR
        the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.7.2             2012-Aug-24                       OPTIPNG(1)
+OptiPNG version 0.7.3             2012-Sep-16                       OPTIPNG(1)

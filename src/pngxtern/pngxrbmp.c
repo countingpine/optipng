@@ -1,6 +1,6 @@
 /*
  * pngxrbmp.c - libpng external I/O: BMP reader.
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2012 Cosmin Truta.
  *
  * This code was derived from "bmp2png.c" by MIYASAKA Masaru, and
  * is distributed under the same copyright and warranty terms as libpng.
@@ -392,7 +392,7 @@ bmp_to_png_rows(png_bytepp row_pointers,
    {
       for (y = 0; y < height; ++y)
       {
-         src_ptr  = row_pointers[y] + (width - 1) * 2;
+         src_ptr = row_pointers[y] + (width - 1) * 2;
          dest_ptr = row_pointers[y] + (width - 1) * num_samples;
          for (x = 0; x < width; ++x, src_ptr -= 2, dest_ptr -= num_samples)
          {
