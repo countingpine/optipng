@@ -40,6 +40,11 @@ Version Hg
  * Redesigned the API; created opnglib.
  * Required libpng version 1.4.5 as a minimum.
 
+Version 0.7.4   21-oct-2012
+-------------
+!! Fixed the previous fix, which failed to fix the option -fix.
+   (Thanks to Gynvael Coldwind and Mateusz Jurczyk for the report.)
+
 Version 0.7.3   16-sep-2012
 -------------
 !! Fixed a use-after-free vulnerability in the palette reduction code.
