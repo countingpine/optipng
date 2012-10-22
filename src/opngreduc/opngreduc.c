@@ -1096,6 +1096,8 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
 
    opng_debug(1, "in opng_reduce_palette");
 
+   result = OPNG_REDUCE_NONE;
+
    png_get_IHDR(png_ptr, info_ptr, &width, &height, &bit_depth,
       &color_type, &interlace_type, &compression_type, &filter_type);
    row_ptr = png_get_rows(png_ptr, info_ptr);
@@ -1139,11 +1141,13 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
       opng_realloc_PLTE(png_ptr, info_ptr, last_color_index + 1);
       png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
       OPNG_ASSERT(num_palette == last_color_index + 1);
+      result |= OPNG_REDUCE_REPAIR;
    }
    if (num_trans > num_palette)
    {
       png_warning(png_ptr, "Too many alpha values in tRNS");
       /* Transparency will be fixed further below. */
+      result |= OPNG_REDUCE_REPAIR;
    }
 
    /* Check if tRNS can be reduced to grayscale. */
@@ -1177,16 +1181,13 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
       }
    }
 
-   /* Initialize result value. */
-   result = OPNG_REDUCE_NONE;
-
    /* Remove tRNS if it is entirely sterile. */
    if (num_trans > 0 && last_trans_index < 0)
    {
       num_trans = 0;
       png_free_data(png_ptr, info_ptr, PNG_FREE_TRNS, -1);
       png_set_invalid(png_ptr, info_ptr, PNG_INFO_tRNS);
-      result = OPNG_REDUCE_PALETTE_FAST;
+      result |= OPNG_REDUCE_PALETTE_FAST;
    }
 
    if (reductions & OPNG_REDUCE_PALETTE_FAST)
@@ -1198,7 +1199,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
          opng_realloc_PLTE(png_ptr, info_ptr, last_color_index + 1);
          png_get_PLTE(png_ptr, info_ptr, &palette, &num_palette);
          OPNG_ASSERT(num_palette == last_color_index + 1);
-         result = OPNG_REDUCE_PALETTE_FAST;
+         result |= OPNG_REDUCE_PALETTE_FAST;
       }
 
       if (num_trans > 0 && num_trans != last_trans_index + 1)
@@ -1207,7 +1208,7 @@ opng_reduce_palette(png_structp png_ptr, png_infop info_ptr,
          opng_realloc_tRNS(png_ptr, info_ptr, last_trans_index + 1);
          png_get_tRNS(png_ptr, info_ptr, &trans_alpha, &num_trans, NULL);
          OPNG_ASSERT(num_trans == last_trans_index + 1);
-         result = OPNG_REDUCE_PALETTE_FAST;
+         result |= OPNG_REDUCE_PALETTE_FAST;
       }
    }
 
