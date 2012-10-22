@@ -1032,7 +1032,7 @@ opng_read_file(FILE *infile)
         usr_printf("\n");
 
         /* Choose the applicable image reductions. */
-        reductions = OPNG_REDUCE_ALL & ~OPNG_REDUCE_ANCILLARY;
+        reductions = OPNG_REDUCE_ALL & ~OPNG_REDUCE_METADATA;
         if (options.nb)
             reductions &= ~OPNG_REDUCE_BIT_DEPTH;
         if (options.nc)

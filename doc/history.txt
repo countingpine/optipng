@@ -13,6 +13,11 @@ Legend
    (crash, data/metadata loss or security hazard).
  * Other modification (e.g. architectural improvement).
 
+Version 0.7.4   21-oct-2012
+-------------
+!! Fixed the previous fix, which failed to fix the option -fix.
+   (Thanks to Gynvael Coldwind and Mateusz Jurczyk for the report.)
+
 Version 0.7.3   16-sep-2012
 -------------
 !! Fixed a use-after-free vulnerability in the palette reduction code.

@@ -71,7 +71,8 @@ png_uint_32 PNGAPI opng_reduce_image(png_structp png_ptr, png_infop info_ptr,
                                                 and reorder PLTE */
 #define OPNG_REDUCE_PALETTE_FAST     0x0200  /* remove trailing sterile entries
                                                 only; do not reorder PLTE */
-#define OPNG_REDUCE_ANCILLARY        0x1000  /* TODO */
+#define OPNG_REDUCE_METADATA         0x1000  /* TODO */
+#define OPNG_REDUCE_REPAIR           0x2000  /* repair broken image data */
 
 #define OPNG_REDUCE_BIT_DEPTH  \
    (OPNG_REDUCE_16_TO_8 | OPNG_REDUCE_8_TO_4_2_1)
@@ -86,7 +87,7 @@ png_uint_32 PNGAPI opng_reduce_image(png_structp png_ptr, png_infop info_ptr,
 
 #define OPNG_REDUCE_ALL  \
    (OPNG_REDUCE_BIT_DEPTH | OPNG_REDUCE_COLOR_TYPE | \
-    OPNG_REDUCE_PALETTE | OPNG_REDUCE_ANCILLARY)
+    OPNG_REDUCE_PALETTE | OPNG_REDUCE_METADATA)
 
 #endif /* OPNG_IMAGE_REDUCTIONS_SUPPORTED */
 
