@@ -1,36 +1,43 @@
+OptiPNG 0.7.5: Advanced PNG optimizer
+=====================================
 
-OptiPNG 0.7.4: Advanced PNG optimizer.
-Copyright (C) 2001-2012 Cosmin Truta.
-======================================
+Copyright and licensing
+-----------------------
+  Copyright (C) 2001-2014 Cosmin Truta and the Contributing Authors.
+  See the accompanying AUTHORS file.
 
-License
--------
-  Open-Source (the zlib license)
-  See the accompanying LICENSE.txt
+  This program is distributed under the zlib license.
+  See the accompanying LICENSE file.
+
+  This program uses third-party software released under various
+  open-source licenses.
 
 Resources
 ---------
   Home page:
-    http://optipng.sourceforge.net/
+        http://optipng.sourceforge.net/
+
   Download:
-    http://sourceforge.net/project/showfiles.php?group_id=151404
+        http://sourceforge.net/project/showfiles.php?group_id=151404
+
   Announcements:
-    https://sourceforge.net/news/?group_id=151404
+        https://sourceforge.net/news/?group_id=151404
+
   Support:
-    http://sourceforge.net/tracker/?group_id=151404
-    ctruta (at) gmail (dot) com
+        http://sourceforge.net/tracker/?group_id=151404
+        ctruta (at) gmail (dot) com
 
 Build instructions
 ------------------
   On Unix, or under a Bourne-compatible shell, run ./configure and make:
-        cd optipng-0.7.4/
+        cd optipng-0.7.5/
         ./configure
         make
         make test
 
   Alternatively, use a pre-configured makefile that matches your compiler;
   e.g.:
-        cd optipng-0.7.4/
+        cd optipng-0.7.5/
         nmake -f build/visualc.mk
         nmake -f build/visualc.mk test
 
@@ -46,4 +53,3 @@ Installation instructions
 
   On Windows:
   - Copy optipng.exe to a directory found in PATH.
-

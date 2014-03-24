@@ -2,10 +2,10 @@
  * optim.c
  * The main PNG optimization engine.
  *
- * Copyright (C) 2001-2012 Cosmin Truta.
+ * Copyright (C) 2001-2014 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
- * Please see the attached LICENSE for more information.
+ * Please see the accompanying LICENSE file.
  */
 
 #include <limits.h>
@@ -17,17 +17,18 @@
 #include "optipng.h"
 #include "proginfo.h"
 
-#include "cbitset.h"
+#include "bitset.h"
 #include "opngreduc.h"
 #include "osys.h"
 #include "png.h"
 #include "pngxtern.h"
 #include "pngxutil.h"
+#include "ratio.h"
 #include "zlib.h"
 
 
 /*
- * User exception setup.
+ * User exception setup
  */
 #include "cexcept.h"
 define_exception_type(const char *);
@@ -35,24 +36,38 @@ struct exception_context the_exception_context[1];
 
 
 /*
- * Optimization tables and presets
+ * The optimization level presets
  */
-static const char *compr_level_presets[OPNG_OPTIM_LEVEL_MAX + 1] =
-    { "", "", "9", "9", "9", "9", "1-9", "1-9" };
-static const char *mem_level_presets[OPNG_OPTIM_LEVEL_MAX + 1] =
-    { "", "", "8", "8-9", "8", "8-9", "8", "8-9" };
-static const char *strategy_presets[OPNG_OPTIM_LEVEL_MAX + 1] =
-    { "", "", "0-", "0-", "0-", "0-", "0-", "0-" };
-static const char *filter_presets[OPNG_OPTIM_LEVEL_MAX + 1] =
-    { "", "", "0,5", "0,5", "0-", "0-", "0-", "0-" };
+static const struct opng_preset
+{
+    const char *compr_level;
+    const char *mem_level;
+    const char *strategy;
+    const char *filter;
+} presets[OPNG_OPTIM_LEVEL_MAX + 1] =
+{
+/*  { -zc    -zm    -zs   -f    }  */
+    { "",    "",    "",   ""    },  /* -o0 */
+    { "",    "",    "",   ""    },  /* -o1 */
+    { "9",   "8",   "0-", "0,5" },  /* -o2 */
+    { "9",   "8-9", "0-", "0,5" },  /* -o3 */
+    { "9",   "8",   "0-", "0-"  },  /* -o4 */
+    { "9",   "8-9", "0-", "0-"  },  /* -o5 */
+    { "1-9", "8",   "0-", "0-"  },  /* -o6 */
+    { "1-9", "8-9", "0-", "0-"  }   /* -o7 */
+};
+
+/*
+ * The filter table
+ */
 static const int filter_table[OPNG_FILTER_MAX + 1] =
 {
-    PNG_FILTER_NONE  /* 0 */,
-    PNG_FILTER_SUB   /* 1 */,
-    PNG_FILTER_UP    /* 2 */,
-    PNG_FILTER_AVG   /* 3 */,
-    PNG_FILTER_PAETH /* 4 */,
-    PNG_ALL_FILTERS  /* 5 */
+    PNG_FILTER_NONE,   /* -f0 */
+    PNG_FILTER_SUB,    /* -f1 */
+    PNG_FILTER_UP,     /* -f2 */
+    PNG_FILTER_AVG,    /* -f3 */
+    PNG_FILTER_PAETH,  /* -f4 */
+    PNG_ALL_FILTERS    /* -f5 */
 };
 
 /*
@@ -90,8 +105,8 @@ static const png_byte sig_fcTL[4] = { 0x66, 0x63, 0x54, 0x4c };
 static const png_byte sig_fdAT[4] = { 0x66, 0x64, 0x41, 0x54 };
 
 /*
- * The optimization engine.
- * Since the engine is not multithreaded, there isn't much to put in here...
+ * The optimization engine
+ * (Since the engine is not thread-safe, there isn't much to put in here...)
  */
 static struct opng_engine_struct
 {
@@ -111,7 +126,7 @@ static struct opng_process_struct
     osys_fsize_t best_idat_size, max_idat_size;
     png_uint_32 in_plte_trns_size, out_plte_trns_size;
     png_uint_32 reductions;
-    bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
+    opng_bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
     int best_compr_level, best_mem_level, best_strategy, best_filter;
 } process;
 
@@ -195,80 +210,27 @@ static png_infop write_info_ptr;
  * Size ratio display
  */
 static void
-opng_print_fsize_ratio(osys_fsize_t num, osys_fsize_t denom, int force_percent)
+opng_print_fsize_ratio(osys_fsize_t num, osys_fsize_t denom)
 {
-    /* (1) num/denom = 0/0                  ==> print "??%"
-     * (2) num/denom = INFINITY             ==> print "INFTY%"
-     * (3) 0 <= num/denom < 99.995%         ==> use the percent format "99.99%"
-     *     if force_percent:
-     * (4)    0.995 <= num/denom < INFINITY ==> use the percent format "999%"
-     *     else:
-     * (5)    0.995 <= num/denom < 99.995   ==> use the factor format "9.99x"
-     * (6)    99.5 <= num/denom < INFINITY  ==> use the factor format "999x"
-     *     end if
-     */
+#if OSYS_FSIZE_MAX <= ULONG_MAX
+#define RATIO_TYPE struct opng_ulratio
+#define RATIO_CONVERTOR opng_ulratio_to_factor_string
+#else
+#define RATIO_TYPE struct opng_ullratio
+#define RATIO_CONVERTOR opng_ullratio_to_factor_string
+#endif
 
-    osys_fsize_t integer_part, remainder;
-    unsigned int fractional_part, scale;
-    double scaled_ratio;
+    char buffer[32];
+    RATIO_TYPE ratio;
+    int result;
 
-    /* (1,2): num/denom = 0/0 or num/denom = INFINITY */
-    if (denom == 0)
-    {
-        usr_printf(num == 0 ? "??%%" : "INFTY%%");
-        return;
-    }
+    ratio.num = num;
+    ratio.denom = denom;
+    result = RATIO_CONVERTOR(buffer, sizeof(buffer), &ratio);
+    usr_printf("%s%s", buffer, (result > 0) ? "" : "...");
 
-    /* (3): 0 <= num/denom < 99.995% */
-    /* num/denom < 99.995% <==> denom/(denom-num) < 20000 */
-    if (num < denom && denom / (denom - num) < 20000)
-    {
-        scale = 10000;
-        scaled_ratio = ((double)num * (double)scale) / (double)denom;
-        fractional_part = (unsigned int)(scaled_ratio + 0.5);
-        /* Adjust the scaled result in the event of a roundoff error. */
-        /* Such error may occur only if the numerator is extremely large. */
-        if (fractional_part >= scale)
-            fractional_part = scale - 1;
-        usr_printf("%u.%02u%%", fractional_part / 100, fractional_part % 100);
-        return;
-    }
-
-    /* Extract the integer part out of the fraction for the remaining cases. */
-    integer_part = num / denom;
-    remainder = num % denom;
-    scale = 100;
-    scaled_ratio = ((double)remainder * (double)scale) / (double)denom;
-    fractional_part = (unsigned int)(scaled_ratio + 0.5);
-    if (fractional_part >= scale)
-    {
-        fractional_part = 0;
-        ++integer_part;
-    }
-
-    /* (4): 0.995 <= num/denom < INFINITY */
-    if (force_percent)
-    {
-        usr_printf("%" OSYS_FSIZE_PRIu "%02u%%",
-                   integer_part, fractional_part);
-        return;
-    }
-
-    /* (5): 0.995 <= num/denom < 99.995 */
-    if (integer_part < 100)
-    {
-        usr_printf("%" OSYS_FSIZE_PRIu ".%02ux",
-                   integer_part, fractional_part);
-        return;
-    }
-
-    /* (6): 99.5 <= num/denom < INFINITY */
-    /* Round to the nearest integer. */
-    /* Recalculate the integer part, for corner cases like 123.999. */
-    integer_part = num / denom;
-    if (remainder > (denom - 1) / 2)
-        ++integer_part;
-    usr_printf("%" OSYS_FSIZE_PRIu "x", integer_part);
+#undef RATIO_TYPE
+#undef RATIO_CONVERTOR
 }
 
 /*
@@ -304,7 +266,7 @@ opng_print_fsize_difference(osys_fsize_t init_size, osys_fsize_t final_size,
     if (show_ratio && init_size > 0)
     {
         usr_printf(" = ");
-        opng_print_fsize_ratio(difference, init_size, 0);
+        opng_print_fsize_ratio(difference, init_size);
     }
     usr_printf(sign == 0 ? " increase" : " decrease");
 }
@@ -965,8 +927,10 @@ opng_read_file(FILE *infile)
         if (read_info_ptr == NULL)
             Throw "Out of memory";
 
+        /* Override the default libpng settings. */
         png_set_keep_unknown_chunks(read_ptr,
                                     PNG_HANDLE_CHUNK_ALWAYS, NULL, 0);
+        png_set_user_limits(read_ptr, PNG_UINT_31_MAX, PNG_UINT_31_MAX);
 
         /* Read the input image file. */
         opng_init_read_data();
@@ -1149,11 +1113,14 @@ opng_write_file(FILE *outfile,
             png_set_compression_window_bits(write_ptr, 9);
 #endif
         }
+
+        /* Override the default libpng settings. */
         png_set_keep_unknown_chunks(write_ptr,
                                     PNG_HANDLE_CHUNK_ALWAYS, NULL, 0);
-        opng_store_image_info(write_ptr, write_info_ptr, (outfile != NULL));
+        png_set_user_limits(write_ptr, PNG_UINT_31_MAX, PNG_UINT_31_MAX);
 
         /* Write the PNG stream. */
+        opng_store_image_info(write_ptr, write_info_ptr, (outfile != NULL));
         opng_init_write_data();
         pngx_set_write_fn(write_ptr, outfile, opng_write_data, NULL);
         png_write_png(write_ptr, write_info_ptr, 0, NULL);
@@ -1243,17 +1210,17 @@ opng_copy_file(FILE *infile, FILE *outfile)
  * Iteration initialization
  */
 static void
-opng_init_iteration(bitset_t cmdline_set, bitset_t mask_set,
-                    const char *preset, bitset_t *output_set)
+opng_init_iteration(opng_bitset_t cmdline_set, opng_bitset_t mask_set,
+                    const char *preset, opng_bitset_t *output_set)
 {
-    bitset_t preset_set;
+    opng_bitset_t preset_set;
 
     *output_set = cmdline_set & mask_set;
-    if (*output_set == BITSET_EMPTY && cmdline_set != BITSET_EMPTY)
+    if (*output_set == 0 && cmdline_set != 0)
         Throw "Iteration parameter(s) out of range";
-    if (*output_set == BITSET_EMPTY || options.optim_level >= 0)
+    if (*output_set == 0 || options.optim_level >= 0)
     {
-        preset_set = rangeset_string_to_bitset(preset, NULL);
+        preset_set = opng_rangeset_string_to_bitset(preset, NULL);
         *output_set |= preset_set & mask_set;
     }
 }
@@ -1264,7 +1231,8 @@ opng_init_iteration(bitset_t cmdline_set, bitset_t mask_set,
 static void
 opng_init_iterations(void)
 {
-    bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
+    opng_bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
+    opng_bitset_t strategy_singles_set;
     int preset_index;
     int t1, t2;
 
@@ -1289,7 +1257,7 @@ opng_init_iterations(void)
 
     /* Get preset_index from options.optim_level, but leave the latter intact,
      * because the effect of "optipng -o2 -z... -f..." is slightly different
-     * than the effect of "optipng -z... -f..." (without "-o").
+     * from the effect of "optipng -z... -f..." (without "-o").
      */
     preset_index = options.optim_level;
     if (preset_index < 0)
@@ -1301,44 +1269,46 @@ opng_init_iterations(void)
      * Combine the user-defined values with the optimization presets.
      */
     opng_init_iteration(options.compr_level_set, OPNG_COMPR_LEVEL_SET_MASK,
-        compr_level_presets[preset_index], &compr_level_set);
+        presets[preset_index].compr_level, &compr_level_set);
     opng_init_iteration(options.mem_level_set, OPNG_MEM_LEVEL_SET_MASK,
-        mem_level_presets[preset_index], &mem_level_set);
+        presets[preset_index].mem_level, &mem_level_set);
     opng_init_iteration(options.strategy_set, OPNG_STRATEGY_SET_MASK,
-        strategy_presets[preset_index], &strategy_set);
+        presets[preset_index].strategy, &strategy_set);
     opng_init_iteration(options.filter_set, OPNG_FILTER_SET_MASK,
-        filter_presets[preset_index], &filter_set);
+        presets[preset_index].filter, &filter_set);
 
     /* Replace the empty sets with the libpng's "best guess" heuristics. */
-    if (compr_level_set == BITSET_EMPTY)
-        bitset_set(&compr_level_set, Z_BEST_COMPRESSION);  /* -zc9 */
-    if (mem_level_set == BITSET_EMPTY)
-        bitset_set(&mem_level_set, 8);
+    if (compr_level_set == 0)
+        opng_bitset_set(&compr_level_set, Z_BEST_COMPRESSION);  /* -zc9 */
+    if (mem_level_set == 0)
+        opng_bitset_set(&mem_level_set, 8);
     if (image.bit_depth < 8 || image.palette != NULL)
     {
-        if (strategy_set == BITSET_EMPTY)
-            bitset_set(&strategy_set, Z_DEFAULT_STRATEGY);  /* -zs0 */
-        if (filter_set == BITSET_EMPTY)
-            bitset_set(&filter_set, 0);  /* -f0 */
+        if (strategy_set == 0)
+            opng_bitset_set(&strategy_set, Z_DEFAULT_STRATEGY);  /* -zs0 */
+        if (filter_set == 0)
+            opng_bitset_set(&filter_set, 0);  /* -f0 */
     }
     else
     {
-        if (strategy_set == BITSET_EMPTY)
-            bitset_set(&strategy_set, Z_FILTERED);  /* -zs1 */
-        if (filter_set == BITSET_EMPTY)
-            bitset_set(&filter_set, 5);  /* -f0 */
+        if (strategy_set == 0)
+            opng_bitset_set(&strategy_set, Z_FILTERED);  /* -zs1 */
+        if (filter_set == 0)
+            opng_bitset_set(&filter_set, 5);  /* -f0 */
     }
 
     /* Store the results into process. */
     process.compr_level_set = compr_level_set;
-    process.mem_level_set   = mem_level_set;
-    process.strategy_set    = strategy_set;
-    process.filter_set      = filter_set;
-    t1 = bitset_count(compr_level_set) *
-         bitset_count(strategy_set & ~((1 << Z_HUFFMAN_ONLY) | (1 << Z_RLE)));
-    t2 = bitset_count(strategy_set &  ((1 << Z_HUFFMAN_ONLY) | (1 << Z_RLE)));
+    process.mem_level_set = mem_level_set;
+    process.strategy_set = strategy_set;
+    process.filter_set = filter_set;
+    strategy_singles_set = (1 << Z_HUFFMAN_ONLY) | (1 << Z_RLE);
+    t1 = opng_bitset_count(compr_level_set) *
+         opng_bitset_count(strategy_set & ~strategy_singles_set);
+    t2 = opng_bitset_count(strategy_set & strategy_singles_set);
     process.num_iterations =
-        (t1 + t2) * bitset_count(mem_level_set) * bitset_count(filter_set);
+        (t1 + t2) *
+        opng_bitset_count(mem_level_set) * opng_bitset_count(filter_set);
     OPNG_ENSURE(process.num_iterations > 0, "Invalid iteration parameters");
 }
 
@@ -1348,8 +1318,8 @@ opng_init_iterations(void)
 static void
 opng_iterate(void)
 {
-    bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
-    bitset_t saved_compr_level_set;
+    opng_bitset_t compr_level_set, mem_level_set, strategy_set, filter_set;
+    opng_bitset_t saved_compr_level_set;
     int compr_level, mem_level, strategy, filter;
     int counter;
     int line_reused;
@@ -1362,23 +1332,23 @@ opng_iterate(void)
         * Do not waste time running it twice.
         */
        process.best_idat_size = 0;
-       process.best_compr_level = bitset_find_first(process.compr_level_set);
-       process.best_mem_level   = bitset_find_first(process.mem_level_set);
-       process.best_strategy    = bitset_find_first(process.strategy_set);
-       process.best_filter      = bitset_find_first(process.filter_set);
+       process.best_compr_level = opng_bitset_find_first(process.compr_level_set);
+       process.best_mem_level = opng_bitset_find_first(process.mem_level_set);
+       process.best_strategy = opng_bitset_find_first(process.strategy_set);
+       process.best_filter = opng_bitset_find_first(process.filter_set);
        return;
     }
 
     /* Prepare for the big iteration. */
     compr_level_set = process.compr_level_set;
-    mem_level_set   = process.mem_level_set;
-    strategy_set    = process.strategy_set;
-    filter_set      = process.filter_set;
-    process.best_idat_size   = idat_size_max + 1;
+    mem_level_set = process.mem_level_set;
+    strategy_set = process.strategy_set;
+    filter_set = process.filter_set;
+    process.best_idat_size = idat_size_max + 1;
     process.best_compr_level = -1;
-    process.best_mem_level   = -1;
-    process.best_strategy    = -1;
-    process.best_filter      = -1;
+    process.best_mem_level = -1;
+    process.best_strategy = -1;
+    process.best_filter = -1;
 
     /* Iterate through the "hyper-rectangle" (zc, zm, zs, f). */
     usr_printf("\nTrying:\n");
@@ -1387,12 +1357,12 @@ opng_iterate(void)
     for (filter = OPNG_FILTER_MIN;
          filter <= OPNG_FILTER_MAX; ++filter)
     {
-       if (bitset_test(filter_set, filter))
+       if (opng_bitset_test(filter_set, filter))
        {
           for (strategy = OPNG_STRATEGY_MIN;
                strategy <= OPNG_STRATEGY_MAX; ++strategy)
           {
-             if (bitset_test(strategy_set, strategy))
+             if (opng_bitset_test(strategy_set, strategy))
              {
                 /* The compression level has no significance under
                  * Z_HUFFMAN_ONLY or Z_RLE.
@@ -1400,23 +1370,23 @@ opng_iterate(void)
                 saved_compr_level_set = compr_level_set;
                 if (strategy == Z_HUFFMAN_ONLY)
                 {
-                   compr_level_set = BITSET_EMPTY;
-                   bitset_set(&compr_level_set, 1);  /* use deflate_fast */
+                   compr_level_set = 0;
+                   opng_bitset_set(&compr_level_set, 1);  /* deflate_fast */
                 }
                 else if (strategy == Z_RLE)
                 {
-                   compr_level_set = BITSET_EMPTY;
-                   bitset_set(&compr_level_set, 9);  /* use deflate_slow */
+                   compr_level_set = 0;
+                   opng_bitset_set(&compr_level_set, 9);  /* deflate_slow */
                 }
                 for (compr_level = OPNG_COMPR_LEVEL_MAX;
                      compr_level >= OPNG_COMPR_LEVEL_MIN; --compr_level)
                 {
-                   if (bitset_test(compr_level_set, compr_level))
+                   if (opng_bitset_test(compr_level_set, compr_level))
                    {
                       for (mem_level = OPNG_MEM_LEVEL_MAX;
                            mem_level >= OPNG_MEM_LEVEL_MIN; --mem_level)
                       {
-                         if (bitset_test(mem_level_set, mem_level))
+                         if (opng_bitset_test(mem_level_set, mem_level))
                          {
                             usr_printf(
                                "  zc = %d  zm = %d  zs = %d  f = %d",

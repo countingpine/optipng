@@ -1,12 +1,13 @@
 /*
  * pngxmem.c - libpng extension: memory allocation utilities.
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2014 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
  */
 
 #include "pngxutil.h"
+#include <string.h>
 
 
 #ifdef PNG_INFO_IMAGE_SUPPORTED
@@ -27,10 +28,14 @@ pngx_malloc_rows_extended(png_structp png_ptr, png_infop info_ptr,
    png_bytepp rows;
    png_uint_32 height, i;
 
-   /* Calculate the row size. */
+   /* Check the image dimensions and calculate the row size. */
+   height = png_get_image_height(png_ptr, info_ptr);
+   if (height == 0)
+      png_error(png_ptr, "Missing IHDR");
    row_size = png_get_rowbytes(png_ptr, info_ptr);
-   if (row_size == 0)
-      return NULL;
+   /* libpng sets row_size to 0 when the width is too large to process. */
+   if (row_size == 0 || height > (pngx_alloc_size_t)(-1) / sizeof(png_bytep))
+      png_error(png_ptr, "Can't handle exceedingly large image dimensions");
    if (row_size < min_row_size)
       row_size = min_row_size;
 
@@ -38,12 +43,6 @@ pngx_malloc_rows_extended(png_structp png_ptr, png_infop info_ptr,
    png_free_data(png_ptr, info_ptr, PNG_FREE_ROWS, 0);
 
    /* Allocate memory for the row index. */
-   height = png_get_image_height(png_ptr, info_ptr);
-   if (height > (pngx_alloc_size_t)(-1) / sizeof(png_bytep))
-   {
-      png_warning(png_ptr, "Image height is too large");
-      return NULL;
-   }
    rows = (png_bytepp)png_malloc(png_ptr,
       (pngx_alloc_size_t)(height * sizeof(png_bytep)));
    if (rows == NULL)
@@ -53,7 +52,7 @@ pngx_malloc_rows_extended(png_structp png_ptr, png_infop info_ptr,
    for (i = 0; i < height; ++i)
    {
       row = (png_bytep)png_malloc(png_ptr, row_size);
-      if (row == NULL)  /* out of memory? */
+      if (row == NULL)
       {
          /* Release the memory allocated up to the point of failure. */
          while (i > 0)

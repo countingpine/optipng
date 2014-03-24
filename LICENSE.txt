@@ -1,5 +1,4 @@
-
-Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors.
+Copyright (C) 2001-2014 Cosmin Truta and the Contributing Authors.
 For the purpose of copyright and licensing, the list of Contributing
 Authors is available in the accompanying AUTHORS file.
 
@@ -20,4 +19,3 @@ freely, subject to the following restrictions:
    be misrepresented as being the original software.
 
 3. This notice may not be removed or altered from any source distribution.
-

@@ -2,16 +2,16 @@
  * optipng.h
  * The OptiPNG programming interface.
  *
- * Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors.
+ * Copyright (C) 2001-2014 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
- * Please see the attached LICENSE for more information.
+ * Please see the accompanying LICENSE file.
  */
 
 #ifndef OPTIPNG_H
 #define OPTIPNG_H
 
-#include "cbitset.h"
+#include "bitset.h"
 
 
 #ifdef __cplusplus
@@ -43,10 +43,10 @@ struct opng_options
     int interlace;
     int nb, nc, np, nz;
     int optim_level;
-    bitset_t compr_level_set;
-    bitset_t mem_level_set;
-    bitset_t strategy_set;
-    bitset_t filter_set;
+    opng_bitset_t compr_level_set;
+    opng_bitset_t mem_level_set;
+    opng_bitset_t strategy_set;
+    opng_bitset_t filter_set;
     int window_bits;
 
     /* editing options */

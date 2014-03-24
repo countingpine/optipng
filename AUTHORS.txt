@@ -1,5 +1,5 @@
-# OptiPNG version 0.7.4
-# Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors.
+# OptiPNG version 0.7.5
+# Copyright (C) 2001-2014 Cosmin Truta and the Contributing Authors.
 # See the accompanying LICENSE file for details.
 #
 # A Contributing Author is a person or company who contributed code that
@@ -16,6 +16,7 @@ Maciej Pilichowski
 Matthew Fearnley
 Nelson A. de Oliveira
 Niels de Koning
+Oliver Schneider
 Petr Gajdos
 Piotr Bandurski
 Ramona C. Truta

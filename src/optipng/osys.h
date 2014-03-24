@@ -2,10 +2,10 @@
  * osys.h
  * System extensions.
  *
- * Copyright (C) 2003-2012 Cosmin Truta.
+ * Copyright (C) 2003-2014 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
- * Please see the attached LICENSE for more information.
+ * Please see the accompanying LICENSE file.
  */
 
 #ifndef OSYS_H

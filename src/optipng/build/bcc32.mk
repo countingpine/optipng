@@ -30,6 +30,7 @@ PNGXTERN_MK = build\bcc32.mk
 LIBPNG_DIR = ..\libpng
 LIBPNG_LIB = libpng.lib
 LIBPNG_MK = scripts\makefile.bc32
+LIBPNG_MK_DEF = PNGLIBCONF_H_PREBUILT=pnglibconf.h.optipng
 ZLIB_DIR = ..\zlib
 ZLIB_LIB = zlib.lib
 ZLIB_MK = win32\Makefile.bor
@@ -46,12 +47,14 @@ TIFF_MK = build\bcc32.mk
 OPTIPNG_OBJS = \
   optipng.obj \
   optim.obj \
-  cbitset.obj \
+  bitset.obj \
+  ratio.obj \
   osys.obj \
   wildargs.obj
 
 OPTIPNG_DEPLIB_ZLIB = $(ZLIB_DIR)\$(ZLIB_LIB)
 OPTIPNG_DEPLIB_LIBPNG = $(LIBPNG_DIR)\$(LIBPNG_LIB)
+
 OPTIPNG_DEPLIBS = \
   $(OPNGREDUC_DIR)\$(OPNGREDUC_LIB) \
   $(PNGXTERN_DIR)\$(PNGXTERN_LIB) \
@@ -71,12 +74,11 @@ OPTIPNG_DEPINCLUDES = \
   -I$(PNGXTERN_DIR)
 
 OPTIPNG_TESTS = \
-  test\cbitset_test.exe \
-  test\print_ratio_test.exe
+  test\bitset_test.exe \
+  test\ratio_test.exe
 OPTIPNG_TESTOBJS = \
-  test\cbitset_test.obj \
-  test\print_ratio_test.obj \
-  test\sprint_ratio.generated.obj
+  test\bitset_test.obj \
+  test\ratio_test.obj \
 OPTIPNG_TESTOUT = *.out.png test\*.out
 
 all: optipng.exe
@@ -87,13 +89,15 @@ optipng.exe: $(OPTIPNG_OBJS) $(OPTIPNG_DEPLIBS)
 .c.obj:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPTIPNG_DEPINCLUDES) -o$@ $<
 
-optipng.obj: optipng.c optipng.h cbitset.h osys.h proginfo.h
-optim.obj: optim.c optipng.h cbitset.h osys.h
-cbitset.obj: cbitset.c cbitset.h
+optipng.obj: optipng.c optipng.h bitset.h osys.h proginfo.h $(OPTIPNG_DEPLIBS)
+optim.obj: optim.c optipng.h bitset.h osys.h ratio.h $(OPTIPNG_DEPLIBS)
+bitset.obj: bitset.c bitset.h
+ratio.obj: ratio.c ratio.h
 osys.obj: osys.c osys.h
 wildargs.obj: wildargs.c
 
-$(OPNGREDUC_DIR)\$(OPNGREDUC_LIB):
+$(OPNGREDUC_DIR)\$(OPNGREDUC_LIB): \
+  $(OPTIPNG_DEPLIB_LIBPNG)
 	cd $(OPNGREDUC_DIR)
 	$(MAKE) -f $(OPNGREDUC_MK) $(OPNGREDUC_LIB)
 	cd $(OPTIPNG_DIR)
@@ -110,12 +114,12 @@ $(PNGXTERN_DIR)\$(PNGXTERN_LIB): \
 $(LIBPNG_DIR)\$(LIBPNG_LIB): \
   $(OPTIPNG_DEPLIB_ZLIB)
 	cd $(LIBPNG_DIR)
-	$(MAKE) -f $(LIBPNG_MK) $(LIBPNG_LIB)
+	$(MAKE) -f $(LIBPNG_MK) $(LIBPNG_MK_DEF)
 	cd $(OPTIPNG_DIR)
 
 $(ZLIB_DIR)\$(ZLIB_LIB):
 	cd $(ZLIB_DIR)
-	$(MAKE) -f $(ZLIB_MK) $(ZLIB_LIB)
+	$(MAKE) -f $(ZLIB_MK)
 	cd $(OPTIPNG_DIR)
 
 $(GIF_DIR)\$(GIF_LIB):
@@ -139,37 +143,29 @@ local-test: optipng.exe $(OPTIPNG_TESTS)
 	-@$(RM_F) pngtest.out.png
 	.\optipng.exe -o1 -q img\pngtest.png -out=pngtest.out.png
 	-@echo optipng ... ok
-	test\cbitset_test.exe < test\cbitset_test.dat > test\cbitset_test.out
-	fc test\cbitset_test.expect test\cbitset_test.out
-	-@echo cbitset_test ... ok
-	test\print_ratio_test.exe > test\print_ratio_test.out
-	-@echo print_ratio_test ... ok
+	test\bitset_test.exe < test\bitset_test.dat > test\bitset_test.out
+	fc test\bitset_test.expect test\bitset_test.out
+	-@echo bitset_test ... ok
+	test\ratio_test.exe > test\ratio_test.out
+	-@echo ratio_test ... ok
 
-test\cbitset_test.exe: test\cbitset_test.obj cbitset.obj
+test\bitset_test.exe: test\bitset_test.obj bitset.obj
 	$(LD) $(LDFLAGS) -e$@ \
-	  test\cbitset_test.obj cbitset.obj $(LIBS)
+	  test\bitset_test.obj bitset.obj $(LIBS)
 
-test\print_ratio_test.exe: \
-  test\print_ratio_test.obj test\sprint_ratio.generated.obj
+test\ratio_test.exe: test\ratio_test.obj ratio.obj
 	$(LD) $(LDFLAGS) -e$@ \
-	  test\print_ratio_test.obj test\sprint_ratio.generated.obj
+	  test\ratio_test.obj ratio.obj $(LIBS)
 
-test\cbitset_test.obj: test\cbitset_test.c cbitset.h
+test\bitset_test.obj: test\bitset_test.c bitset.h
 	$(CC) -c -I. $(CPPFLAGS) $(CFLAGS) -o$@ $*.c
 
-test\print_ratio_test.obj: test\print_ratio_test.c test\print_ratio.h
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o$@ $*.c
-
-test\sprint_ratio.generated.obj: \
-  test\sprint_ratio.generated.c test\print_ratio.h osys.h
-	$(CC) -c $(CPPFLAGS) $(CFLAGS) -o$@ $*.c
-
-#test\sprint_ratio.generated.c: test\extract_print_ratio.sh optim.c
-#	$(SHELL) -c test\extract_print_ratio.sh
+test\ratio_test.obj: test\ratio_test.c ratio.h
+	$(CC) -c -I. $(CPPFLAGS) $(CFLAGS) -o$@ $*.c
 
 test-libpng: test-zlib
 	cd $(LIBPNG_DIR)
-	$(MAKE) -f $(LIBPNG_MK) test
+	$(MAKE) -f $(LIBPNG_MK) $(LIBPNG_MK_DEF) test
 	cd $(OPTIPNG_DIR)
 
 # FIXME:
@@ -219,7 +215,7 @@ clean-pngxtern-gif-pnm-tiff:
 
 clean-libpng:
 	cd $(LIBPNG_DIR)
-	$(MAKE) -f $(LIBPNG_MK) clean
+	$(MAKE) -f $(LIBPNG_MK) $(LIBPNG_MK_DEF) clean
 	cd $(OPTIPNG_DIR)
 
 clean-zlib:
@@ -256,7 +252,7 @@ distclean-pngxtern-gif-pnm-tiff:
 
 distclean-libpng:
 	cd $(LIBPNG_DIR)
-	$(MAKE) -f $(LIBPNG_MK) clean
+	$(MAKE) -f $(LIBPNG_MK) $(LIBPNG_MK_DEF) clean
 	cd $(OPTIPNG_DIR)
 
 distclean-zlib:

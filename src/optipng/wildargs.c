@@ -3,29 +3,32 @@
  * Automatic command-line wildcard expansion for environments that
  * are not based on the Un*x shell.
  *
- * This file is placed in the PUBLIC DOMAIN.
- * The author CLAIMS NO COPYRIGHT and DISCLAIMS ALL WARRANTIES.
- * -- Cosmin Truta
+ * Copyright (C) 2003-2014 Cosmin Truta.
  *
- * Revision history:
- *    2010-Mar-11  Added Win64 support.
- *    2003-May-05  First edition, Win32 support.
+ * This software is distributed under the zlib license.
+ * Please see the accompanying LICENSE file.
  */
 
 /*
- * The following code is inspired from MinGW32 by Colin Peters.
+ * Automatic wildcard expansion for Microsoft Visual C++.
  */
-#if defined _MSC_VER && (defined _WIN32 || defined _WIN64)
+#ifdef _MSC_VER
+#if defined _WIN32 || defined _WIN64
+/* The following line is inspired from MinGW32 by Colin Peters. */
 int _dowildcard = 1;
+#endif
 #endif
 
 /*
- * The following code is inspired from BMP2PNG by MIYASAKA Masaru.
+ * Automatic wildcard expansion for Borland C++.
  */
-#if defined __BORLANDC__ && (defined __WIN32__ || defined __WIN64__)
+#ifdef __BORLANDC__
+#if defined _WIN32 || defined __WIN32__ || defined _WIN64 || defined __WIN64__
+/* The following lines are inspired from BMP2PNG by MIYASAKA Masaru. */
 #include <wildargs.h>
 typedef void _RTLENTRY (* _RTLENTRY _argv_expand_fn)(char *, _PFN_ADDARG);
 typedef void _RTLENTRY (* _RTLENTRY _wargv_expand_fn)(wchar_t *, _PFN_ADDARG);
 _argv_expand_fn _argv_expand_ptr = _expand_wild;
 _wargv_expand_fn _wargv_expand_ptr = _wexpand_wild;
+#endif
 #endif

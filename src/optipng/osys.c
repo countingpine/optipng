@@ -2,10 +2,10 @@
  * osys.c
  * System extensions.
  *
- * Copyright (C) 2003-2012 Cosmin Truta.
+ * Copyright (C) 2003-2014 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
- * Please see the attached LICENSE for more information.
+ * Please see the accompanying LICENSE file.
  */
 
 #include "osys.h"
@@ -78,7 +78,9 @@
 #endif
 
 #if defined OSYS_UNIX
-#  define _BSD_SOURCE 1
+#  ifndef _BSD_SOURCE
+#    define _BSD_SOURCE 1
+#  endif
 #  include <strings.h>
 #endif
 
@@ -475,23 +477,23 @@ osys_copy_attr(const char *src_path, const char *dest_path)
 
     HANDLE hFile;
     FILETIME ftLastWrite;
-    BOOL result;
+    BOOL success;
 
     hFile = CreateFileA(src_path, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, 0);
     if (hFile == INVALID_HANDLE_VALUE)
         return -1;
-    result = GetFileTime(hFile, NULL, NULL, &ftLastWrite);
+    success = GetFileTime(hFile, NULL, NULL, &ftLastWrite);
     CloseHandle(hFile);
-    if (!result)
+    if (!success)
         return -1;
 
     hFile = CreateFileA(dest_path, GENERIC_WRITE, 0, NULL, OPEN_EXISTING,
         (OSYS_WINDOWS_IS_WIN9X() ? 0 : FILE_FLAG_BACKUP_SEMANTICS), 0);
     if (hFile == INVALID_HANDLE_VALUE)
         return -1;
-    result = SetFileTime(hFile, NULL, NULL, &ftLastWrite);
+    success = SetFileTime(hFile, NULL, NULL, &ftLastWrite);
     CloseHandle(hFile);
-    if (!result)
+    if (!success)
         return -1;
 
     /* TODO: Copy the access mode. */
@@ -501,14 +503,20 @@ osys_copy_attr(const char *src_path, const char *dest_path)
 #elif defined OSYS_UNIX || defined OSYS_DOSISH
 
     struct stat sbuf;
-    int /* mode_t */ mode;
+    int result;
 
     if (stat(src_path, &sbuf) != 0)
         return -1;
 
-    mode = (int)sbuf.st_mode;
-    if (chmod(dest_path, mode) != 0)
-        return -1;
+    result = 0;
+
+    if (chown(dest_path, sbuf.st_uid, sbuf.st_gid) != 0)
+    {
+        /* This is not required to succeed. Fall through. */
+    }
+
+    if (chmod(dest_path, sbuf.st_mode) != 0)
+        result = -1;
 
 #ifdef AT_FDCWD
     {
@@ -517,7 +525,7 @@ osys_copy_attr(const char *src_path, const char *dest_path)
         times[0] = sbuf.st_atim;
         times[1] = sbuf.st_mtim;
         if (utimensat(AT_FDCWD, dest_path, times, 0) != 0)
-            return -1;
+            result = -1;
     }
 #else  /* legacy utime */
     {
@@ -526,11 +534,11 @@ osys_copy_attr(const char *src_path, const char *dest_path)
         utbuf.actime = sbuf.st_atime;
         utbuf.modtime = sbuf.st_mtime;
         if (utime(dest_path, &utbuf) != 0)
-            return -1;
+            result = -1;
     }
 #endif
 
-    return 0;
+    return result;
 
 #else  /* generic */
 

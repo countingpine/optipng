@@ -1,4 +1,4 @@
-OPTIPNG(1)                                                          OPTIPNG(1)
+OPTIPNG(1)                  General Commands Manual                 OPTIPNG(1)
 
 NAME
        OptiPNG - Optimize Portable Network Graphics files
@@ -295,4 +295,4 @@ AUTHOR
        the Debian Project. It was later updated by Cosmin Truta,  and  is  now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.7.4             2012-Oct-21                       OPTIPNG(1)
+OptiPNG version 0.7.5             2014-Mar-24                       OPTIPNG(1)

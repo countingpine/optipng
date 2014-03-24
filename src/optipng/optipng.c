@@ -2,10 +2,10 @@
  * OptiPNG: Advanced PNG optimization program.
  * http://optipng.sourceforge.net/
  *
- * Copyright (C) 2001-2012 Cosmin Truta and the Contributing Authors.
+ * Copyright (C) 2001-2014 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
- * Please see the attached LICENSE for more information.
+ * Please see the accompanying LICENSE file.
  *
  * PNG optimization is described in detail in the PNG-Tech article
  * "A guide to PNG optimization"
@@ -28,7 +28,7 @@
 #include "optipng.h"
 #include "proginfo.h"
 
-#include "cbitset.h"
+#include "bitset.h"
 #include "osys.h"
 #include "png.h"
 #include "pngxutil.h"
@@ -317,12 +317,12 @@ opng_str2ulong(unsigned long *out_val, const char *in_str,
  * String conversion utility
  */
 static int
-opng_rangeset2bitset(bitset_t *out_val, const char *in_str)
+opng_rangeset2bitset(opng_bitset_t *out_val, const char *in_str)
 {
     size_t end_idx;
 
     /* Extract the bitset value from the rangeset string. */
-    *out_val = rangeset_string_to_bitset(in_str, &end_idx);
+    *out_val = opng_rangeset_string_to_bitset(in_str, &end_idx);
     if (end_idx == 0 || *opng_strltrim(in_str + end_idx) != 0)
     {
         errno = EINVAL;
@@ -391,18 +391,18 @@ check_power2_option(const char *opt, const char *opt_arg,
 /*
  * Command line utility
  */
-static bitset_t
+static opng_bitset_t
 check_rangeset_option(const char *opt, const char *opt_arg,
-                      bitset_t result_mask)
+                      opng_bitset_t result_mask)
 {
-    bitset_t result;
+    opng_bitset_t result;
 
     /* Extract the rangeset from the option argument. */
     if (opng_rangeset2bitset(&result, opt_arg) == 0)
         result &= result_mask;
     else
-        result = BITSET_EMPTY;
-    if (result == BITSET_EMPTY)
+        result = 0;
+    if (result == 0)
         err_option_arg(opt, opt_arg);
     return result;
 }
@@ -497,7 +497,7 @@ parse_args(int argc, char *argv[])
     size_t opt_len;
     const char *xopt;
     int simple_opt, stop_switch;
-    bitset_t set;
+    opng_bitset_t set;
     int val;
     unsigned int file_count;
     int i;

@@ -1,10 +1,9 @@
-
 OptiPNG - TO-DO list
 ====================
 
 - Compression improvements:
   Use zlib's deflateTune().
-  Use 7zip's powerful deflation engine.
+  Use 7zip's and/or zopfli's powerful deflation engine.
 
 - Speed improvements:
   Avoid repeated filtering when trying a filter value more than once.
@@ -44,4 +43,3 @@ OptiPNG - TO-DO list
 
 - A shared library (e.g. optipng.dll), to facilitate the development of
   PNG-optimizing GUI applications and plugins.
-
