@@ -2,7 +2,7 @@
  * optim.c
  * The main PNG optimization engine.
  *
- * Copyright (C) 2001-2014 Cosmin Truta.
+ * Copyright (C) 2001-2014 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -1646,7 +1646,7 @@ opng_optimize_impl(const char *infile_name)
         if (new_outfile && !options.backup && !options.clobber)
         {
             usr_printf("The output file exists. "
-                       "Rerun " PROGRAM_NAME " with -backup enabled\n");
+                       "Rerun " PROGRAM_NAME " with -backup enabled.\n");
             Throw "Can't overwrite the output file";
         }
         if (osys_test(outfile_name, "fw") != 0 ||

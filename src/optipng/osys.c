@@ -19,9 +19,17 @@
  * Auto-configuration.
  */
 #if defined UNIX || defined __UNIX__ || defined __unix || defined __unix__ || \
+    defined _BSD_SOURCE || defined _GNU_SOURCE || defined _SVID_SOURCE || \
     defined _POSIX_SOURCE || defined _POSIX_C_SOURCE || defined _XOPEN_SOURCE
 #  define OSYS_UNIX
-/* To be continued. */
+#endif
+
+#if defined __APPLE__ && defined __MACH__
+#  define OSYS_DARWIN
+#  ifndef OSYS_UNIX
+     /* The macros __unix and __unix__ are not predefined on Darwin. */
+#    define OSYS_UNIX
+#  endif
 #endif
 
 #if defined WIN32 || defined _WIN32 || defined _WIN32_WCE || \
@@ -50,20 +58,10 @@
 #  define OSYS_DOSISH
 #endif
 
-#if defined __APPLE__
-#  define OSYS_MACOS
-#  if defined __MACH__
-#    define OSYS_MACOSX
-#    ifndef OSYS_UNIX
-#      define OSYS_UNIX
-#    endif
-#  endif
-#endif
-
 #if defined __CYGWIN__ || defined __DJGPP__ || defined __EMX__
 #  define OSYS_UNIXISH
-   /* Strictly speaking, this is not entirely correct, but "it works". */
 #  ifndef OSYS_UNIX
+     /* Strictly speaking, this is not correct, but "it works". */
 #    define OSYS_UNIX
 #  endif
 #endif
@@ -75,13 +73,6 @@
 #      define OSYS_UNIX
 #    endif
 #  endif
-#endif
-
-#if defined OSYS_UNIX
-#  ifndef _BSD_SOURCE
-#    define _BSD_SOURCE 1
-#  endif
-#  include <strings.h>
 #endif
 
 #if defined OSYS_UNIX || defined OSYS_WINDOWS || defined OSYS_DOSISH
@@ -120,7 +111,7 @@
 #  define OSYS_PATH_PATHSEP_STR "/"
 #  if defined OSYS_UNIXISH
 #    define OSYS_PATH_PATHSEP_ALL_STR "/\\"
-#  elif defined OSYS_MACOSX
+#  elif defined OSYS_DARWIN
 #    define OSYS_PATH_PATHSEP_ALL_STR "/:"
 #  else  /* OSYS_UNIX and others */
 #    define OSYS_PATH_PATHSEP_ALL_STR "/"
@@ -128,7 +119,6 @@
 #endif
 #define OSYS_PATH_EXTSEP '.'
 #define OSYS_PATH_EXTSEP_STR "."
-/* TODO: Support more systems (e.g. OSYS_RISCOS). */
 
 #if defined OSYS_WINDOWS || defined OSYS_DOSISH || defined OSYS_UNIXISH
 #  define OSYS_PATH_DOS
@@ -167,7 +157,7 @@
 #endif
 
 #ifdef OSYS_WINDOWS
-#  if defined OSYS_WIN64
+#  if defined OSYS_WIN64 || (defined _MSC_VER && _MSC_VER >= 1500)
 #    define OSYS_HAVE_STDIO__I64
 #    define OSYS_WINDOWS_IS_WIN9X() 0
 #  else
@@ -518,7 +508,7 @@ osys_copy_attr(const char *src_path, const char *dest_path)
     if (chmod(dest_path, sbuf.st_mode) != 0)
         result = -1;
 
-#ifdef AT_FDCWD
+#if defined AT_FDCWD && defined UTIME_NOW && defined UTIME_OMIT
     {
         struct timespec times[2];
 

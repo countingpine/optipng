@@ -5,14 +5,14 @@
  * @author Cosmin Truta
  *
  * @section Copyright
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2015 Cosmin Truta.
  * This software was derived from "giftopnm.c" by David Koblas,
  * and is distributed under the same copyright and warranty terms.
  *
  * The original copyright notice is provided below.
  * <pre>
  * +-------------------------------------------------------------------+
- * | Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)    |
+ * | Copyright 1990 - 1994, David Koblas.  (koblas@netcom.com)         |
  * |   Permission to use, copy, modify, and distribute this software   |
  * |   and its documentation for any purpose and without fee is hereby |
  * |   granted, provided that the above copyright notice appear in all |

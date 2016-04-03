@@ -2,7 +2,7 @@
  * optipng.h
  * The OptiPNG programming interface.
  *
- * Copyright (C) 2001-2014 Cosmin Truta and the Contributing Authors.
+ * Copyright (C) 2001-2016 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.

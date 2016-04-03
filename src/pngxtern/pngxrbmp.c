@@ -1,6 +1,6 @@
 /*
  * pngxrbmp.c - libpng external I/O: BMP reader.
- * Copyright (C) 2003-2014 Cosmin Truta.
+ * Copyright (C) 2003-2016 Cosmin Truta and the Contributing Authors.
  *
  * This code was derived from "bmp2png.c" by MIYASAKA Masaru, and
  * is distributed under the same copyright and warranty terms as libpng.
@@ -108,17 +108,17 @@ bmp_get_dword(png_bytep ptr)
 
 
 /*****************************************************************************/
-/* BMP RLE helpers                                                           */
+/* BMP helpers                                                               */
 /*****************************************************************************/
 
 static void
-bmp_rle8_memset(png_bytep ptr, size_t offset, int ch, size_t len)
+bmp_memset_bytes(png_bytep ptr, size_t offset, int ch, size_t len)
 {
    memset(ptr + offset, ch, len);
 }
 
 static void
-bmp_rle4_memset(png_bytep ptr, size_t offset, int ch, size_t len)
+bmp_memset_halfbytes(png_bytep ptr, size_t offset, int ch, size_t len)
 {
    if (len == 0)
       return;
@@ -136,7 +136,7 @@ bmp_rle4_memset(png_bytep ptr, size_t offset, int ch, size_t len)
 }
 
 static size_t
-bmp_rle8_fread(png_bytep ptr, size_t offset, size_t len, FILE *stream)
+bmp_fread_bytes(png_bytep ptr, size_t offset, size_t len, FILE *stream)
 {
    size_t result;
 
@@ -147,15 +147,17 @@ bmp_rle8_fread(png_bytep ptr, size_t offset, size_t len, FILE *stream)
 }
 
 static size_t
-bmp_rle4_fread(png_bytep ptr, size_t offset, size_t len, FILE *stream)
+bmp_fread_halfbytes(png_bytep ptr, size_t offset, size_t len, FILE *stream)
 {
    size_t result;
    int ch;
 
+   if (len == 0)
+      return 0;
    ptr += offset / 2;
    if (offset & 1)  /* use half-byte operations at odd offset */
    {
-      for (result = 0; result < len; result += 2)
+      for (result = 0; result < len - 1; result += 2)
       {
          ch = getc(stream);
          if (ch == EOF)
@@ -231,14 +233,14 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, size_t row_size,
       endn = row_size * 2;
       if (endn <= row_size)
          return 0;  /* overflow */
-      bmp_memset_fn = bmp_rle4_memset;
-      bmp_fread_fn = bmp_rle4_fread;
+      bmp_memset_fn = bmp_memset_halfbytes;
+      bmp_fread_fn = bmp_fread_halfbytes;
    }
    else
    {
       endn = row_size;
-      bmp_memset_fn = bmp_rle8_memset;
-      bmp_fread_fn = bmp_rle8_fread;
+      bmp_memset_fn = bmp_memset_bytes;
+      bmp_fread_fn = bmp_fread_bytes;
    }
 
    if (compression == BI_RGB || compression == BI_BITFIELDS)
@@ -258,19 +260,14 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, size_t row_size,
       if (compression == BI_RLE8)
       {
          endn = row_size;
-         bmp_memset_fn = bmp_rle8_memset;
-         bmp_fread_fn = bmp_rle8_fread;
       }
-      else /* BI_RLE4 */
+      else  /* BI_RLE4 */
       {
          endn = row_size * 2;
          if (endn <= row_size)
             return 0;  /* overflow */
-         bmp_memset_fn = bmp_rle4_memset;
-         bmp_fread_fn = bmp_rle4_fread;
       }
-      crt_row = begin_row;
-      for ( ; ; )
+      for (crt_row = begin_row; crt_row != end_row; )
       {
          ch = getc(stream); b1 = (unsigned int)ch;
          ch = getc(stream); b2 = (unsigned int)ch;
@@ -300,6 +297,7 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, size_t row_size,
             {
                bmp_memset_fn(*crt_row, crtn, 0, endn - crtn);
                crt_row += inc;
+               crtn = 0;
                result = (begin_row <= end_row) ?
                   (end_row - begin_row) : (begin_row - end_row);
                break;  /* the rest is wiped out at the end */
@@ -311,16 +309,17 @@ bmp_read_rows(png_bytepp begin_row, png_bytepp end_row, size_t row_size,
                if (ch == EOF)
                   break;
                dcrtn = (b1 < endn - crtn) ? (crtn + b1) : endn;
-               if (b2 > (size_t)((end_row - crt_row) * inc))
-                  b2 = (unsigned int)((end_row - crt_row) * inc);
                for ( ; b2 > 0; --b2)
                {
                   bmp_memset_fn(*crt_row, crtn, 0, endn - crtn);
                   crt_row += inc;
                   crtn = 0;
                   ++result;
+                  if (crt_row == end_row)
+                      break;
                }
-               bmp_memset_fn(*crt_row, crtn, 0, dcrtn - crtn);
+               if (crt_row != end_row)
+                  bmp_memset_fn(*crt_row, crtn, 0, dcrtn - crtn);
             }
             else  /* b2 >= 3 bytes in absolute mode */
             {
@@ -566,7 +565,7 @@ pngx_read_bmp(png_structp png_ptr, png_infop info_ptr, FILE *stream)
             rgba_mask[1] = 0x03e0;
             rgba_mask[2] = 0x001f;
          }
-         else /* pixdepth == 24 || pixdepth == 32 */
+         else  /* pixdepth == 24 || pixdepth == 32 */
          {
             rgba_mask[0] = (png_uint_32)0x00ff0000L;
             rgba_mask[1] = (png_uint_32)0x0000ff00L;

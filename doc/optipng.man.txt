@@ -276,14 +276,15 @@ BUGS
 
        Metadata is not imported from the external image formats.
 
-       There is no support for pipes or streams.
+       There is no support for pipes, streams,  extended  file  attributes  or
+       access control lists.
 
 SEE ALSO
        png(5), libpng(3), zlib(3), pngcrush(1), pngrewrite(1).
 
 STANDARDS
        The files produced by OptiPNG are compliant with PNG-2003:
-       Glenn Randers-Pehrson et al.  Portable Network Graphics (PNG)  Specifi-
+       Glenn  Randers-Pehrson et al.  Portable Network Graphics (PNG) Specifi-
        cation, Second Edition.
        W3C Recommendation 10 November 2003; ISO/IEC IS 15948:2003 (E).
        http://www.w3.org/TR/PNG/
@@ -291,8 +292,8 @@ STANDARDS
 AUTHOR
        OptiPNG is written and maintained by Cosmin Truta.
 
-       This  manual  page  was originally written by Nelson A. de Oliveira for
-       the Debian Project. It was later updated by Cosmin Truta,  and  is  now
+       This manual page was originally written by Nelson A.  de  Oliveira  for
+       the  Debian  Project.  It was later updated by Cosmin Truta, and is now
        part of the OptiPNG distribution.
 
-OptiPNG version 0.7.5             2014-Mar-24                       OPTIPNG(1)
+OptiPNG version 0.7.6             2016-Apr-03                       OPTIPNG(1)

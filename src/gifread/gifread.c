@@ -5,14 +5,14 @@
  * @author Cosmin Truta
  *
  * @section Copyright
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2015 Cosmin Truta.
  * This software was derived from "giftopnm.c" by David Koblas,
  * and is distributed under the same copyright and warranty terms.
  *
  * The original copyright notice is provided below.
  * <pre>
  * +-------------------------------------------------------------------+
- * | Copyright 1990, 1991, 1993, David Koblas.  (koblas@netcom.com)    |
+ * | Copyright 1990 - 1994, David Koblas.  (koblas@netcom.com)         |
  * |   Permission to use, copy, modify, and distribute this software   |
  * |   and its documentation for any purpose and without fee is hereby |
  * |   granted, provided that the above copyright notice appear in all |
@@ -357,6 +357,7 @@ static int LZWGetCode(int code_size, int init_flag, FILE *stream)
     {
         curbit = 0;
         lastbit = 0;
+        last_byte = 2;
         done = LZW_FALSE;
         return 0;
     }
@@ -369,8 +370,8 @@ static int LZWGetCode(int code_size, int init_flag, FILE *stream)
                 GIFError("GIF/LZW error: ran off the end of my bits");
             return -1;
         }
-        buffer[0] = buffer[last_byte-2];
-        buffer[1] = buffer[last_byte-1];
+        buffer[0] = buffer[last_byte - 2];
+        buffer[1] = buffer[last_byte - 1];
 
         if ((count = GIFReadDataBlock(&buffer[2], stream)) == 0)
             done = LZW_TRUE;
@@ -382,7 +383,7 @@ static int LZWGetCode(int code_size, int init_flag, FILE *stream)
 
     ret = 0;
     for (i = curbit, j = 0; j < code_size; ++i, ++j)
-        ret |= ((buffer[ i / 8 ] & (1 << (i % 8))) != 0) << j;
+        ret |= ((buffer[i / 8] & (1 << (i % 8))) != 0) << j;
 
     curbit += code_size;
     return ret;
@@ -403,7 +404,7 @@ static int LZWReadByte(int init_flag, int input_code_size, FILE *stream)
     if (init_flag)
     {
         set_code_size = input_code_size;
-        code_size = set_code_size+1;
+        code_size = set_code_size + 1;
         clear_code = 1 << set_code_size;
         end_code = clear_code + 1;
         max_code_size = 2 * clear_code;
@@ -456,9 +457,9 @@ static int LZWReadByte(int init_flag, int input_code_size, FILE *stream)
                 table[1][i] = 0;
             }
 
-            code_size = set_code_size+1;
-            max_code_size = 2*clear_code;
-            max_code = clear_code+2;
+            code_size = set_code_size + 1;
+            max_code_size = 2 * clear_code;
+            max_code = clear_code + 2;
             sp = stack;
             firstcode = oldcode =
                 LZWGetCode(code_size, LZW_FALSE, stream);
@@ -583,7 +584,7 @@ void GIFInitExtension(struct GIFExtension *ext,
 {
     unsigned char *newBuffer;
 
-    ext->Screen     = screen;
+    ext->Screen = screen;
     if (initBufferSize > 0)
     {
         newBuffer = (unsigned char *)malloc(initBufferSize);
@@ -720,4 +721,3 @@ void (*GIFError)(const char *message) = DefaultError;
  * The warning handling callback.
  */
 void (*GIFWarning)(const char *message) = DefaultWarning;
-

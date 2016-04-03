@@ -22,7 +22,7 @@ typedef opng_ullong_t opng_ulongest_impl_t;
 #define OPNG_LONGEST_IMPL_FORMAT OPNG_LLONG_FORMAT
 #else
 typedef long opng_longest_impl_t;
-typedef unsigned long opng_longest_impl_t;
+typedef unsigned long opng_ulongest_impl_t;
 #define OPNG_LONGEST_IMPL_FORMAT "l"
 #endif
 

@@ -155,7 +155,7 @@ $(TIFF_DIR)/$(TIFF_LIB):
 	$(MAKE) -f $(TIFF_MK) $(TIFF_LIB) && \
 	cd $(OPTIPNG_DIR)
 
-test: local-test test-libpng test-gifread test-minitiff
+test: local-test test-gifread test-minitiff
 
 .PHONY: local-test
 local-test: optipng$(EXEEXT) $(OPTIPNG_TESTS)
@@ -181,20 +181,6 @@ test/bitset_test.o: test/bitset_test.c bitset.h
 
 test/ratio_test.o: test/ratio_test.c ratio.h
 	$(CC) -c -I. $(CPPFLAGS) $(CFLAGS) -o $@ $*.c
-
-.PHONY: test-libpng
-test-libpng: test-zlib
-	cd $(LIBPNG_DIR) && \
-	$(MAKE) -f $(LIBPNG_MK) $(LIBPNG_MK_DEF) test && \
-	cd $(OPTIPNG_DIR)
-
-# FIXME:
-# Can't test zlib if NO_GZCOMPRES and NO_GZIP are enabled.
-.PHONY: test-zlib
-test-zlib:
-#	cd $(ZLIB_DIR) && \
-#	$(MAKE) -f $(ZLIB_MK) test && \
-#	cd $(OPTIPNG_DIR)
 
 .PHONY: test-gifread
 test-gifread:

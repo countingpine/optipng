@@ -14,7 +14,8 @@
 #include <stddef.h>
 
 
-/* The following definitions exist for the benefit of pre-C99 and pre-C++11
+/*
+ * The following definitions exist for the benefit of pre-C99 and pre-C++11
  * compilers and runtimes that are unable to grok the long long type.
  */
 #ifndef OPNG_LLONG_T_DEFINED

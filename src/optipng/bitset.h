@@ -95,21 +95,21 @@ inline void
 opng_bitset_set_range(opng_bitset_t *set, int start_elt, int stop_elt)
 {
     if (start_elt <= stop_elt)
-        *set |= (((1U << (stop_elt - start_elt) << 1) - 1) << start_elt);
+        *set |= opng_bitset__range__(start_elt, stop_elt);
 }
 
 inline void
 opng_bitset_reset_range(opng_bitset_t *set, int start_elt, int stop_elt)
 {
     if (start_elt <= stop_elt)
-        *set &= ~(((1U << (stop_elt - start_elt) << 1) - 1) << start_elt);
+        *set &= ~opng_bitset__range__(start_elt, stop_elt);
 }
 
 inline void
 opng_bitset_flip_range(opng_bitset_t *set, int start_elt, int stop_elt)
 {
     if (start_elt <= stop_elt)
-        *set ^= (((1U << (stop_elt - start_elt) << 1) - 1) << start_elt);
+        *set ^= opng_bitset__range__(start_elt, stop_elt);
 }
 
 #else  /* !__cplusplus */

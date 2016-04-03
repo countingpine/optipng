@@ -2,6 +2,11 @@
 
 trap "rm -f conftest* core a.out; exit 1" 1 2 3 15
 
+LC_ALL=C
+export LC_ALL
+LANGUAGE=C
+export LANGUAGE
+
 prefix="${prefix-/usr/local}"
 exec_prefix="${exec_prefix-\$(prefix)}"
 bindir="${bindir-\$(exec_prefix)/bin}"
