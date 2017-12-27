@@ -40,6 +40,3 @@ OptiPNG - TO-DO list
 
 - Parallelization on multi-processor/multi-core machines:
     optipng -jobs 4 files ...
-
-- A shared library (e.g. optipng.dll), to facilitate the development of
-  PNG-optimizing GUI applications and plugins.

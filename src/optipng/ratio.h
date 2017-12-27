@@ -2,14 +2,14 @@
  * ratio.h
  * Exact rational numbers.
  *
- * Copyright (C) 2003-2014 Cosmin Truta.
+ * Copyright (C) 2003-2017 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
  */
 
-#ifndef RATIO_H
-#define RATIO_H
+#ifndef OPNG_RATIO_H_
+#define OPNG_RATIO_H_
 
 #include <stddef.h>
 
@@ -49,9 +49,9 @@ typedef unsigned __int64 opng_ullong_t;
 #ifdef OPNG_LLONG_T_DEFINED
 #if defined _WIN32 || defined __WIN32__
 /* The "ll" format modifier may not work on Windows XP and earlier. */
-#define OPNG_LLONG_FORMAT "I64"
+#define OPNG_LLONG_FORMAT_PREFIX "I64"
 #else
-#define OPNG_LLONG_FORMAT "ll"
+#define OPNG_LLONG_FORMAT_PREFIX "ll"
 #endif
 #endif
 
@@ -110,13 +110,13 @@ struct opng_ullratio
  *
  * The factor string has the following format:
  *
- *   "DD.DD%" if ratio < 99.995%
- *   "DD.DDx" if ratio >= 99.995% and ratio < 99.995
- *   "DDDx"   if ratio >= 99.995
- *   "??%"    if ratio == 0/0
- *   "INFTY%" if ratio >= 1/0
+ *   "DD.DD%"    if ratio < 99.995%
+ *   "DD.DDx"    if ratio >= 99.995% and ratio < 99.995
+ *   "DDDx"      if ratio >= 99.995
+ *   "??%"       if ratio == 0/0
+ *   "INFINITY%" if ratio >= 1/0
  *
- * The buffer shall contain the resulting string, or a part of it if the
+ * The buffer shall contain the output string, or a part of it if the
  * buffer size is too small, always null-terminated.
  * The function shall return the number of characters stored, not including
  * the null-character terminator, or -1 if the buffer size is too small.
@@ -132,7 +132,7 @@ opng_ulratio_to_factor_string(char *buffer, size_t buffer_size,
  * This is the format "DD.DD%" for ratios below 99.995%, and the format
  * "DDD%" for ratios equal to or above 99.995%.
  *
- * The buffer shall contain the resulting string, or a part of it if the
+ * The buffer shall contain the output string, or a part of it if the
  * buffer size is too small, always null-terminated.
  * The function shall return the number of characters stored, not including
  * the null-character terminator, or -1 if the buffer size is too small.
@@ -175,4 +175,4 @@ opng_ullratio_to_percent_string(char *buffer, size_t buffer_size,
 #endif
 
 
-#endif  /* RATIO_H */
+#endif  /* OPNG_RATIO_H_ */

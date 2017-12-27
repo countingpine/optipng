@@ -54,7 +54,8 @@
   ---------------------------------------------------------------------------
 
    Changelog:
-     %RDATE% - Check return value of png_get_bKGD() (Glenn R-P)
+     2015-11-12 - Check return value of png_get_bKGD() (Glenn R-P)
+     2017-04-22 - Guard against integer overflow (Glenn R-P)
 
   ---------------------------------------------------------------------------*/
 

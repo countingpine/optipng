@@ -2,14 +2,14 @@
  * bitset.h
  * Plain old bitset data type.
  *
- * Copyright (C) 2001-2014 Cosmin Truta.
+ * Copyright (C) 2001-2017 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
  */
 
-#ifndef BITSET_H
-#define BITSET_H
+#ifndef OPNG_BITSET_H_
+#define OPNG_BITSET_H_
 
 #include <limits.h>
 #include <stddef.h>
@@ -27,13 +27,20 @@ typedef unsigned int opng_bitset_t;
 
 
 /*
+ * Bitset constants.
+ */
+#define OPNG_BITSET_EMPTY 0U
+#define OPNG_BITSET_FULL (~0U)
+
+
+/*
  * The size operator (not restricted to opng_bitset_t).
  */
 #define OPNG_BITSIZEOF(object) (sizeof(object) * CHAR_BIT)
 
 
 /*
- * Bitset limits.
+ * Bitset element limits.
  */
 enum
 {
@@ -81,14 +88,16 @@ inline int
 opng_bitset_test_all_in_range(opng_bitset_t set, int start_elt, int stop_elt)
 {
     return (start_elt <= stop_elt) ?
-        ((~set & opng_bitset__range__(start_elt, stop_elt)) == 0) : 1;
+           ((~set & opng_bitset__range__(start_elt, stop_elt)) == 0) :
+           1;
 }
 
 inline int
 opng_bitset_test_any_in_range(opng_bitset_t set, int start_elt, int stop_elt)
 {
     return (start_elt <= stop_elt) ?
-        ((set & opng_bitset__range__(start_elt, stop_elt)) != 0) : 0;
+           ((set & opng_bitset__range__(start_elt, stop_elt)) != 0) :
+           0;
 }
 
 inline void
@@ -130,29 +139,29 @@ opng_bitset_flip_range(opng_bitset_t *set, int start_elt, int stop_elt)
     (((1U << ((stop_elt) - (start_elt)) << 1) - 1) << (start_elt))
 
 #define opng_bitset_test_all_in_range(set, start_elt, stop_elt) \
-    (((start_elt) <= (stop_elt)) \
-        ? (~(set) & opng_bitset__range__(start_elt, stop_elt)) == 0 \
-        : 1)
+    (((start_elt) <= (stop_elt)) ? \
+     (~(set) & opng_bitset__range__(start_elt, stop_elt)) == 0 : \
+     1)
 
 #define opng_bitset_test_any_in_range(set, start_elt, stop_elt) \
-    (((start_elt) <= (stop_elt)) \
-        ? ((set) & opng_bitset__range__(start_elt, stop_elt)) != 0 \
-        : 0)
+    (((start_elt) <= (stop_elt)) ? \
+     ((set) & opng_bitset__range__(start_elt, stop_elt)) != 0 : \
+     0)
 
 #define opng_bitset_set_range(set, start_elt, stop_elt) \
-    (*(set) |= ((start_elt) <= (stop_elt)) \
-        ? opng_bitset__range__(start_elt, stop_elt) \
-        : 0U)
+    (*(set) |= ((start_elt) <= (stop_elt)) ? \
+               opng_bitset__range__(start_elt, stop_elt) : \
+               0U)
 
 #define opng_bitset_reset_range(set, start_elt, stop_elt) \
-    (*(set) &= ((start_elt) <= (stop_elt)) \
-        ? ~opng_bitset__range__(start_elt, stop_elt) \
-        : ~0U)
+    (*(set) &= ((start_elt) <= (stop_elt)) ? \
+               ~opng_bitset__range__(start_elt, stop_elt) : \
+               ~0U)
 
 #define opng_bitset_flip_range(set, start_elt, stop_elt) \
-    (*(set) ^= ((start_elt) <= (stop_elt)) \
-        ? opng_bitset__range__(start_elt, stop_elt) \
-        : 0U)
+    (*(set) ^= ((start_elt) <= (stop_elt)) ? \
+               opng_bitset__range__(start_elt, stop_elt) : \
+               0U)
 
 #endif  /* __cplusplus */
 
@@ -202,50 +211,54 @@ int
 opng_bitset_find_prev(opng_bitset_t set, int elt);
 
 /*
- * Converts a rangeset string to a bitset.
+ * Parses a rangeset string and converts the result to a bitset.
  *
- * A rangeset string is an arbitrary sequence of elements ("N") and
- * ranges ("M-N" or "M-"), separated by ',' or ';'. Whitespace is
- * allowed around lexical elements, and is ignored.
+ * A rangeset string is an arbitrary sequence of non-negative integers ("N")
+ * and ranges ("M-N" or "M-"), represented in base 10, and separated by comma
+ * or semicolon characters. Whitespace is allowed around lexical elements,
+ * and is ignored.
  *
- * Here are a few examples, assuming OPNG_BITSIZEOF(opng_bitset_t) == 16:
+ * Here are a few examples, assuming the input mask is 0xffff:
+ *  ""         => 0000000000000000
+ *  "0"        => 0000000000000001
  *  "0,3,5-7"  => 0000000011101001
  *  "0-3,5,7-" => 1111111110101111
- *  "8-,4"     => 1111111100010000
- *  ""         => 0000000000000000
- *  "8-4"      => 0000000000000000, errno = ERANGE
- *  "99"       => 1000000000000000, errno = ERANGE
- *  "invalid"  => 0000000000000000, errno = EINVAL
+ *  "7-,5"     => 1111111110100000
+ *  "7-7"      => 0000000010000000
+ *  "7-5"      => 1111111111111111, range error
+ *  "99"       => 1111111111111111, range error
+ *  "1-2-3"    => 0000000000000000, invalid input error
  *
- * If end_idx is not null, the function sets *end_idx to point to
- * the character that stopped the scan. If the input is invalid and
- * end_idx is not null, the function sets *end_idx to 0.
+ * On success, the function sets the output value to the converted bitset.
+ * If the input is well-formed, but contains elements or ranges that are not
+ * representable within the given mask, the function sets errno to ERANGE,
+ * and sets the output value to BITSET_FULL.
+ * If the input is ill-formed, the function sets errno to EINVAL, and sets
+ * the output value to BITSET_EMPTY.
  *
- * The function returns the value of the converted bitset. If the
- * input contains non-representable elements or ranges (e.g. elements
- * larger than OPNG_BITSET_ELT_MAX), the function sets errno to ERANGE.
- * If the input is invalid, the function sets errno to EINVAL and
- * returns 0 (i.e. the empty set).
+ * The function returns 0 on success, or -1 on error.
  */
-opng_bitset_t
-opng_rangeset_string_to_bitset(const char *str, size_t *end_idx);
+int
+opng_strparse_rangeset_to_bitset(opng_bitset_t *out_set,
+                                 const char *rangeset_str,
+                                 opng_bitset_t mask_set);
 
 /*
- * Converts a bitset to a rangeset string.
- *
- * The function converts the bitset to a rangeset string representation
- * and attempts to store it in sbuf, if sbuf is large enough. Otherwise,
- * it leaves sbuf intact.
+ * Formats a bitset using the rangeset string representation.
  *
  * The function returns the length of the rangeset string representation.
+ * Upon return, if the output buffer is large enough, it shall contain the
+ * rangeset string. Otherwise, the buffer shall remain intact.
  */
 size_t
-opng_bitset_to_rangeset_string(char *sbuf, size_t sbuf_size, opng_bitset_t set);
+opng_strformat_bitset_as_rangeset(char *out_buf,
+                                  size_t out_buf_size,
+                                  opng_bitset_t bitset);
 
 /*
  * TODO:
- * opng_rangeset_wstring_to_bitset
- * opng_bitset_to_rangeset_wstring
+ * opng_wcsparse_rangeset_to_bitset
+ * opng_wcsformat_bitset_as_rangeset
  */
 
 
@@ -254,4 +267,4 @@ opng_bitset_to_rangeset_string(char *sbuf, size_t sbuf_size, opng_bitset_t set);
 #endif
 
 
-#endif  /* BITSET_H */
+#endif  /* OPNG_BITSET_H_ */

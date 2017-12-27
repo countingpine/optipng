@@ -1,7 +1,7 @@
 Name: libpng
 Summary: The PNG reference library
 Authors: Glenn Randers-Pehrson et al.
-Version: 1.6.21
+Version: 1.6.34
 License: the libpng license (zlib-like); see LICENSE
 URL: http://libpng.org/
 

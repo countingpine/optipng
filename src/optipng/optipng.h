@@ -2,14 +2,14 @@
  * optipng.h
  * The OptiPNG programming interface.
  *
- * Copyright (C) 2001-2016 Cosmin Truta and the Contributing Authors.
+ * Copyright (C) 2001-2017 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
  */
 
-#ifndef OPTIPNG_H
-#define OPTIPNG_H
+#ifndef OPTIPNG_H_
+#define OPTIPNG_H_
 
 #include "bitset.h"
 
@@ -20,11 +20,11 @@ extern "C" {
 
 
 /*
- * User options (e.g. extracted from the command line)
+ * User options.
  */
 struct opng_options
 {
-    /* general options */
+    /* General options. */
     int backup;
     int clobber;
     int debug;
@@ -39,7 +39,7 @@ struct opng_options
     const char *dir_name;
     const char *log_name;
 
-    /* optimization options */
+    /* Optimization options. */
     int interlace;
     int nb, nc, np, nz;
     int optim_level;
@@ -49,14 +49,14 @@ struct opng_options
     opng_bitset_t filter_set;
     int window_bits;
 
-    /* editing options */
+    /* Editing options. */
     int snip;
     int strip_all;
 };
 
 
 /*
- * User interface callbacks
+ * User interface callbacks.
  */
 struct opng_ui
 {
@@ -68,24 +68,24 @@ struct opng_ui
 
 
 /*
- * Engine initialization
+ * Engine initialization.
  */
 int opng_initialize(const struct opng_options *options,
                     const struct opng_ui *ui);
 
 /*
- * Engine execution
+ * Engine execution.
  */
 int opng_optimize(const char *infile_name);
 
 /*
- * Engine finalization
+ * Engine finalization.
  */
 int opng_finalize(void);
 
 
 /*
- * Encoder limits and default values
+ * Encoder limits and default values.
  */
 #define OPNG_OPTIM_LEVEL_DEFAULT    2
 #define OPNG_OPTIM_LEVEL_MIN        0
@@ -113,4 +113,4 @@ int opng_finalize(void);
 #endif
 
 
-#endif  /* OPTIPNG_H */
+#endif  /* OPTIPNG_H_ */

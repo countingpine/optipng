@@ -2,7 +2,7 @@
  * bitset.c
  * Plain old bitset data type.
  *
- * Copyright (C) 2001-2014 Cosmin Truta.
+ * Copyright (C) 2001-2017 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -16,22 +16,26 @@
 
 
 /*
- * Private helper macros: opng__MIN__ and opng__MAX__.
+ * Returns the minimum of two given values.
  */
 #define opng__MIN__(a, b) \
     ((a) < (b) ? (a) : (b))
+
+/*
+ * Returns the maximum of two given values.
+ */
 #define opng__MAX__(a, b) \
     ((a) > (b) ? (a) : (b))
 
 /*
- * Private helper macro: opng__PTR_SPAN_PRED__.
- *
  * Spans the given pointer past the elements that satisfy the given predicate.
- * E.g., opng__PTR_SPAN_PRED__(str, isspace) moves str past the leading
- * whitespace.
+ * E.g., opng__SPAN__(str, isspace) moves str past the leading whitespace.
  */
-#define opng__PTR_SPAN_PRED__(ptr, predicate) \
-    { while (predicate(*(ptr))) ++(ptr); }
+#define opng__SPAN__(ptr, predicate) \
+    { \
+        while ((predicate)(*(ptr))) \
+            ++(ptr); \
+    }
 
 
 /*
@@ -117,26 +121,28 @@ opng_bitset_find_prev(opng_bitset_t set, int elt)
 }
 
 /*
- * Converts a rangeset string to a bitset.
+ * Parses a rangeset string and converts the result to a bitset.
  */
-opng_bitset_t
-opng_rangeset_string_to_bitset(const char *str, size_t *end_idx)
+int
+opng_strparse_rangeset_to_bitset(opng_bitset_t *out_set,
+                                 const char *rangeset_str,
+                                 opng_bitset_t mask_set)
 {
     opng_bitset_t result;
     const char *ptr;
     int state;
     int num, num1, num2;
-    int out_of_range;
+    int err_invalid, err_range;
 
-    result = 0;  /* empty */
-    ptr = str;
+    result = OPNG_BITSET_EMPTY;
+    ptr = rangeset_str;
     state = 0;
-    out_of_range = 0;
+    err_invalid = err_range = 0;
     num1 = num2 = -1;
 
     for ( ; ; )
     {
-        opng__PTR_SPAN_PRED__(ptr, isspace);
+        opng__SPAN__(ptr, isspace);
         switch (state)
         {
         case 0:  /* "" */
@@ -150,11 +156,13 @@ opng_rangeset_string_to_bitset(const char *str, size_t *end_idx)
                     num = 10 * num + (*ptr - '0');
                     if (num > OPNG_BITSET_ELT_MAX)
                     {
-                        out_of_range = 1;
                         num = OPNG_BITSET_ELT_MAX;
+                        err_range = 1;
                     }
                     ++ptr;
                 } while (*ptr >= '0' && *ptr <= '9');
+                if (!opng_bitset_test(mask_set, num))
+                    err_range = 1;
                 if (state == 0)
                     num1 = num;
                 num2 = num;
@@ -177,16 +185,17 @@ opng_rangeset_string_to_bitset(const char *str, size_t *end_idx)
         if (state > 0)  /* "N", "N-" or "N-N" */
         {
             /* Store the partial result; go to state 0. */
-            state = 0;
-            if (num2 > OPNG_BITSET_ELT_MAX)
-            {
-                out_of_range = 1;
-                num2 = OPNG_BITSET_ELT_MAX;
-            }
             if (num1 <= num2)
+            {
                 opng_bitset_set_range(&result, num1, num2);
+                result &= mask_set;
+            }
             else
-                out_of_range = 1;
+            {
+                /* Incorrect range operands. */
+                err_range = 1;
+            }
+            state = 0;
         }
 
         if (*ptr == ',' || *ptr == ';')
@@ -195,33 +204,57 @@ opng_rangeset_string_to_bitset(const char *str, size_t *end_idx)
             ++ptr;
             continue;
         }
+        else if (*ptr == '-')
+        {
+            /* Unexpected range operator: invalidate and exit the loop. */
+            err_invalid = 1;
+            break;
+        }
         else
         {
-            /* Unexpected character or end of string: break the loop. */
+            /* Unexpected character or end of string: exit the loop. */
             break;
         }
     }
 
-    if (num1 == -1)
+    opng__SPAN__(ptr, isspace);
+    if (*ptr != '\0')
     {
-        /* There were no partial results. */
-        if (end_idx != NULL)
-            *end_idx = 0;
-        /* No EINVAL here: the empty set is a valid input. */
-        return 0;
+        /* Unexpected trailing character: invalidate. */
+        err_invalid = 1;
     }
-    if (end_idx != NULL)
-        *end_idx = (size_t)(ptr - str);
+
+    if (err_invalid)
+    {
+        /* Invalid input error. */
+#ifdef EINVAL
+        errno = EINVAL;
+#endif
+        *out_set = OPNG_BITSET_EMPTY;
+        return -1;
+    }
+    else if (err_range)
+    {
+        /* Range error. */
 #ifdef ERANGE
-    if (out_of_range)
         errno = ERANGE;
 #endif
-    return result;
+        *out_set = OPNG_BITSET_FULL;
+        return -1;
+    }
+    else
+    {
+        /* Success. */
+        *out_set = result;
+        return 0;
+    }
 }
 
 /*
- * Converts a bitset to a rangeset string.
+ * Formats a bitset using the rangeset string representation.
  */
 size_t
-opng_bitset_to_rangeset_string(char *sbuf, size_t sbuf_size, opng_bitset_t set);
+opng_strformat_bitset_as_rangeset(char *out_buf,
+                                  size_t out_buf_size,
+                                  opng_bitset_t bitset);
 /* TODO */

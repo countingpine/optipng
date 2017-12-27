@@ -2,7 +2,7 @@
  * ratio.c
  * Exact rational numbers.
  *
- * Copyright (C) 2003-2014 Cosmin Truta.
+ * Copyright (C) 2003-2017 Cosmin Truta.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -17,13 +17,13 @@
 
 
 #ifdef OPNG_LLONG_T_DEFINED
-typedef opng_llong_t opng_longest_impl_t;
-typedef opng_ullong_t opng_ulongest_impl_t;
-#define OPNG_LONGEST_IMPL_FORMAT OPNG_LLONG_FORMAT
+typedef opng_llong_t opng_xlong_impl_t;
+typedef opng_ullong_t opng_uxlong_impl_t;
+#define OPNG_XLONG_IMPL_FORMAT_PREFIX OPNG_LLONG_FORMAT_PREFIX
 #else
-typedef long opng_longest_impl_t;
-typedef unsigned long opng_ulongest_impl_t;
-#define OPNG_LONGEST_IMPL_FORMAT "l"
+typedef long opng_xlong_impl_t;
+typedef unsigned long opng_uxlong_impl_t;
+#define OPNG_XLONG_IMPL_FORMAT_PREFIX "l"
 #endif
 
 
@@ -73,11 +73,11 @@ opng_snprintf_impl(char *buffer, size_t buffer_size, const char *format, ...)
  */
 static int
 opng_sprint_uratio_impl(char *buffer, size_t buffer_size,
-                        opng_ulongest_impl_t num, opng_ulongest_impl_t denom,
+                        opng_uxlong_impl_t num, opng_uxlong_impl_t denom,
                         int always_percent)
 {
-    /* (1) num/denom = 0/0                  ==> print "??%"
-     * (2) num/denom = INFINITY             ==> print "INFTY%"
+    /* (1) num/denom == 0/0                 ==> print "??%"
+     * (2) num/denom == INFINITY            ==> print "INFINITY%"
      * (3) 0 <= num/denom < 99.995%         ==> use the percent format "99.99%"
      *     if always_percent:
      * (4)    0.995 <= num/denom < INFINITY ==> use the percent format "999%"
@@ -87,14 +87,14 @@ opng_sprint_uratio_impl(char *buffer, size_t buffer_size,
      *     end if
      */
 
-    opng_ulongest_impl_t integer_part, remainder;
+    opng_uxlong_impl_t integer_part, remainder;
     unsigned int fractional_part, scale;
     double scaled_ratio;
 
-    /* (1,2): num/denom = 0/0 or num/denom = INFINITY */
+    /* (1,2): num/denom == 0/0 or num/denom == INFINITY */
     if (denom == 0)
         return opng_snprintf_impl(buffer, buffer_size,
-                                  num == 0 ? "??%%" : "INFTY%%");
+                                  num == 0 ? "??%%" : "INFINITY%%");
 
     /* (3): 0 <= num/denom < 99.995% */
     /* num/denom < 99.995% <==> denom/(denom-num) < 20000 */
@@ -128,13 +128,13 @@ opng_sprint_uratio_impl(char *buffer, size_t buffer_size,
     /* (4): 0.995 <= num/denom < INFINITY */
     if (always_percent)
         return opng_snprintf_impl(buffer, buffer_size,
-                                  "%" OPNG_LONGEST_IMPL_FORMAT "u%02u%%",
+                                  "%" OPNG_XLONG_IMPL_FORMAT_PREFIX "u%02u%%",
                                   integer_part, fractional_part);
 
     /* (5): 0.995 <= num/denom < 99.995 */
     if (integer_part < 100)
         return opng_snprintf_impl(buffer, buffer_size,
-                                  "%" OPNG_LONGEST_IMPL_FORMAT "u.%02ux",
+                                  "%" OPNG_XLONG_IMPL_FORMAT_PREFIX "u.%02ux",
                                   integer_part, fractional_part);
 
     /* (6): 99.5 <= num/denom < INFINITY */
@@ -144,7 +144,7 @@ opng_sprint_uratio_impl(char *buffer, size_t buffer_size,
     if (remainder > (denom - 1) / 2)
         ++integer_part;
     return opng_snprintf_impl(buffer, buffer_size,
-                              "%" OPNG_LONGEST_IMPL_FORMAT "ux",
+                              "%" OPNG_XLONG_IMPL_FORMAT_PREFIX "ux",
                               integer_part);
 }
 
@@ -155,8 +155,8 @@ int
 opng_ulratio_to_factor_string(char *buffer, size_t buffer_size,
                               const struct opng_ulratio *ratio)
 {
-    opng_ulongest_impl_t num = ratio->num;
-    opng_ulongest_impl_t denom = ratio->denom;
+    opng_uxlong_impl_t num = ratio->num;
+    opng_uxlong_impl_t denom = ratio->denom;
     return opng_sprint_uratio_impl(buffer, buffer_size, num, denom, 0);
 }
 
@@ -167,8 +167,8 @@ int
 opng_ulratio_to_percent_string(char *buffer, size_t buffer_size,
                                const struct opng_ulratio *ratio)
 {
-    opng_ulongest_impl_t num = ratio->num;
-    opng_ulongest_impl_t denom = ratio->denom;
+    opng_uxlong_impl_t num = ratio->num;
+    opng_uxlong_impl_t denom = ratio->denom;
     return opng_sprint_uratio_impl(buffer, buffer_size, num, denom, 1);
 }
 
@@ -181,8 +181,8 @@ int
 opng_ullratio_to_factor_string(char *buffer, size_t buffer_size,
                                const struct opng_ullratio *ratio)
 {
-    opng_ulongest_impl_t num = ratio->num;
-    opng_ulongest_impl_t denom = ratio->denom;
+    opng_uxlong_impl_t num = ratio->num;
+    opng_uxlong_impl_t denom = ratio->denom;
     return opng_sprint_uratio_impl(buffer, buffer_size, num, denom, 0);
 }
 
@@ -193,8 +193,8 @@ int
 opng_ullratio_to_percent_string(char *buffer, size_t buffer_size,
                                 const struct opng_ullratio *ratio)
 {
-    opng_ulongest_impl_t num = ratio->num;
-    opng_ulongest_impl_t denom = ratio->denom;
+    opng_uxlong_impl_t num = ratio->num;
+    opng_uxlong_impl_t denom = ratio->denom;
     return opng_sprint_uratio_impl(buffer, buffer_size, num, denom, 1);
 }
 

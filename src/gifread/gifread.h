@@ -2,29 +2,28 @@
  * @file gifread.h
  * A simple GIF reader.
  *
- * @author Cosmin Truta
- *
- * @section Copyright
- * Copyright (C) 2003-2015 Cosmin Truta.
+ * @copyright
+ * <pre>
+ * Copyright (C) 2003-2017 Cosmin Truta.
  * This software was derived from "giftopnm.c" by David Koblas,
  * and is distributed under the same copyright and warranty terms.
- *
+ * </pre><pre>
  * The original copyright notice is provided below.
- * <pre>
- * +-------------------------------------------------------------------+
- * | Copyright 1990 - 1994, David Koblas.  (koblas@netcom.com)         |
- * |   Permission to use, copy, modify, and distribute this software   |
- * |   and its documentation for any purpose and without fee is hereby |
- * |   granted, provided that the above copyright notice appear in all |
- * |   copies and that both that copyright notice and this permission  |
- * |   notice appear in supporting documentation.  This software is    |
- * |   provided "as is" without express or implied warranty.           |
- * +-------------------------------------------------------------------+
+ * </pre><pre>
+ * Copyright 1990 - 1994, David Koblas.  (koblas@netcom.com)
+ *   Permission to use, copy, modify, and distribute this software
+ *   and its documentation for any purpose and without fee is hereby
+ *   granted, provided that the above copyright notice appear in all
+ *   copies and that both that copyright notice and this permission
+ *   notice appear in supporting documentation.  This software is
+ *   provided "as is" without express or implied warranty.
  * </pre>
+ *
+ * @bug GIF/LZW decoding is not reentrant.
  **/
 
-#ifndef GIFREAD_H
-#define GIFREAD_H
+#ifndef GIFREAD_H_
+#define GIFREAD_H_
 
 #include <stdio.h>
 
@@ -109,32 +108,32 @@ struct GIFGraphicCtlExt
 
 /**
  * Reads the GIF screen and the global color table.
- * @param screen  the destination screen.
- * @param stream  a file stream.
+ * @param screen  the destination screen object
+ * @param stream  a file stream
  **/
 void GIFReadScreen(struct GIFScreen *screen, FILE *stream);
 
 /**
  * Initializes a GIF image object.
- * @param image   the resulting image.
- * @param screen  a screen.
- * @param rows    an array of rows; can be NULL.
+ * @param image   the resulting image object
+ * @param screen  a screen object
+ * @param rows    an array of rows; can be NULL
  **/
 void GIFInitImage(struct GIFImage *image,
                   struct GIFScreen *screen, unsigned char **rows);
 
 /**
  * Destroys a GIF image object.
- * @param image  an image.
+ * @param image  an image object
  **/
 void GIFDestroyImage(struct GIFImage *image);
 
 /**
  * Reads the next GIF block into an image or extension object.
- * @param image   the destination image; can be NULL.
- * @param ext     the destination extension; can be NULL.
- * @param stream  a file stream.
- * @return        the block code or EOF.
+ * @param image   the destination image object; can be NULL
+ * @param ext     the destination extension object; can be NULL
+ * @param stream  a file stream
+ * @return        the block code
  **/
 int GIFReadNextBlock(struct GIFImage *image, struct GIFExtension *ext,
                      FILE *stream);
@@ -142,33 +141,33 @@ int GIFReadNextBlock(struct GIFImage *image, struct GIFExtension *ext,
 /**
  * Returns the local or the global color table (whichever is applicable),
  * or a predefined color table if both of these tables are missing.
- * @param colors     the resulting color table.
- * @param numColors  the size of the resulting color table.
- * @param image      an image.
+ * @param colors     the resulting color table
+ * @param numColors  the size of the resulting color table
+ * @param image      an image object
  **/
 void GIFGetColorTable(unsigned char **colors, unsigned int *numColors,
                       struct GIFImage *image);
 
 /**
  * Initializes a GIF extension object.
- * @param ext             the resulting extension.
- * @param screen          a screen.
- * @param initBufferSize  an initial buffer size; can be 0.
+ * @param ext             the resulting extension object
+ * @param screen          a screen object
+ * @param initBufferSize  an initial buffer size; can be 0
  **/
 void GIFInitExtension(struct GIFExtension *ext,
                       struct GIFScreen *screen, unsigned int initBufferSize);
 
 /**
  * Destroys a GIF extension object.
- * @param ext  an extension.
+ * @param ext  an extension object
  **/
 void GIFDestroyExtension(struct GIFExtension *ext);
 
 /**
  * Constructs a GIF graphic control extension object
  * from a raw extension object.
- * @param graphicExt  the resulting graphic control extension.
- * @param ext         a raw extension.
+ * @param graphicExt  the resulting graphic control extension object
+ * @param ext         a raw extension object
  **/
 void GIFGetGraphicCtl(struct GIFGraphicCtlExt *graphicExt,
                       struct GIFExtension *ext);
@@ -176,13 +175,13 @@ void GIFGetGraphicCtl(struct GIFGraphicCtlExt *graphicExt,
 
 /**
  * The error handling callback.
- * @param message  an error message.
+ * @param message  an error message
  **/
 extern void (*GIFError)(const char *message);
 
 /**
  * The warning handling callback.
- * @param message  a warning message.
+ * @param message  a warning message
  **/
 extern void (*GIFWarning)(const char *message);
 
@@ -192,4 +191,4 @@ extern void (*GIFWarning)(const char *message);
 #endif
 
 
-#endif  /* GIFREAD_H */
+#endif  /* GIFREAD_H_ */

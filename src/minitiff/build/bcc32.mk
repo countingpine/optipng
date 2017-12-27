@@ -16,8 +16,8 @@ LIBS = #noeh32.lib
 RM_F = del /q
 
 MINITIFF_LIB = minitiff.lib
-MINITIFF_OBJS = tiffbase.obj tiffread.obj #tiffwrite.obj
-MINITIFF_LIBOBJS = +tiffbase.obj +tiffread.obj #+tiffwrite.obj
+MINITIFF_OBJS = tiffread.obj tiffutil.obj #tiffwrite.obj
+MINITIFF_LIBOBJS = +tiffread.obj +tiffutil.obj #+tiffwrite.obj
 TIFF2PNM = test\tiff2pnm.exe
 TIFF2PNM_OBJS = test\tiff2pnm.obj
 TIFF2PNM_LIBOBJS = test\+tiff2pnm.obj
@@ -38,9 +38,9 @@ $(MINITIFF_LIB): $(MINITIFF_OBJS)
 $(TIFF2PNM): $(TIFF2PNM_OBJS) $(MINITIFF_LIB)
 	$(LD) $(LDFLAGS) -e$@ $(TIFF2PNM_OBJS) $(MINITIFF_LIB) $(LIBS)
 
-tiffbase.obj: tiffbase.c minitiff.h
-tiffread.obj: tiffread.c minitiff.h tiffdef.h
-tiffwrite.obj: tiffwrite.c
+tiffread.obj: tiffread.c minitiff.h
+tiffutil.obj: tiffutil.c minitiff.h
+#tiffwrite.obj: tiffwrite.c
 
 test\tiff2pnm.obj: test\tiff2pnm.c minitiff.h
 	$(CC) -c -I. $(CPPFLAGS) $(CFLAGS) -o$@ $*.c

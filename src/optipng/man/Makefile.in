@@ -34,7 +34,7 @@ clean:
 	rm -f optipng.man.pdf
 	rm -f optipng.man.html
 
-distclean: dist clean
+distclean: clean
 	rm -f Makefile
 
 install: optipng.1

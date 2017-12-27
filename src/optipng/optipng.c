@@ -2,7 +2,7 @@
  * OptiPNG: Advanced PNG optimization program.
  * http://optipng.sourceforge.net/
  *
- * Copyright (C) 2001-2016 Cosmin Truta and the Contributing Authors.
+ * Copyright (C) 2001-2017 Cosmin Truta and the Contributing Authors.
  *
  * This software is distributed under the zlib license.
  * Please see the accompanying LICENSE file.
@@ -29,7 +29,6 @@
 #include "proginfo.h"
 
 #include "bitset.h"
-#include "osys.h"
 #include "png.h"
 #include "pngxutil.h"
 #include "zlib.h"
@@ -143,7 +142,7 @@ static int start_of_line;
 
 
 /*
- * Error handling
+ * Error handling.
  */
 static void
 error(const char *fmt, ...)
@@ -160,7 +159,7 @@ error(const char *fmt, ...)
 }
 
 /*
- * Panic handling
+ * Panic handling.
  */
 static void
 panic(const char *msg)
@@ -177,12 +176,14 @@ panic(const char *msg)
     else
     {
         /* Terminate abnormally, cleanly. */
-        osys_terminate();
+        fprintf(stderr,
+            "The execution of this program has been terminated abnormally.\n");
+        exit(70);  /* EX_SOFTWARE */
     }
 }
 
 /*
- * String utility
+ * String utility.
  */
 static int
 opng_strcasecmp(const char *str1, const char *str2)
@@ -203,7 +204,7 @@ opng_strcasecmp(const char *str1, const char *str2)
 }
 
 /*
- * String utility
+ * String utility.
  */
 static char *
 opng_strltrim(const char *str)
@@ -215,7 +216,7 @@ opng_strltrim(const char *str)
 }
 
 /*
- * String utility
+ * String utility.
  */
 static char *
 opng_strtail(const char *str, size_t num)
@@ -230,7 +231,7 @@ opng_strtail(const char *str, size_t num)
 }
 
 /*
- * String utility
+ * String utility.
  */
 static char *
 opng_strpbrk_digit(const char *str)
@@ -246,7 +247,7 @@ opng_strpbrk_digit(const char *str)
 }
 
 /*
- * String conversion utility
+ * String conversion utility.
  */
 static int
 opng_str2ulong(unsigned long *out_val, const char *in_str,
@@ -314,25 +315,7 @@ opng_str2ulong(unsigned long *out_val, const char *in_str,
 }
 
 /*
- * String conversion utility
- */
-static int
-opng_rangeset2bitset(opng_bitset_t *out_val, const char *in_str)
-{
-    size_t end_idx;
-
-    /* Extract the bitset value from the rangeset string. */
-    *out_val = opng_rangeset_string_to_bitset(in_str, &end_idx);
-    if (end_idx == 0 || *opng_strltrim(in_str + end_idx) != 0)
-    {
-        errno = EINVAL;
-        return -1;
-    }
-    return 0;
-}
-
-/*
- * Command line utility
+ * Command line utility.
  */
 static void
 err_option_arg(const char *opt, const char *opt_arg)
@@ -345,7 +328,7 @@ err_option_arg(const char *opt, const char *opt_arg)
 }
 
 /*
- * Command line utility
+ * Command line utility.
  */
 static int
 check_num_option(const char *opt, const char *opt_arg,
@@ -355,13 +338,13 @@ check_num_option(const char *opt, const char *opt_arg,
 
     /* Extract the numeric value from the option argument. */
     if (opng_str2ulong(&value, opt_arg, 0) != 0 ||
-            value > INT_MAX || (int)value < lowest || (int)value > highest)
+        value > INT_MAX || (int)value < lowest || (int)value > highest)
         err_option_arg(opt, opt_arg);
     return (int)value;
 }
 
 /*
- * Command line utility
+ * Command line utility.
  */
 static int
 check_power2_option(const char *opt, const char *opt_arg,
@@ -389,7 +372,7 @@ check_power2_option(const char *opt, const char *opt_arg,
 }
 
 /*
- * Command line utility
+ * Command line utility.
  */
 static opng_bitset_t
 check_rangeset_option(const char *opt, const char *opt_arg,
@@ -397,18 +380,20 @@ check_rangeset_option(const char *opt, const char *opt_arg,
 {
     opng_bitset_t result;
 
-    /* Extract the rangeset from the option argument. */
-    if (opng_rangeset2bitset(&result, opt_arg) == 0)
-        result &= result_mask;
-    else
-        result = 0;
-    if (result == 0)
+    /* Extract the rangeset from the option argument.
+     * Accept only non-empty rangesets that fit in the given range.
+     */
+    if (opng_strparse_rangeset_to_bitset(&result, opt_arg, result_mask) != 0)
+        result = OPNG_BITSET_EMPTY;
+    if ((result & result_mask) != result)
+        result = OPNG_BITSET_EMPTY;
+    if (result == OPNG_BITSET_EMPTY)
         err_option_arg(opt, opt_arg);
     return result;
 }
 
 /*
- * Command line utility
+ * Command line utility.
  */
 static void
 check_obj_option(const char *opt, const char *opt_arg)
@@ -434,7 +419,7 @@ check_obj_option(const char *opt, const char *opt_arg)
 }
 
 /*
- * Command line parsing
+ * Command line parsing.
  */
 static int
 scan_option(const char *str,
@@ -487,7 +472,7 @@ scan_option(const char *str,
 }
 
 /*
- * Command line parsing
+ * Command line parsing.
  */
 static void
 parse_args(int argc, char *argv[])
@@ -783,7 +768,7 @@ parse_args(int argc, char *argv[])
 }
 
 /*
- * Application-defined printf callback
+ * Application-defined printf callback.
  */
 static void
 app_printf(const char *fmt, ...)
@@ -809,7 +794,7 @@ app_printf(const char *fmt, ...)
 }
 
 /*
- * Application-defined control print callback
+ * Application-defined control print callback.
  */
 static void
 app_print_cntrl(int cntrl_code)
@@ -859,7 +844,7 @@ app_print_cntrl(int cntrl_code)
 }
 
 /*
- * Application-defined progress update callback
+ * Application-defined progress update callback.
  */
 static void
 app_progress(unsigned long current_step, unsigned long total_steps)
@@ -876,7 +861,7 @@ app_progress(unsigned long current_step, unsigned long total_steps)
 }
 
 /*
- * Application initialization
+ * Application initialization.
  */
 static void
 app_init(void)
@@ -902,7 +887,7 @@ app_init(void)
 }
 
 /*
- * Application finalization
+ * Application finalization.
  */
 static void
 app_finish(void)
@@ -915,7 +900,7 @@ app_finish(void)
 }
 
 /*
- * File list processing
+ * File list processing.
  */
 static int
 process_files(int argc, char *argv[])
@@ -925,10 +910,10 @@ process_files(int argc, char *argv[])
     int i;
 
     /* Initialize the optimization engine. */
-    ui.printf_fn      = app_printf;
+    ui.printf_fn = app_printf;
     ui.print_cntrl_fn = app_print_cntrl;
-    ui.progress_fn    = app_progress;
-    ui.panic_fn       = panic;
+    ui.progress_fn = app_progress;
+    ui.panic_fn = panic;
     if (opng_initialize(&options, &ui) != 0)
         panic("Can't initialize optimization engine");
 
@@ -950,7 +935,7 @@ process_files(int argc, char *argv[])
 }
 
 /*
- * main
+ * The main function.
  */
 int
 main(int argc, char *argv[])

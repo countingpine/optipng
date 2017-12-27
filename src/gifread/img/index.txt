@@ -1,1 +1,1 @@
-compass.gif: The famous about:jwz compass.
+compass.gif: The historical "about:jwz" compass.

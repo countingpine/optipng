@@ -1,12 +1,13 @@
 /*
  * gifdump.c
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2017 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as gifread.c.
  */
 
 #include "gifread.h"
+
 #include <stdio.h>
 
 
@@ -48,10 +49,10 @@ int GIFDump(const char *filename)
     {
         switch (GIFReadNextBlock(&image, &ext, stream))
         {
-        case GIF_TERMINATOR:  /* ';' */
+        case GIF_TERMINATOR:
             loop = 0;
             break;
-        case GIF_IMAGE:       /* ',' */
+        case GIF_IMAGE:
             ++result;
             printf("Image: %u x %u @ (%u, %u)\n",
                    image.Width, image.Height, image.LeftPos, image.TopPos);
@@ -59,7 +60,7 @@ int GIFDump(const char *filename)
                 printf("  Local colors: %u\n", image.LocalNumColors);
             printf("  Interlaced: %s\n", image.InterlaceFlag ? "YES" : "NO");
             break;
-        case GIF_EXTENSION:   /* '!' */
+        case GIF_EXTENSION:
             if (ext.Label == GIF_GRAPHICCTL)
             {
                 GIFGetGraphicCtl(&graphicExt, &ext);
@@ -97,7 +98,7 @@ int main(int argc, char *argv[])
 
     if (argc <= 1)
     {
-        printf("Usage: gifdump <files.gif...>\n");
+        printf("Usage: gifdump [<file>...]\n");
         return 0;
     }
 

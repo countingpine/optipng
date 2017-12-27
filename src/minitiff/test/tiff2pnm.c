@@ -1,58 +1,106 @@
-#include <stdio.h>
-#include <stdlib.h>
+/*
+ * tiff2pnm.c
+ * A test program for minitiff.
+ *
+ * Copyright (C) 2006-2017 Cosmin Truta.
+ *
+ * minitiff is open-source software, distributed under the zlib license.
+ * For conditions of distribution and use, see copyright notice in minitiff.h.
+ */
+
 #include "minitiff.h"
 
+#include <stdio.h>
+#include <stdlib.h>
 
-static void error(const char *msg)
+
+static int tiff2pnm(const char *in_path, const char *out_path)
 {
-    fprintf(stderr, "%s\n", msg);
-    exit(EXIT_FAILURE);
-}
-
-
-int main(int argc, char *argv[])
-{
-    FILE *in_file, *out_file;
-    struct minitiff_info tiff_info;
-    unsigned int width, height, depth, y;
+    FILE *in_stream;
+    FILE *out_stream;
+    struct minitiff_info info;
+    size_t width, height, depth, y;
     unsigned char *row;
+    int ioerr;
 
-    if (argc <= 2)
-        error("Usage: tiff2pnm input.tif output.pnm");
+    in_stream = fopen(in_path, "rb");
+    if (in_stream == NULL)
+    {
+        fprintf(stderr, "error: Can't open input TIFF file: %s\n", in_path);
+        return -1;
+    }
 
-    in_file = fopen(argv[1], "rb");
-    if (in_file == NULL)
-        error("Can't open input (TIFF) file");
-    minitiff_init_info(&tiff_info);
-    minitiff_read_info(&tiff_info, in_file);
-    width  = tiff_info.width;
-    height = tiff_info.height;
-    depth  = tiff_info.samples_per_pixel;
-    if (width == 0 || height == 0)
-        error("Invalid TIFF dimensions");
+    minitiff_init_info(&info);
+    minitiff_read_info(&info, in_stream);
+    minitiff_validate_info(&info);
+
+    width = info.width;
+    height = info.height;
+    depth = info.samples_per_pixel;
     if (depth != 1 && depth != 3)
-        error("Invalid number of color planes");
+    {
+        fprintf(stderr,
+                "error: Invalid number of color planes in TIFF files: %lu\n",
+                (unsigned long)depth);
+        minitiff_destroy_info(&info);
+        fclose(in_stream);
+        return -1;
+    }
 
     row = (unsigned char *)malloc(depth * width);
     if (row == NULL)
-        error("Out of memory");
-
-    out_file = fopen(argv[2], "wb");
-    if (out_file == NULL)
-        error("Can't open output (PNM) file");
-    fprintf(out_file, "P%c\n%d %d\n255\n",
-        ((depth == 1) ? '5' : '6'),
-        width, height);
-
-    for (y = 0; y < height; ++y)
     {
-        minitiff_read_row(&tiff_info, row, y, in_file);
-        if (fwrite(row, depth, width, out_file) != width)
-            error("Can't write to output file");
+        fprintf(stderr, "critical error: Out of memory\n");
+        minitiff_destroy_info(&info);
+        fclose(in_stream);
+        exit(EXIT_FAILURE);
     }
 
-    minitiff_destroy_info(&tiff_info);
-    fclose(in_file);
-    fclose(out_file);
-    return EXIT_SUCCESS;
+    out_stream = fopen(out_path, "wb");
+    if (out_stream != NULL)
+    {
+        ioerr = 0;
+        fprintf(out_stream,
+                "P%c\n%lu %lu\n255\n",
+                (depth == 1) ? '5' : '6',
+                (unsigned long)width, (unsigned long)height);
+        for (y = 0; y < height; ++y)
+        {
+            minitiff_read_row(&info, row, y, in_stream);
+            fwrite(row, depth, width, out_stream);
+        }
+        if (ferror(in_stream))
+        {
+            ioerr = 1;
+            fprintf(stderr,
+                    "error: Can't read input TIFF file: %s\n", in_path);
+        }
+        if (ferror(out_stream))
+        {
+            ioerr = 1;
+            fprintf(stderr,
+                    "error: Can't write output PNM file: %s\n", out_path);
+        }
+        fclose(out_stream);
+    }
+    else
+    {
+        ioerr = 1;
+        fprintf(stderr, "error: Can't open output PNM file: %s\n", out_path);
+    }
+
+    minitiff_destroy_info(&info);
+    fclose(in_stream);
+    fclose(out_stream);
+    return ioerr ? -1 : 1;
+}
+
+int main(int argc, char *argv[])
+{
+    if (argc <= 2)
+    {
+        fprintf(stderr, "usage: tiff2pnm input.tif output.pnm\n");
+        return EXIT_FAILURE;
+    }
+    return (tiff2pnm(argv[1], argv[2]) >= 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

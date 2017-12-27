@@ -21,7 +21,7 @@ LIBS =
 RM_F = rm -f
 
 MINITIFF_LIB = libminitiff.a
-MINITIFF_OBJS = tiffbase.o tiffread.o #tiffwrite.o
+MINITIFF_OBJS = tiffread.o tiffutil.o #tiffwrite.o
 TIFF2PNM = test/tiff2pnm$(EXEEXT)
 TIFF2PNM_OBJS = test/tiff2pnm.o
 
@@ -42,9 +42,9 @@ $(MINITIFF_LIB): $(MINITIFF_OBJS)
 $(TIFF2PNM): $(TIFF2PNM_OBJS) $(MINITIFF_LIB)
 	$(LD) $(LDFLAGS) -o $@ $(TIFF2PNM_OBJS) $(MINITIFF_LIB) $(LIBS)
 
-tiffbase.o: tiffbase.c minitiff.h
-tiffread.o: tiffread.c minitiff.h tiffdef.h
-tiffwrite.o: tiffwrite.c
+tiffread.o: tiffread.c minitiff.h
+tiffutil.o: tiffutil.c minitiff.h
+#tiffwrite.o: tiffwrite.c
 
 test/tiff2pnm.o: test/tiff2pnm.c minitiff.h
 	$(CC) -c -I. $(CPPFLAGS) $(CFLAGS) -o $@ $*.c

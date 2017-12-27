@@ -1,7 +1,7 @@
 /*
  * pngxmem.c - libpng extension: memory allocation utilities.
  *
- * Copyright (C) 2003-2014 Cosmin Truta.
+ * Copyright (C) 2003-2017 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
  */
@@ -34,7 +34,8 @@ pngx_malloc_rows_extended(png_structp png_ptr, png_infop info_ptr,
       png_error(png_ptr, "Missing IHDR");
    row_size = png_get_rowbytes(png_ptr, info_ptr);
    /* libpng sets row_size to 0 when the width is too large to process. */
-   if (row_size == 0 || height > (pngx_alloc_size_t)(-1) / sizeof(png_bytep))
+   if (row_size == 0 ||
+       (pngx_alloc_size_t)height > (pngx_alloc_size_t)(-1) / sizeof(png_bytep))
       png_error(png_ptr, "Can't handle exceedingly large image dimensions");
    if (row_size < min_row_size)
       row_size = min_row_size;

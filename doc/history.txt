@@ -12,6 +12,21 @@ Legend
    (crash, data/metadata loss or security hazard).
  * Other modification (e.g. architectural improvement).
 
+Version 0.7.7   2017-dec-27
+-------------
+ * Upgraded libpng to version 1.6.34.
+ * Upgraded zlib to version 1.2.11-optipng.
+ * Upgraded minitiff to version 0.2.
+!! Fixed a buffer overflow vulnerability in the GIF decoder.
+   [Reported by Joonun Jang]
+!! Fixed an integer overflow vulnerability in the TIFF decoder.
+   [Reported by Jaeseung Choi]
+ ! Fixed the build on macOS High Sierra.
+   [Reported by various users]
+   [Fixed by Yuen Ho Wong and Friedrich Preuss]
+ ! Fixed the build on DJGPP.
+ * Disallowed out-of-bounds values in rangeset options.
+
 Version 0.7.6   2016-apr-03   [Released by Ramona C. Truta]
 -------------
  * Upgraded libpng to version 1.6.21.
@@ -21,7 +36,7 @@ Version 0.7.6   2016-apr-03   [Released by Ramona C. Truta]
    [Reported by Henri Salo and Hans Jerry Illikainen]
    [Fixed by Ramona C. Truta]
  ! Fixed a benign uninitialized memory read in the GIF decoder.
-   [Fixed by cherry-picking from the original gifread code]
+   [Reported by Gustavo Grieco]
  ! Fixed a build failure occurring under the Estonian (et_EE) locale.
    [Reported by Sebastian Pipping]
    [Fixed by Priit Laes]
@@ -205,7 +220,7 @@ Version 0.6     2008-jun-15
    [Reported by Christian Davideck]
  * Provided more detailed image information at the start of processing.
  * Provided a more detailed summary at the end of processing, under the
-   presence of the -v option and/or the occurrence of exceptional events.
+   presence of the option -v and/or the occurrence of exceptional events.
 
 Version 0.5.5   2007-jan-28
 -------------
@@ -228,8 +243,8 @@ Version 0.5.5   2007-jan-28
 
 Version 0.5.4   2006-aug-11
 -------------
- + Added user options -out and -dir, to specify the name of
-   the output file or directory.
+ + Added the options -out and -dir, to specify the name of the
+   output file or directory.
    [Requested by Alexander Lucas]
  * Added support for builds based on the system-supplied libpng.
    [Contributed by Nelson A. de Oliveira]
@@ -241,7 +256,7 @@ Version 0.5.3   2006-jul-23
    uncompressed).
 ++ Avoided the redundant trial when the search space is singular
    (e.g. when running "optipng -o1 example.tif").
- + Prevented accidental file corruption when using option "-log".
+ + Prevented accidental file corruption when using the option -log.
  ! Fixed (again) a small typo in the online help.
 
 Version 0.5.2   2006-may-07
@@ -258,8 +273,8 @@ Version 0.5.1   2006-apr-30
  + Added a Unix man page.
    [Contributed by Nelson A. de Oliveira]
  + Allowed abbreviation of command-line options.
- + Changed user option -log to accept a file name as an argument.
- * Changed user option -no to -simulate.
+ + Changed the option -log to accept a file name as an argument.
+ * Renamed the option -no to -simulate.
  ! Fixed an error in handling .bak files on Unix.
    [Reported by Adam Szojda and Nelson A. de Oliveira]
  ! Fixed a small typo in the help screen.
@@ -273,7 +288,7 @@ Version 0.5     2006-jan-14
  * Upgraded zlib to version 1.2.3-optipng.
  * Upgraded libpng to version 1.2.8-optipng.
  + If trials are ended prematurely, detailed progression is only
-   reported under the user option -v.
+   reported under the option -v.
  - Removed reporting of some IDAT sizes that exceeded the optimum.
    (This was NOT a bug, but a "feature" that confused some users.)
  ! Fixed an RGB-to-gray reduction problem that occurred under some
@@ -315,16 +330,16 @@ Version 0.4.6   2004-oct-25
    [Requested by Larry Hastings]
  + Changed the order of trials, to perform the trials that are
    more likely to yield a smaller IDAT, at the beginning.
- + Added user option -full to avoid the premature termination of
+ + Added the option -full to avoid the premature termination of
    trials; useful for debugging.
 
 Version 0.4.5   2004-may-31
 -------------
  * Upgraded zlib to version 1.2.1.f-cos2.
  * Upgraded libpng to version 1.0.15-cos2.
- * Changed user option -nx to -nz.
- + Added user option to preserve file attributes (file mode,
-   time stamp, etc.) when applicable.
+ * Renamed the option -nx to -nz.
+ + Added the option -preserve to preserve file attributes
+   (file mode, time stamp, etc.) where applicable.
    [Requested by Nehal Mistry]
  ! Fixed an incorrect initialization of zlib window bits.
  ! Displayed an error message when the search space was invalid.
@@ -391,7 +406,7 @@ Version 0.3     2003-feb-24
 Version 0.2     2001-dec-27
 -----------
  + Added support for optimization level presets.
- + Added user option for changing the interlacing.
+ + Added a user option for changing the interlacing.
 
 Version 0.1     2001-dec-17
 -----------

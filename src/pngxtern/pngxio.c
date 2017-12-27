@@ -1,7 +1,7 @@
 /*
  * pngxio.c - libpng extension: I/O state query.
  *
- * Copyright (C) 2003-2011 Cosmin Truta.
+ * Copyright (C) 2003-2017 Cosmin Truta.
  * This software is distributed under the same licensing and warranty terms
  * as libpng.
  *
@@ -49,7 +49,7 @@ static const char *_pngxio_errmsg_invalid_argument =
 
 /* Update io_state and call the user-supplied read/write functions. */
 void /* PRIVATE */
-pngxio_read_write(png_structp png_ptr, png_bytep data, png_size_t length)
+pngxio_read_write(png_structp png_ptr, png_bytep data, size_t length)
 {
    png_rw_ptr io_data_fn;
    int *io_state_ptr;

@@ -1,5 +1,10 @@
 #!/bin/sh
 
+# Copyright (C) 2008-2017 Cosmin Truta.
+#
+# This software is distributed under the zlib license.
+# Please see the accompanying LICENSE file.
+
 trap "rm -f conftest* core a.out; exit 1" 1 2 3 15
 
 LC_ALL=C
@@ -196,22 +201,43 @@ fi
 
 if test "$enable_debug" -ne 0
 then
-    CPPFLAGS="$CPPFLAGS -DDEBUG -D_DEBUG"
+    CPPFLAGS="$CPPFLAGS -DDEBUG -D_DEBUG -DPNGX_DEBUG"
     CFLAGS="$CFLAGS -g"
     LDFLAGS="$LDFLAGS -g"
 fi
 
-if test "$with_system_libpng" -eq 0
+if test "$with_system_libpng" -ne 0
 then
+    USE_SYSTEM_LIBPNG_TRUE=""
+    USE_SYSTEM_LIBPNG_FALSE="#"
+    echo "Checking for system libpng..."
+    test=conftest$$
+cat > $test.c <<EOM
+#include <png.h>
+#if PNG_LIBPNG_VER < 10209
+#error This program requires libpng version 1.2.9 or higher
+#endif
+int dummy;
+EOM
+    ($CC -c $CPPFLAGS $CFLAGS $test.c) 2>/dev/null
+    status=$?
+    rm -f $test.c $test.o
+    if test $status -ne 0
+    then
+        echo "$0: error: missing libpng or incorrect libpng version"
+        echo "$0: note: libpng version 1.2.9 or higher is required"
+        exit 1
+    fi
+else
     USE_SYSTEM_LIBPNG_TRUE="#"
     USE_SYSTEM_LIBPNG_FALSE=""
     if test "$with_preconfigured_libpng" -ne 0
     then
         echo "Using pre-configured libpng..."
-        libpng_makefile=scripts/makefile.gcc
-        if test ! -f src/libpng/$libpng_makefile
+        libpng_preconfig_makefile=scripts/makefile.gcc
+        if test ! -f "src/libpng/$libpng_preconfig_makefile"
         then
-            echo "$0: warning: cannot find: src/libpng/$libpng_makefile"
+            echo "$0: warning: cannot find: src/libpng/$libpng_preconfig_makefile"
             with_preconfigured_libpng=0
         fi
     fi
@@ -272,7 +298,7 @@ then
             "
         fi
         sed "$sed_preconfig_libpng" \
-            src/libpng/$libpng_makefile > src/libpng/Makefile
+            src/libpng/$libpng_preconfig_makefile > src/libpng/Makefile
         LIBPNG_MK=Makefile
         # The pre-configured makefiles in libpng don't do distclean.
         LIBPNG_DISTCLEAN="clean"
@@ -286,80 +312,10 @@ then
             exit 1
         fi
     fi
-else
-    USE_SYSTEM_LIBPNG_TRUE=""
-    USE_SYSTEM_LIBPNG_FALSE="#"
-    echo "Checking for system libpng..."
-    test=conftest$$
-cat > $test.c <<EOM
-#include <png.h>
-#if PNG_LIBPNG_VER < 10209
-#error This program requires libpng version 1.2.9 or higher
-#endif
-int dummy;
-EOM
-    ($CC -c $CPPFLAGS $CFLAGS $test.c) 2>/dev/null
-    status=$?
-    rm -f $test.c $test.o
-    if test $status -ne 0
-    then
-        echo "$0: error: missing libpng or incorrect libpng version"
-        echo "$0: note: libpng version 1.2.9 or higher is required"
-        exit 1
-    fi
 fi
 
-ZLIB_MK=Makefile
-ZLIB_DISTCLEAN=distclean
 if test "$with_system_zlib" -ne 0
 then
-    USE_SYSTEM_ZLIB_TRUE=""
-    USE_SYSTEM_ZLIB_FALSE="#"
-else
-    USE_SYSTEM_ZLIB_TRUE="#"
-    USE_SYSTEM_ZLIB_FALSE=""
-    case `(uname -s) 2>/dev/null || echo unknown` in
-    mingw* | MINGW* | windows* | WINDOWS* )
-        with_preconfigured_zlib=1
-        ZLIB_MK=win32/Makefile.gcc
-        ZLIB_DISTCLEAN=clean
-        ;;
-    esac
-fi
-
-if test "$with_system_zlib" -eq 0
-then
-    USE_SYSTEM_ZLIB_TRUE="#"
-    USE_SYSTEM_ZLIB_FALSE=""
-    case `(uname -s) 2>/dev/null || echo unknown` in
-    mingw* | MINGW* | windows* | WINDOWS* )
-        # zlib configure is known to fail on MinGW.
-        zlib_makefile=win32/Makefile.gcc
-        if test -f src/zlib/$zlib_makefile
-        then
-            with_preconfigured_zlib=1
-        else
-            echo "$0: warning: cannot find: src/zlib/$zlib_makefile"
-            with_preconfigured_zlib=0
-        fi
-        ;;
-    esac
-    if test "$with_preconfigured_zlib" -ne 0
-    then
-        echo "Using pre-configured zlib..."
-        ZLIB_MK="$zlib_makefile"
-        # The pre-configured makefiles in zlib don't do distclean.
-        ZLIB_DISTCLEAN=clean
-    else
-        echo "Configuring zlib..."
-        (cd src/zlib && ./configure --static)
-        if test $? -ne 0
-        then
-            echo "$0: error: could not configure: zlib"
-            exit 1
-        fi
-    fi
-else
     USE_SYSTEM_ZLIB_TRUE=""
     USE_SYSTEM_ZLIB_FALSE="#"
     echo "Checking for system zlib..."
@@ -380,6 +336,44 @@ EOM
         echo "$0: note: zlib version 1.2.1 or higher is required"
         exit 1
     fi
+else
+    USE_SYSTEM_ZLIB_TRUE="#"
+    USE_SYSTEM_ZLIB_FALSE=""
+    case `(uname -s) 2>/dev/null || echo unknown` in
+    mingw* | MINGW* | windows* | WINDOWS* )
+        with_preconfigured_zlib=1
+        ZLIB_MK=win32/Makefile.gcc
+        # This pre-configured makefile doesn't do distclean.
+        ZLIB_DISTCLEAN=clean
+        ;;
+    *djgpp | *DJGPP | *dos | *DOS )
+        with_preconfigured_zlib=1
+        ZLIB_MK=msdos/Makefile.dj2
+        # This pre-configured makefile doesn't do distclean.
+        ZLIB_DISTCLEAN=clean
+        ;;
+    * )
+        with_preconfigured_zlib=0
+        ZLIB_MK=Makefile
+        ZLIB_DISTCLEAN=distclean
+    esac
+    if test "$with_preconfigured_zlib" -ne 0
+    then
+        echo "Using pre-configured zlib..."
+        if test ! -f "src/zlib/$ZLIB_MK"
+        then
+            echo "$0: error: cannot find: src/zlib/$ZLIB_MK"
+            exit 1
+        fi
+    else
+        echo "Configuring zlib..."
+        (cd src/zlib && ./configure --static)
+        if test $? -ne 0
+        then
+            echo "$0: error: could not configure: zlib"
+            exit 1
+        fi
+    fi
 fi
 
 sed_config="
@@ -388,10 +382,10 @@ sed_config="
     s|@bindir@|$bindir|g
     s|@mandir@|$mandir|g
     s|@man1dir@|$man1dir|g
-    s|@USE_SYSTEM_LIBPNG_TRUE@|$USE_SYSTEM_LIBPNG_TRUE|g
     s|@USE_SYSTEM_LIBPNG_FALSE@|$USE_SYSTEM_LIBPNG_FALSE|g
-    s|@USE_SYSTEM_ZLIB_TRUE@|$USE_SYSTEM_ZLIB_TRUE|g
+    s|@USE_SYSTEM_LIBPNG_TRUE@|$USE_SYSTEM_LIBPNG_TRUE|g
     s|@USE_SYSTEM_ZLIB_FALSE@|$USE_SYSTEM_ZLIB_FALSE|g
+    s|@USE_SYSTEM_ZLIB_TRUE@|$USE_SYSTEM_ZLIB_TRUE|g
     s|@CC@|${CC-cc}|g
     s|@CFLAGS@|${CFLAGS--O}|g
     s|@CPP@|${CPP-\$(CC) -E}|g
@@ -401,18 +395,19 @@ sed_config="
     s|@AR@|${AR-ar}|g
     s|@ARFLAGS@|${ARFLAGS-cru}|g
     s|@RANLIB@|${RANLIB-ranlib}|g
-    s|@LIBS@|${LIBS-}|g
-    s|@LIBM@|${LIBM--lm}|g
-    s|@LIBZ@|${LIBZ--lz}|g
-    s|@LIBPNG@|${LIBPNG--lpng}|g
-    s|@DIFF@|${DIFF-diff -b -u}|g
+    s|@CP_FP@|${CP_FP-cp -f -p}|g
+    s|@MKDIR_P@|${MKDIR_P-mkdir -p}|g
     s|@RM_F@|${RM_F-rm -f}|g
-    s|@LIBPNG_MK@|${LIBPNG_MK-Makefile}|g
-    s|@LIBPNG_MK_DEF@|${LIBPNG_MK_DEF-PNGLIBCONF_H_PREBUILT=pnglibconf.h.optipng}|g
+    s|@LIBM@|${LIBM--lm}|g
+    s|@LIBPNG@|${LIBPNG--lpng}|g
+    s|@LIBS@|${LIBS-}|g
+    s|@LIBZ@|${LIBZ--lz}|g
     s|@LIBPNG_DISTCLEAN@|${LIBPNG_DISTCLEAN-distclean}|g
     s|@LIBPNG_DISTCLEAN_XCMD@|${LIBPNG_DISTCLEAN_XCMD-true}|g
-    s|@ZLIB_MK@|${ZLIB_MK-Makefile}|g
+    s|@LIBPNG_MK@|${LIBPNG_MK-Makefile}|g
+    s|@LIBPNG_MK_DEF@|${LIBPNG_MK_DEF-PNGLIBCONF_H_PREBUILT=pnglibconf.h.optipng}|g
     s|@ZLIB_DISTCLEAN@|${ZLIB_DISTCLEAN-distclean}|g
+    s|@ZLIB_MK@|${ZLIB_MK-Makefile}|g
     s|@[A-Z]*_MK@|Makefile|g
     s| *\$||
 "

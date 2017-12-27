@@ -10,7 +10,8 @@ CPP = #cpp32 -P-
 CPPFLAGS =
 LD = $(CC)
 LDFLAGS = $(CFLAGS)
-DIFF = fc
+MKDIR_P = mkdir
+CP_FP = copy
 RM_F = del /q
 
 LIB_LIBPNG =
@@ -48,8 +49,8 @@ OPTIPNG_OBJS = \
   optipng.obj \
   optim.obj \
   bitset.obj \
+  ioutil.obj \
   ratio.obj \
-  osys.obj \
   wildargs.obj
 
 OPTIPNG_DEPLIB_ZLIB = $(ZLIB_DIR)\$(ZLIB_LIB)
@@ -78,7 +79,7 @@ OPTIPNG_TESTS = \
   test\ratio_test.exe
 OPTIPNG_TESTOBJS = \
   test\bitset_test.obj \
-  test\ratio_test.obj \
+  test\ratio_test.obj
 OPTIPNG_TESTOUT = *.out.png test\*.out
 
 all: optipng.exe
@@ -89,11 +90,11 @@ optipng.exe: $(OPTIPNG_OBJS) $(OPTIPNG_DEPLIBS)
 .c.obj:
 	$(CC) -c $(CPPFLAGS) $(CFLAGS) $(OPTIPNG_DEPINCLUDES) -o$@ $<
 
-optipng.obj: optipng.c optipng.h bitset.h osys.h proginfo.h $(OPTIPNG_DEPLIBS)
-optim.obj: optim.c optipng.h bitset.h osys.h ratio.h $(OPTIPNG_DEPLIBS)
+optipng.obj: optipng.c optipng.h bitset.h proginfo.h $(OPTIPNG_DEPLIBS)
+optim.obj: optim.c optipng.h bitset.h ioutil.h ratio.h $(OPTIPNG_DEPLIBS)
 bitset.obj: bitset.c bitset.h
+ioutil.obj: ioutil.c ioutil.h
 ratio.obj: ratio.c ratio.h
-osys.obj: osys.c osys.h
 wildargs.obj: wildargs.c
 
 $(OPNGREDUC_DIR)\$(OPNGREDUC_LIB): \
@@ -143,8 +144,7 @@ local-test: optipng.exe $(OPTIPNG_TESTS)
 	-@$(RM_F) pngtest.out.png
 	.\optipng.exe -o1 -q img\pngtest.png -out=pngtest.out.png
 	-@echo optipng ... ok
-	test\bitset_test.exe < test\bitset_test.dat > test\bitset_test.out
-	fc test\bitset_test.expect test\bitset_test.out
+	test\bitset_test.exe > test\bitset_test.out
 	-@echo bitset_test ... ok
 	test\ratio_test.exe > test\ratio_test.out
 	-@echo ratio_test ... ok
@@ -182,6 +182,11 @@ clean: \
   clean-libpng \
   clean-zlib
 
+local-clean:
+	-$(RM_F) optipng.exe $(OPTIPNG_OBJS)
+	-$(RM_F) $(OPTIPNG_TESTS) $(OPTIPNG_TESTOBJS) $(OPTIPNG_TESTOUT)
+	-$(RM_F) *.tds
+
 clean-opngreduc:
 	cd $(OPNGREDUC_DIR)
 	$(MAKE) -f $(OPNGREDUC_MK) clean
@@ -212,12 +217,14 @@ clean-zlib:
 	cd $(OPTIPNG_DIR)
 
 distclean: \
-  local-clean \
+  local-distclean \
   distclean-opngreduc \
   distclean-pngxtern-gif-pnm-tiff \
   distclean-libpng \
   distclean-zlib
-	-$(RM_F) Makefile man\Makefile
+
+local-distclean: local-clean
+	-$(RM_F) Makefile
 
 distclean-opngreduc:
 	cd $(OPNGREDUC_DIR)
@@ -245,21 +252,16 @@ distclean-libpng:
 
 distclean-zlib:
 	cd $(ZLIB_DIR)
-	$(MAKE) -f $(ZLIB_MK) distclean
+	$(MAKE) -f $(ZLIB_MK) clean
 	cd $(OPTIPNG_DIR)
 
-local-clean:
-	-$(RM_F) optipng.exe $(OPTIPNG_OBJS)
-	-$(RM_F) $(OPTIPNG_TESTS) $(OPTIPNG_TESTOBJS) $(OPTIPNG_TESTOUT)
-	-$(RM_F) *.tds
-
 install: optipng.exe
-	mkdir -p $(DESTDIR)$(bindir)
-	mkdir -p $(DESTDIR)$(man1dir)
+	$(MKDIR_P) $(DESTDIR)$(bindir)
+	$(MKDIR_P) $(DESTDIR)$(man1dir)
 	-@$(RM_F) $(DESTDIR)$(bindir)\optipng.exe
 	-@$(RM_F) $(DESTDIR)$(man1dir)\optipng.1
-	cp -f -p optipng.exe $(DESTDIR)$(bindir)
-	cp -f -p man\optipng.1 $(DESTDIR)$(man1dir)
+	$(CP_FP) optipng.exe $(DESTDIR)$(bindir)
+	$(CP_FP) man\optipng.1 $(DESTDIR)$(man1dir)
 
 uninstall:
 	-$(RM_F) $(DESTDIR)$(bindir)\optipng.exe
